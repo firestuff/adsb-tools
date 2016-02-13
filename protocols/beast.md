@@ -47,10 +47,24 @@ receiving stations across multiple packets, and then use the differences between
 station receive timing to calculate signal source position.
 
 
+## Examples
+
+* `1a 32 08 3e 27 b6 cb 6a 1a 1a 00 a1 84 1a 1a c3 b3 1d`
+  * `1a`: frame start
+  * `32`: Mode-S short frame
+  * `08 3e 27 b6 cb 6a`: MLAT counter value
+    * Decimal: 9063047285610
+  * `1a 1a': Signal level
+    * Unescaped: `1a`
+  * `00 a1 84 1a 1a c3 b3 1d`: Mode-S short data
+    * Unescaped: `00 a1 84 1a c3 b3 1d`
+
+
 ## Implementations
 
 * [Mode-S Beast hardware](http://modesbeast.com/scope.html)
 * [FlightAware dump1090 fork](https://flightaware.com/adsb/piaware/install)
+
 
 ## References
 
