@@ -25,13 +25,13 @@ Escaping makes frame length for a given type variable, up to
 
 ## Frame types
 * `0x31`: Mode-AC frame
-  * 1 byte signal level (TODO: units?)
+  * 1 byte signal level
   * 2 byte Mode-AC data
 * `0x32`: Mode-S short frame
-  * 1 byte signal level (TODO: units?)
+  * 1 byte signal level
   * 7 byte Mode-S short data
 * `0x33`: Mode-S long frame
-  * 1 byte signal level (TODO: units?)
+  * 1 byte signal level
   * 14 byte Mode-S long data
 * `0x34`: Status data
   * *Appears to only be used by Mode-S Beast hardware later versions*
@@ -49,15 +49,17 @@ station receive timing to calculate signal source position.
 
 ## Examples
 
-* `1a 32 08 3e 27 b6 cb 6a 1a 1a 00 a1 84 1a 1a c3 b3 1d`
-  * `1a`: frame start
-  * `32`: Mode-S short frame
-  * `08 3e 27 b6 cb 6a`: MLAT counter value
+* `0x1a 0x32 0x08 0x3e 0x27 0xb6 0xcb 0x6a 0x1a 0x1a 0x00 0xa1 0x84 0x1a 0x1a 0xc3 0xb3 0x1d`
+  * `0x1a`: Frame start
+  * `0x32`: Mode-S short frame
+  * `0x08 0x3e 0x27 0xb6 0xcb 0x6a`: MLAT counter value
     * Decimal: 9063047285610
-  * `1a 1a`: Signal level
-    * Unescaped: `1a`
-  * `00 a1 84 1a 1a c3 b3 1d`: Mode-S short data
-    * Unescaped: `00 a1 84 1a c3 b3 1d`
+  * `0x1a 0x1a`: Signal level
+    * Unescaped: `0x1a`
+    * Decimal: 26
+    * 26 / 256 * 100% = 10.2%
+  * `0x00 0xa1 0x84 0x1a 0x1a 0xc3 0xb3 0x1d`: Mode-S short data
+    * Unescaped: `0x00 0xa1 0x84 0x1a 0xc3 0xb3 0x1d`
 
 
 ## Implementations
