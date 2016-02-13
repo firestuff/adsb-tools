@@ -54,7 +54,7 @@ station receive timing to calculate signal source position.
   * `32`: Mode-S short frame
   * `08 3e 27 b6 cb 6a`: MLAT counter value
     * Decimal: 9063047285610
-  * `1a 1a': Signal level
+  * `1a 1a`: Signal level
     * Unescaped: `1a`
   * `00 a1 84 1a 1a c3 b3 1d`: Mode-S short data
     * Unescaped: `00 a1 84 1a c3 b3 1d`
