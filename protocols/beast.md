@@ -6,14 +6,16 @@
 
 ## Format
 
-All data is escaped: `0x1a -> 0x1a 0x1a`. Note that synchronization is still
+All data is escaped: `0x1a` -> `0x1a 0x1a`. Note that synchronization is still
 complex, since `0x1a 0x31` may be the start of a frame or mid-data, depending
 on what preceded it. To synchronize, you must see, in order:
-* != 0x1a
-* 0x1a
-* {0x31, 0x32, 0x33}
+* != `0x1a`
+* `0x1a`
+* {`0x31`, `0x32`, `0x33`}
+
 Escaping makes frame length for a given type variable, up to
-`2 + (2 * data length)`
+`2 + (2 * data_length_sum)`
+
 
 * Mode-AC frame
   * `0x1a 0x31`
