@@ -17,27 +17,35 @@ Escaping makes frame length for a given type variable, up to
 `2 + (2 * data_length_sum)`
 
 
-* Mode-AC frame
-  * `0x1a 0x31`
-  * 6 byte MLAT timestamp (TODO: endianness? units?)
+## Frame structure
+* `0x1a`
+* Frame type (see types below)
+* 6 byte MLAT timestamp (see below)
+  
+
+## Frame types
+* 0x31: Mode-AC frame
   * 1 byte signal level (TODO: units?)
   * 2 byte Mode-AC data
-* Mode-S short frame
-  * `0x1a 0x32`
-  * 6 byte MLAT timestamp (TODO: endianness? units?)
+* 0x32: Mode-S short frame
   * 1 byte signal level (TODO: units?)
   * 7 byte Mode-S short data
-* Mode-S long frame
-  * `0x1a 0x33`
-  * 6 byte MLAT timestamp (TODO: endianness? units?)
+* 0x33: Mode-S long frame
   * 1 byte signal level (TODO: units?)
   * 14 byte Mode-S long data
-* Status data
+* 0x34: Status data
   * *Appears to only be used by Mode-S Beast hardware later versions*
-  * `0x1a 0x34`
-  * 6 byte MLAT timestamp (TODO: endianness? units?)
   * ?? byte status data
   * ?? byte DIP switch configuration
+
+
+## MLAT timestamp
+The MLAT timestamp included in each frame is the value of a 12 MHz counter at
+the of packet reception. This counter isn't calibrated to external time, but
+receiving software can calculate its offset from other receiving stations
+across multiple packets, and then use the differences between station receive
+timing to calculate signal source position.
+
 
 ## Implementations
 
