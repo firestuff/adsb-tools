@@ -51,11 +51,30 @@ source position.
   * `7AF3`: RSSI
     * Decoded: `0x7a 0xf3`
     * Decimal: 31475
-    * 31475 / 65536 * 100% = 48%
+    * 31475 / 65535 * 100% = 48%
   * `;` (`0x3b`): Delimiter
   * `\r\n` (`0x0d 0x0a`): Frame end
 
 * `*8DA07CD89915908778A01E4B4C86;D03D33F9;0A;8437;\r\n`
+  * `*` (`0x2a`): Frame start
+  * `8DA07CD89915908778A01E4B4C86`: Mode-S long data
+    * Decoded: `0x8d 0xa0 0x7c 0xd8 0x99 0x15 0x90 0x87 0x78 0xa0 0x1e 0x4b 0x4c 0x86`
+  * `;` (`0x3b`): Delimiter
+  * `D03D33F9`: MLAT counter
+    * Decoded: `0xd0 0x3d 0x33 0xf9`
+    * Decimal: 3493671929
+  * `;` (`0x3b`): Delimiter
+  * `0A`: MLAT precision
+    * Decoded: `0x0a`
+    * Decimal: 10
+    * 10 * 2 MHz = 20 MHz MLAT counter clock
+  * `;` (`0x3b`): Delimiter
+  * `8437`: RSSI
+    * Decoded: `0x84 0x37`
+    * Decimal: 33847
+    * 31475 / 65535 * 100% = 52%
+  * `;` (`0x3b`): Delimiter
+  * `\r\n` (`0x0d 0x0a`): Frame end
 
 
 ## Implementations
