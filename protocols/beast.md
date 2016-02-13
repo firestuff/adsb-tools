@@ -33,7 +33,7 @@ Escaping makes frame length for a given type variable, up to
   * 1 byte signal level (TODO: units?)
   * 14 byte Mode-S long data
 * Status data
-  * Appears to only be used by Mode-S Beast hardware later versions
+  * *Appears to only be used by Mode-S Beast hardware later versions*
   * `0x1a 0x34`
   * 6 byte MLAT timestamp (TODO: endianness? units?)
   * ?? byte status data
