@@ -21,13 +21,12 @@ void buf_alias(struct buf *to, struct buf *from) {
 ssize_t buf_fill(struct buf *buf, int fd) {
 	if (buf->start + buf->length == BUF_LEN) {
 		assert(buf->start > 0);
-		memmove(buf->buf, &buf->buf[buf->start], buf->length);
+		memmove(buf->buf, buf_at(buf, 0), buf->length);
 		buf->start = 0;
 	}
 
 	size_t space = BUF_LEN - buf->length - buf->start;
-	size_t end = buf->start + buf->length;
-	ssize_t in = read(fd, &buf->buf[end], space);
+	ssize_t in = read(fd, buf_at(buf, buf->length), space);
 	if (in < 0) {
 		return in;
 	}

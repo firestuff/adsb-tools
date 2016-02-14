@@ -25,6 +25,8 @@ struct packet {
 };
 
 
+#define buf_at(buff, at) (&(buff)->buf[(buff)->start + (at)])
+
 void buf_init(struct buf *, char *, char *);
 void buf_alias(struct buf *, struct buf *);
 

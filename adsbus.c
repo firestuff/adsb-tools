@@ -131,7 +131,6 @@ int loop(int bfd) {
 				buf_alias(&tmp, &buf);
 				while (airspy_adsb_parse(&tmp, &packet)) {
 					buf_alias(&buf, &tmp);
-					fprintf(stderr, "packet!\n");
 				}
 
 				if (buf.length == BUF_LEN) {
