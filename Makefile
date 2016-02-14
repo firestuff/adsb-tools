@@ -10,5 +10,5 @@ clean:
 %.o: %.c *.h
 	$(CC) -c $(CFLAGS) $< -o $@
 
-adsbus: adsbus.o
-	$(CC) $(LDFLAGS) -o adsbus adsbus.o
+adsbus: adsbus.o airspy_adsb.o common.o
+	$(CC) $(LDFLAGS) -o adsbus adsbus.o airspy_adsb.o common.o

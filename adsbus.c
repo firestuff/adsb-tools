@@ -1,3 +1,4 @@
+#include <assert.h>
 #include <stdlib.h>
 #include <stdio.h>
 #include <getopt.h>
@@ -8,6 +9,9 @@
 #include <unistd.h>
 #include <sys/epoll.h>
 
+#include "common.h"
+#include "airspy_adsb.h"
+
 
 struct opts {
 	char *backend_node;
@@ -15,15 +19,7 @@ struct opts {
 };
 
 
-#define BUF_LEN 4096
-struct buf {
-	char buf[BUF_LEN];
-	size_t start;
-	size_t length;
-};
-
-
-int parseOpts(int argc, char *argv[], struct opts *opts) {
+int parse_opts(int argc, char *argv[], struct opts *opts) {
 	int opt;
 	while ((opt = getopt(argc, argv, "h:p:")) != -1) {
 		switch (opt) {
@@ -43,7 +39,7 @@ int parseOpts(int argc, char *argv[], struct opts *opts) {
 }
 
 
-int connectBackend(struct opts *opts) {
+int connect_backend(struct opts *opts) {
 	struct addrinfo hints = {
 		.ai_family = AF_UNSPEC,
 		.ai_socktype = SOCK_STREAM,
@@ -90,32 +86,6 @@ int connectBackend(struct opts *opts) {
 }
 
 
-int readToBuf(int fd, struct buf *buf) {
-	struct iovec iov[2];
-	int iovcnt;
-	size_t space = BUF_LEN - buf->length;
-	size_t end = (buf->start + buf->length) % BUF_LEN;
-	if (end + space > BUF_LEN) {
-	  // Wraps around
-		iovcnt = 2;
-		iov[0].iov_base = &buf->buf[end];
-		iov[0].iov_len = BUF_LEN - end;
-		iov[1].iov_base = 0;
-		iov[1].iov_len = space - iov[0].iov_len;
-	} else {
-		iovcnt = 1;
-		iov[0].iov_base = &buf->buf[end];
-		iov[0].iov_len = space;
-	}
-	ssize_t in = readv(fd, iov, iovcnt);
-	if (in < 0) {
-		return in;
-	}
-	buf->length += in;
-	return in;
-}
-
-
 int loop(int bfd) {
 	int efd = epoll_create(10);
   if (efd == -1) {
@@ -136,10 +106,9 @@ int loop(int bfd) {
 		}
 	}
 
-	struct buf buf = {
-		.start = 0,
-		.length = 0,
-	};
+	struct buf buf;
+	char buf_main[BUF_LEN], buf_temp[BUF_LEN];
+	buf_init(&buf, buf_main, buf_temp);
 
 	while (1) {
 #define MAX_EVENTS 10
@@ -152,19 +121,26 @@ int loop(int bfd) {
 
     for (int n = 0; n < nfds; n++) {
 			if (events[n].data.fd == bfd) {
-				if (readToBuf(bfd, &buf) < 0) {
+				if (buf_fill(&buf, bfd) < 0) {
 					fprintf(stderr, "Connection closed by backend\n");
 					return -1;
 				}
-				fprintf(stderr, "buf len is now %d\n", buf.length);
+
+				struct buf tmp;
+				struct packet packet;
+				buf_alias(&tmp, &buf);
+				while (airspy_adsb_parse(&tmp, &packet)) {
+					buf_alias(&buf, &tmp);
+					fprintf(stderr, "packet!\n");
+				}
+
 				if (buf.length == BUF_LEN) {
+					fprintf(stderr, "Input buffer overrun\n");
 					return -1;
 				}
 			}
 		}
 	}
-
-	return 0;
 }
 
 
@@ -173,22 +149,18 @@ int main(int argc, char *argv[]) {
 		.backend_node = "localhost",
 		.backend_service = "30006",
 	};
-	if (parseOpts(argc, argv, &opts)) {
+	if (parse_opts(argc, argv, &opts)) {
 		fprintf(stderr, "Usage: %s [-h backend_host] [-p backend_port]\n", argv[0]);
 		return EXIT_FAILURE;
 	}
 
-	int bfd = connectBackend(&opts);
+	int bfd = connect_backend(&opts);
 	if (bfd < 0) {
 		fprintf(stderr, "Unable to connect to %s/%s\n", opts.backend_node, opts.backend_service);
 		return EXIT_FAILURE;
 	}
 
-	if (loop(bfd)) {
-		fprintf(stderr, "Main loop exited with error\n");
-		return EXIT_FAILURE;
-	}
-
+	loop(bfd);
 	close(bfd);
 	return EXIT_SUCCESS;
 }
