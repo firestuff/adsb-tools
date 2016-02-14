@@ -131,7 +131,7 @@ static int loop(int bfd) {
 				while (airspy_adsb_parse(&buf, &packet)) {
 				}
 
-				if (buf.length == BUF_LEN) {
+				if (buf.length == BUF_LEN_MAX) {
 					fprintf(stderr, "Input buffer overrun. This probably means that adsbus doesn't understand the protocol that this source is speaking.\n");
 					return -1;
 				}
@@ -142,6 +142,8 @@ static int loop(int bfd) {
 
 
 int main(int argc, char *argv[]) {
+	hex_init();
+
 	struct opts opts = {
 		.backend_node = "localhost",
 		.backend_service = "30006",
