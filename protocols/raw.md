@@ -1,4 +1,4 @@
-# Airspy ADSB protocol
+# Raw protocol
 
 ## Ports
 
