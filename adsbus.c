@@ -19,7 +19,7 @@ struct opts {
 };
 
 
-int parse_opts(int argc, char *argv[], struct opts *opts) {
+static int parse_opts(int argc, char *argv[], struct opts *opts) {
 	int opt;
 	while ((opt = getopt(argc, argv, "h:p:")) != -1) {
 		switch (opt) {
@@ -39,7 +39,7 @@ int parse_opts(int argc, char *argv[], struct opts *opts) {
 }
 
 
-int connect_backend(struct opts *opts) {
+static int connect_backend(struct opts *opts) {
 	struct addrinfo hints = {
 		.ai_family = AF_UNSPEC,
 		.ai_socktype = SOCK_STREAM,
@@ -86,7 +86,7 @@ int connect_backend(struct opts *opts) {
 }
 
 
-int loop(int bfd) {
+static int loop(int bfd) {
 	int efd = epoll_create(10);
   if (efd == -1) {
 		perror("epoll_create");
@@ -106,9 +106,10 @@ int loop(int bfd) {
 		}
 	}
 
-	struct buf buf;
-	char buf_main[BUF_LEN], buf_temp[BUF_LEN];
-	buf_init(&buf, buf_main, buf_temp);
+	struct buf buf = {
+		.start = 0,
+		.length = 0,
+	};
 
 	while (1) {
 #define MAX_EVENTS 10
@@ -126,15 +127,12 @@ int loop(int bfd) {
 					return -1;
 				}
 
-				struct buf tmp;
 				struct packet packet;
-				buf_alias(&tmp, &buf);
-				while (airspy_adsb_parse(&tmp, &packet)) {
-					buf_alias(&buf, &tmp);
+				while (airspy_adsb_parse(&buf, &packet)) {
 				}
 
 				if (buf.length == BUF_LEN) {
-					fprintf(stderr, "Input buffer overrun\n");
+					fprintf(stderr, "Input buffer overrun. This probably means that adsbus doesn't understand the protocol that this source is speaking.\n");
 					return -1;
 				}
 			}

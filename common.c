@@ -7,17 +7,6 @@
 #include "common.h"
 
 
-void buf_init(struct buf *buf, char *main, char *tmp) {
-	buf->buf = main;
-	buf->tmp = tmp;
-	buf->start = 0;
-	buf->length = 0;
-}
-
-void buf_alias(struct buf *to, struct buf *from) {
-	memcpy(to, from, sizeof(*to));
-}
-
 ssize_t buf_fill(struct buf *buf, int fd) {
 	if (buf->start + buf->length == BUF_LEN) {
 		assert(buf->start > 0);
