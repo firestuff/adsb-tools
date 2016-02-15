@@ -2,11 +2,6 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <getopt.h>
-#include <sys/types.h>
-#include <sys/socket.h>
-#include <netdb.h>
-#include <netinet/in.h> 
-#include <unistd.h>
 #include <sys/epoll.h>
 
 #include "common.h"
@@ -18,30 +13,9 @@ struct opts {
 	char *backend_service;
 };
 
-static parser parsers[] = {
-	airspy_adsb_parse,
-};
-#define NUM_PARSERS (sizeof(parsers) / sizeof(*parsers))
-
 struct client {
 	int placeholder;
 };
-
-struct peer {
-	enum {
-		BACKEND,
-		CLIENT,
-	} type;
-	int fd;
-	union {
-		struct backend backend;
-		struct client client;
-	};
-};
-#define PEER_BACKEND_INIT { \
-	.type = BACKEND, \
-	.backend = BACKEND_INIT, \
-}
 
 
 static int parse_opts(int argc, char *argv[], struct opts *opts) {
@@ -63,89 +37,11 @@ static int parse_opts(int argc, char *argv[], struct opts *opts) {
 	return 0;
 }
 
-static int connect_backend(struct opts *opts) {
-	struct addrinfo hints = {
-		.ai_family = AF_UNSPEC,
-		.ai_socktype = SOCK_STREAM,
-	};
-
-	struct addrinfo *addrs;
-
-	int gai_err = getaddrinfo(opts->backend_node, opts->backend_service, &hints, &addrs);
-	if (gai_err) {
-		fprintf(stderr, "getaddrinfo(%s/%s): %s\n", opts->backend_node, opts->backend_service, gai_strerror(gai_err));
-		return -1;
-	}
-
-	int bfd;
-	struct addrinfo *addr;
-  for (addr = addrs; addr != NULL; addr = addr->ai_next) {
-		bfd = socket(addr->ai_family, addr->ai_socktype, addr->ai_protocol);
-		if (bfd == -1) {
-			perror("socket");
-			continue;
-		}
-
-		if (connect(bfd, addr->ai_addr, addr->ai_addrlen) != -1) {
-			break;
-		}
-
-		close(bfd);
-	}
-
-	if (addr == NULL) {
-		freeaddrinfo(addrs);
-		fprintf(stderr, "Can't connect to %s/%s\n", opts->backend_node, opts->backend_service);
-		return -1;
-	}
-
-  char hbuf[NI_MAXHOST], sbuf[NI_MAXSERV];
-  if (getnameinfo(addr->ai_addr, addr->ai_addrlen, hbuf, sizeof(hbuf), sbuf, sizeof(sbuf), NI_NUMERICHOST | NI_NUMERICSERV) == 0) {
-		fprintf(stderr, "Connected to %s/%s\n", hbuf, sbuf);
-	}
-
-	freeaddrinfo(addrs);
-
-	return bfd;
-}
-
-bool backend_autodetect_parse(struct backend *backend, struct packet *packet) {
-	for (int i = 0; i < NUM_PARSERS; i++) {
-		if (parsers[i](backend, packet)) {
-			backend->parser = parsers[i];
-			return true;
-		}
-	}
-	return false;
-}
-
-static int loop(int bfd) {
-	struct peer backend = PEER_BACKEND_INIT;
-	backend.fd = bfd;
-
-	int efd = epoll_create1(0);
-  if (efd == -1) {
-		perror("epoll_create1");
-		return -1;
-  }
-
-	{
-		struct epoll_event ev = {
-			.events = EPOLLIN,
-			.data = {
-				.ptr = &backend,
-			},
-		};
-		if (epoll_ctl(efd, EPOLL_CTL_ADD, bfd, &ev) == -1) {
-			perror("epoll_ctl");
-			return -1;
-		}
-	}
-
+static int loop(int epoll_fd) {
 	while (1) {
 #define MAX_EVENTS 10
 		struct epoll_event events[MAX_EVENTS];
-		int nfds = epoll_wait(efd, events, MAX_EVENTS, -1);
+		int nfds = epoll_wait(epoll_fd, events, MAX_EVENTS, -1);
 		if (nfds == -1) {
 			perror("epoll_wait");
 			return -1;
@@ -154,18 +50,8 @@ static int loop(int bfd) {
     for (int n = 0; n < nfds; n++) {
 			struct peer *peer = events[n].data.ptr;
 			switch (peer->type) {
-				case BACKEND:
-					if (buf_fill(&peer->backend.buf, peer->fd) < 0) {
-						fprintf(stderr, "Connection closed by backend\n");
-						return -1;
-					}
-
-					struct packet packet;
-					while (peer->backend.parser(&peer->backend, &packet)) {
-					}
-
-					if (peer->backend.buf.length == BUF_LEN_MAX) {
-						fprintf(stderr, "Input buffer overrun. This probably means that adsbus doesn't understand the protocol that this source is speaking.\n");
+				case PEER_BACKEND:
+					if (!backend_read((struct backend *) peer)) {
 						return -1;
 					}
 					break;
@@ -191,13 +77,19 @@ int main(int argc, char *argv[]) {
 		return EXIT_FAILURE;
 	}
 
-	int bfd = connect_backend(&opts);
-	if (bfd < 0) {
+	int epoll_fd = epoll_create1(0);
+  if (epoll_fd == -1) {
+		perror("epoll_create1");
+		return EXIT_FAILURE;
+  }
+
+	struct backend backend = BACKEND_INIT;
+	if (!backend_connect(opts.backend_node, opts.backend_service, &backend, epoll_fd)) {
 		fprintf(stderr, "Unable to connect to %s/%s\n", opts.backend_node, opts.backend_service);
 		return EXIT_FAILURE;
 	}
 
-	loop(bfd);
-	close(bfd);
+	loop(epoll_fd);
+	close(epoll_fd);
 	return EXIT_SUCCESS;
 }

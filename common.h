@@ -1,6 +1,18 @@
-#include <stdbool.h>
+#pragma once
+
 #include <stdint.h>
 #include <unistd.h>
+
+
+//////// peer
+
+// All specific peer structs must be castable to this.
+struct peer {
+	enum peer_type {
+		PEER_BACKEND,
+		PEER_CLIENT,
+	} type;
+};
 
 
 //////// buf
@@ -40,24 +52,8 @@ struct packet {
 };
 
 
-//////// backend
-
-#define PARSER_STATE_LEN 256
-struct backend;
-typedef bool (*parser)(struct backend *, struct packet *);
-struct backend {
-	struct buf buf;
-	char parser_state[PARSER_STATE_LEN];
-	parser parser;
-};
-#define BACKEND_INIT { \
-	.buf = BUF_INIT, \
-	.parser_state = { 0 }, \
-	.parser = backend_autodetect_parse, \
-}
-
-
 //////// hex
+
 void hex_init();
 void hex_to_bin(char *, char *, size_t);
 uint64_t hex_to_int(char *, size_t);
