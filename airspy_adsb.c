@@ -48,6 +48,6 @@ static bool airspy_adsb_parse_common(char *in, struct packet *packet) {
 	}
 	uint16_t mlat_mhz = 2 * hex_to_int(&in[9], 1);
 	packet->mlat_timestamp = hex_to_int(in, 4) * (MLAT_MHZ / mlat_mhz);
-	packet->rssi = hex_to_int(&in[12], 2) * (RSSI_MAX / (1 << 16));
+	packet->rssi = hex_to_int(&in[12], 2) * (RSSI_MAX / UINT16_MAX);
 	return true;
 }

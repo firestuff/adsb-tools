@@ -18,6 +18,12 @@ struct opts {
 	char *backend_service;
 };
 
+typedef bool (*parser)(struct buf *, struct packet *);
+static parser parsers[] = {
+	airspy_adsb_parse,
+};
+#define NUM_PARSERS (sizeof(parsers) / sizeof(*parsers))
+
 
 static int parse_opts(int argc, char *argv[], struct opts *opts) {
 	int opt;
@@ -128,7 +134,7 @@ static int loop(int bfd) {
 				}
 
 				struct packet packet;
-				while (airspy_adsb_parse(&buf, &packet)) {
+				while (parsers[0](&buf, &packet)) {
 				}
 
 				if (buf.length == BUF_LEN_MAX) {
