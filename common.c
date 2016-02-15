@@ -7,6 +7,10 @@
 #include "common.h"
 
 
+#define MLAT_MHZ 120
+#define RSSI_MAX UINT32_MAX
+
+
 void buf_init(struct buf *buf) {
 	buf->start = 0;
 	buf->length = 0;
@@ -37,6 +41,30 @@ void buf_consume(struct buf *buf, size_t length) {
 	} else {
 		buf->start = 0;
 	}
+}
+
+
+uint64_t mlat_timestamp_scale_mhz_in(uint64_t timestamp, uint32_t mhz) {
+	return timestamp * (MLAT_MHZ / mhz);
+}
+
+uint64_t mlat_timestamp_scale_width_in(uint64_t timestamp, uint64_t max, struct mlat_state *state) {
+	if (timestamp < state->timestamp_last) {
+		// Counter reset
+		state->timestamp_generation += max;
+	}
+
+	state->timestamp_last = timestamp;
+	return state->timestamp_generation + timestamp;
+}
+
+uint64_t mlat_timestamp_scale_in(uint64_t timestamp, uint64_t max, uint16_t mhz, struct mlat_state *state) {
+	return mlat_timestamp_scale_mhz_in(mlat_timestamp_scale_width_in(timestamp, max, state), mhz);
+}
+
+
+uint32_t rssi_scale_in(uint32_t value, uint32_t max) {
+	return value * (RSSI_MAX / max);
 }
 
 

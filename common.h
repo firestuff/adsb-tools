@@ -34,8 +34,6 @@ void buf_consume(struct buf *, size_t);
 
 //////// packet
 
-#define MLAT_MHZ 120
-#define RSSI_MAX UINT32_MAX
 #define DATA_LEN_MAX 14
 struct packet {
 	enum {
@@ -47,6 +45,21 @@ struct packet {
 	uint64_t mlat_timestamp;
 	uint32_t rssi;
 };
+
+
+//////// mlat
+
+struct mlat_state {
+	uint64_t timestamp_last;
+	uint64_t timestamp_generation;
+};
+
+uint64_t mlat_timestamp_scale_in(uint64_t, uint64_t, uint16_t, struct mlat_state *);
+
+
+//////// rssi
+
+uint32_t rssi_scale_in(uint32_t, uint32_t);
 
 
 //////// hex

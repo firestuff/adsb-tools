@@ -7,8 +7,7 @@
 #include "airspy_adsb.h"
 
 struct airspy_adsb_parser_state {
-	uint64_t mlat_timestamp_last;
-	uint64_t mlat_timestamp_generation;
+	struct mlat_state mlat_state;
 };
 
 static bool airspy_adsb_parse_common(char *, struct packet *, struct airspy_adsb_parser_state *);
@@ -60,7 +59,7 @@ static bool airspy_adsb_parse_common(char *in, struct packet *packet, struct air
 		return false;
 	}
 	uint16_t mlat_mhz = 2 * hex_to_int(&in[9], 1);
-	packet->mlat_timestamp = hex_to_int(in, 4) * (MLAT_MHZ / mlat_mhz);
-	packet->rssi = hex_to_int(&in[12], 2) * (RSSI_MAX / UINT16_MAX);
+	packet->mlat_timestamp = mlat_timestamp_scale_in(hex_to_int(in, 4), UINT32_MAX, mlat_mhz, &state->mlat_state);
+	packet->rssi = rssi_scale_in(hex_to_int(&in[12], 2), UINT16_MAX);
 	return true;
 }
