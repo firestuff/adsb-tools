@@ -6,24 +6,26 @@
 #include "common.h"
 #include "airspy_adsb.h"
 
-struct backend_state {
+struct airspy_adsb_parser_state {
 	uint64_t mlat_timestamp_last;
 	uint64_t mlat_timestamp_generation;
 };
 
-static bool airspy_adsb_parse_common(char *, struct packet *, struct backend_state *);
+static bool airspy_adsb_parse_common(char *, struct packet *, struct airspy_adsb_parser_state *);
 
 
 void airspy_adsb_init() {
-	assert(sizeof(struct backend_state) <= PARSER_STATE_LEN);
+	assert(sizeof(struct airspy_adsb_parser_state) <= PARSER_STATE_LEN);
 }
 
-bool airspy_adsb_parse(struct buf *buf, struct packet *packet, void *state_in) {
+bool airspy_adsb_parse(struct backend *backend, struct packet *packet) {
+	struct buf *buf = &backend->buf;
+	struct airspy_adsb_parser_state *state = (struct airspy_adsb_parser_state *) backend->parser_state;
+
 	if (buf->length < 35 ||
 	    buf_chr(buf, 0) != '*') {
 		return false;
 	}
-	struct backend_state *state = state_in;
 	if (buf->length >= 35 &&
 	    buf_chr(buf, 33) == '\r' &&
 	    buf_chr(buf, 34) == '\n' &&
@@ -51,7 +53,7 @@ bool airspy_adsb_parse(struct buf *buf, struct packet *packet, void *state_in) {
 	return false;
 }
 
-static bool airspy_adsb_parse_common(char *in, struct packet *packet, struct backend_state *state) {
+static bool airspy_adsb_parse_common(char *in, struct packet *packet, struct airspy_adsb_parser_state *state) {
 	if (in[8] != ';' ||
 	    in[11] != ';' ||
 			in[16] != ';') {

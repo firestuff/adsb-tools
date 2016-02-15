@@ -18,17 +18,10 @@ struct opts {
 	char *backend_service;
 };
 
-typedef bool (*parser)(struct buf *, struct packet *, void *);
 static parser parsers[] = {
 	airspy_adsb_parse,
 };
 #define NUM_PARSERS (sizeof(parsers) / sizeof(*parsers))
-
-struct backend {
-	struct buf buf;
-	char parser_state[PARSER_STATE_LEN];
-	parser parser;
-};
 
 struct client {
 	int placeholder;
@@ -47,14 +40,7 @@ struct peer {
 };
 #define PEER_BACKEND_INIT { \
 	.type = BACKEND, \
-	.backend = { \
-		.buf = { \
-			.start = 0, \
-			.length = 0, \
-		}, \
-		.parser_state = { 0 }, \
-		.parser = NULL, \
-	}, \
+	.backend = BACKEND_INIT, \
 }
 
 
@@ -76,7 +62,6 @@ static int parse_opts(int argc, char *argv[], struct opts *opts) {
 	}
 	return 0;
 }
-
 
 static int connect_backend(struct opts *opts) {
 	struct addrinfo hints = {
@@ -124,6 +109,15 @@ static int connect_backend(struct opts *opts) {
 	return bfd;
 }
 
+bool backend_autodetect_parse(struct backend *backend, struct packet *packet) {
+	for (int i = 0; i < NUM_PARSERS; i++) {
+		if (parsers[i](backend, packet)) {
+			backend->parser = parsers[i];
+			return true;
+		}
+	}
+	return false;
+}
 
 static int loop(int bfd) {
 	struct peer backend = PEER_BACKEND_INIT;
@@ -167,19 +161,7 @@ static int loop(int bfd) {
 					}
 
 					struct packet packet;
-					if (!peer->backend.parser) {
-						// Attempt to autodetect format
-						for (int i = 0; i < NUM_PARSERS; i++) {
-							if (parsers[i](&peer->backend.buf, &packet, peer->backend.parser_state)) {
-								peer->backend.parser = parsers[i];
-								break;
-							}
-						}
-					}
-
-					if (peer->backend.parser) {
-						while (peer->backend.parser(&peer->backend.buf, &packet, peer->backend.parser_state)) {
-						}
+					while (peer->backend.parser(&peer->backend, &packet)) {
 					}
 
 					if (peer->backend.buf.length == BUF_LEN_MAX) {
@@ -195,7 +177,6 @@ static int loop(int bfd) {
 		}
 	}
 }
-
 
 int main(int argc, char *argv[]) {
 	hex_init();
