@@ -84,7 +84,6 @@ int main(int argc, char *argv[]) {
 	for (int i = 0, j = optind; i < nbackends && j < argc; i++, j += 2) {
 		backend_init(&backends[i]);
 		if (!backend_connect(argv[j], argv[j + 1], &backends[i], epoll_fd)) {
-			fprintf(stderr, "Unable to connect to %s %s\n", argv[j], argv[j + 1]);
 			return EXIT_FAILURE;
 		}
 	}

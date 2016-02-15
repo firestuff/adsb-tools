@@ -54,3 +54,8 @@ struct packet {
 void hex_init();
 void hex_to_bin(char *, char *, size_t);
 uint64_t hex_to_int(char *, size_t);
+
+
+///////// misc
+
+#define UUID_LEN 37

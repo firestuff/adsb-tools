@@ -8,6 +8,7 @@ struct backend;
 typedef bool (*parser)(struct backend *, struct packet *);
 struct backend {
 	enum peer_type type;
+	char id[UUID_LEN];
 	int fd;
 	struct buf buf;
 	char parser_state[PARSER_STATE_LEN];

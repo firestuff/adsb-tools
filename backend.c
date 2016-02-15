@@ -5,6 +5,7 @@
 #include <netdb.h>
 #include <sys/epoll.h>
 #include <string.h>
+#include <uuid/uuid.h>
 
 #include "airspy_adsb.h"
 #include "backend.h"
@@ -30,6 +31,12 @@ void backend_init(struct backend *backend) {
 bool backend_connect(char *node, char *service, struct backend *backend, int epoll_fd) {
 	assert(backend->type == PEER_BACKEND);
 
+	{
+		uuid_t uuid;
+		uuid_generate(uuid);
+		uuid_unparse(uuid, backend->id);
+	}
+
 	struct addrinfo *addrs;
 
 	{
@@ -40,7 +47,7 @@ bool backend_connect(char *node, char *service, struct backend *backend, int epo
 
 		int gai_err = getaddrinfo(node, service, &hints, &addrs);
 		if (gai_err) {
-			fprintf(stderr, "getaddrinfo(%s %s): %s\n", node, service, gai_strerror(gai_err));
+			fprintf(stderr, "%s: getaddrinfo(%s %s): %s\n", backend->id, node, service, gai_strerror(gai_err));
 			return false;
 		}
 	}
@@ -63,13 +70,13 @@ bool backend_connect(char *node, char *service, struct backend *backend, int epo
 
 		if (addr == NULL) {
 			freeaddrinfo(addrs);
-			fprintf(stderr, "Can't connect to %s %s\n", node, service);
+			fprintf(stderr, "%s: Can't connect to %s %s\n", backend->id, node, service);
 			return false;
 		}
 
   	char hbuf[NI_MAXHOST], sbuf[NI_MAXSERV];
   	if (getnameinfo(addr->ai_addr, addr->ai_addrlen, hbuf, sizeof(hbuf), sbuf, sizeof(sbuf), NI_NUMERICHOST | NI_NUMERICSERV) == 0) {
-			fprintf(stderr, "Connected to %s %s\n", hbuf, sbuf);
+			fprintf(stderr, "%s: Connected to %s %s\n", backend->id, hbuf, sbuf);
 		}
 	}
 
@@ -93,7 +100,7 @@ bool backend_connect(char *node, char *service, struct backend *backend, int epo
 
 bool backend_read(struct backend *backend) {
 	if (buf_fill(&backend->buf, backend->fd) < 0) {
-		fprintf(stderr, "Connection closed by backend\n");
+		fprintf(stderr, "%s: Connection closed by backend\n", backend->id);
 		return false;
 	}
 
@@ -102,7 +109,7 @@ bool backend_read(struct backend *backend) {
 	}
 
 	if (backend->buf.length == BUF_LEN_MAX) {
-		fprintf(stderr, "Input buffer overrun. This probably means that adsbus doesn't understand the protocol that this source is speaking.\n");
+		fprintf(stderr, "%s: Input buffer overrun. This probably means that adsbus doesn't understand the protocol that this source is speaking.\n", backend->id);
 		return false;
 	}
 	return true;
