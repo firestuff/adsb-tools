@@ -45,6 +45,17 @@ struct peer {
 		struct client client;
 	};
 };
+#define PEER_BACKEND_INIT { \
+	.type = BACKEND, \
+	.backend = { \
+		.buf = { \
+			.start = 0, \
+			.length = 0, \
+		}, \
+		.parser_state = { 0 }, \
+		.parser = NULL, \
+	}, \
+}
 
 
 static int parse_opts(int argc, char *argv[], struct opts *opts) {
@@ -115,18 +126,8 @@ static int connect_backend(struct opts *opts) {
 
 
 static int loop(int bfd) {
-	struct peer backend = {
-		.type = BACKEND,
-		.fd = bfd,
-		.backend = {
-			.buf = {
-				.start = 0,
-				.length = 0,
-			},
-			.parser_state = { 0 },
-			.parser = NULL,
-		},
-	};
+	struct peer backend = PEER_BACKEND_INIT;
+	backend.fd = bfd;
 
 	int efd = epoll_create1(0);
   if (efd == -1) {
