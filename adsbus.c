@@ -18,11 +18,33 @@ struct opts {
 	char *backend_service;
 };
 
-typedef bool (*parser)(struct buf *, struct packet *);
+typedef bool (*parser)(struct buf *, struct packet *, void *);
 static parser parsers[] = {
 	airspy_adsb_parse,
 };
 #define NUM_PARSERS (sizeof(parsers) / sizeof(*parsers))
+
+struct backend {
+	struct buf buf;
+	char parser_state[PARSER_STATE_LEN];
+	parser parser;
+};
+
+struct client {
+	int placeholder;
+};
+
+struct peer {
+	enum {
+		BACKEND,
+		CLIENT,
+	} type;
+	int fd;
+	union {
+		struct backend backend;
+		struct client client;
+	};
+};
 
 
 static int parse_opts(int argc, char *argv[], struct opts *opts) {
@@ -93,9 +115,22 @@ static int connect_backend(struct opts *opts) {
 
 
 static int loop(int bfd) {
-	int efd = epoll_create(10);
+	struct peer backend = {
+		.type = BACKEND,
+		.fd = bfd,
+		.backend = {
+			.buf = {
+				.start = 0,
+				.length = 0,
+			},
+			.parser_state = { 0 },
+			.parser = NULL,
+		},
+	};
+
+	int efd = epoll_create1(0);
   if (efd == -1) {
-		perror("epoll_create");
+		perror("epoll_create1");
 		return -1;
   }
 
@@ -103,7 +138,7 @@ static int loop(int bfd) {
 		struct epoll_event ev = {
 			.events = EPOLLIN,
 			.data = {
-				.fd = bfd,
+				.ptr = &backend,
 			},
 		};
 		if (epoll_ctl(efd, EPOLL_CTL_ADD, bfd, &ev) == -1) {
@@ -111,11 +146,6 @@ static int loop(int bfd) {
 			return -1;
 		}
 	}
-
-	struct buf buf = {
-		.start = 0,
-		.length = 0,
-	};
 
 	while (1) {
 #define MAX_EVENTS 10
@@ -127,20 +157,39 @@ static int loop(int bfd) {
 		}
 
     for (int n = 0; n < nfds; n++) {
-			if (events[n].data.fd == bfd) {
-				if (buf_fill(&buf, bfd) < 0) {
-					fprintf(stderr, "Connection closed by backend\n");
-					return -1;
-				}
+			struct peer *peer = events[n].data.ptr;
+			switch (peer->type) {
+				case BACKEND:
+					if (buf_fill(&peer->backend.buf, peer->fd) < 0) {
+						fprintf(stderr, "Connection closed by backend\n");
+						return -1;
+					}
 
-				struct packet packet;
-				while (parsers[0](&buf, &packet)) {
-				}
+					struct packet packet;
+					if (!peer->backend.parser) {
+						// Attempt to autodetect format
+						for (int i = 0; i < NUM_PARSERS; i++) {
+							if (parsers[i](&peer->backend.buf, &packet, peer->backend.parser_state)) {
+								peer->backend.parser = parsers[i];
+								break;
+							}
+						}
+					}
 
-				if (buf.length == BUF_LEN_MAX) {
-					fprintf(stderr, "Input buffer overrun. This probably means that adsbus doesn't understand the protocol that this source is speaking.\n");
+					if (peer->backend.parser) {
+						while (peer->backend.parser(&peer->backend.buf, &packet, peer->backend.parser_state)) {
+						}
+					}
+
+					if (peer->backend.buf.length == BUF_LEN_MAX) {
+						fprintf(stderr, "Input buffer overrun. This probably means that adsbus doesn't understand the protocol that this source is speaking.\n");
+						return -1;
+					}
+					break;
+
+				default:
+					fprintf(stderr, "Unpossible: unknown peer type.\n");
 					return -1;
-				}
 			}
 		}
 	}
@@ -149,6 +198,7 @@ static int loop(int bfd) {
 
 int main(int argc, char *argv[]) {
 	hex_init();
+	airspy_adsb_init();
 
 	struct opts opts = {
 		.backend_node = "localhost",

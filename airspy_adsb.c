@@ -1,3 +1,4 @@
+#include <assert.h>
 #include <stdbool.h>
 #include <stdio.h>
 #include <string.h>
@@ -5,19 +6,29 @@
 #include "common.h"
 #include "airspy_adsb.h"
 
-static bool airspy_adsb_parse_common(char *, struct packet *);
+struct backend_state {
+	uint64_t mlat_timestamp_last;
+	uint64_t mlat_timestamp_generation;
+};
+
+static bool airspy_adsb_parse_common(char *, struct packet *, struct backend_state *);
 
 
-bool airspy_adsb_parse(struct buf *buf, struct packet *packet) {
+void airspy_adsb_init() {
+	assert(sizeof(struct backend_state) <= PARSER_STATE_LEN);
+}
+
+bool airspy_adsb_parse(struct buf *buf, struct packet *packet, void *state_in) {
 	if (buf->length < 35 ||
 	    buf_chr(buf, 0) != '*') {
 		return false;
 	}
+	struct backend_state *state = state_in;
 	if (buf->length >= 35 &&
 	    buf_chr(buf, 33) == '\r' &&
 	    buf_chr(buf, 34) == '\n' &&
 			buf_chr(buf, 15) == ';') {
-		if (!airspy_adsb_parse_common(buf_at(buf, 16), packet)) {
+		if (!airspy_adsb_parse_common(buf_at(buf, 16), packet, state)) {
 			return false;
 		}
 		packet->type = MODE_S_SHORT;
@@ -29,7 +40,7 @@ bool airspy_adsb_parse(struct buf *buf, struct packet *packet) {
 	    buf_chr(buf, 47) == '\r' &&
 	    buf_chr(buf, 48) == '\n' &&
 			buf_chr(buf, 29) == ';') {
-		if (!airspy_adsb_parse_common(buf_at(buf, 30), packet)) {
+		if (!airspy_adsb_parse_common(buf_at(buf, 30), packet, state)) {
 			return false;
 		}
 		packet->type = MODE_S_LONG;
@@ -40,7 +51,7 @@ bool airspy_adsb_parse(struct buf *buf, struct packet *packet) {
 	return false;
 }
 
-static bool airspy_adsb_parse_common(char *in, struct packet *packet) {
+static bool airspy_adsb_parse_common(char *in, struct packet *packet, struct backend_state *state) {
 	if (in[8] != ';' ||
 	    in[11] != ';' ||
 			in[16] != ';') {

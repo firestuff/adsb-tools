@@ -2,6 +2,11 @@
 #include <unistd.h>
 
 
+//////// misc
+
+#define PARSER_STATE_LEN 256
+
+
 //////// buf
 
 #define BUF_LEN_MAX 256
