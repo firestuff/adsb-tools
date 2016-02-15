@@ -4,9 +4,13 @@
 #include <sys/socket.h>
 #include <netdb.h>
 #include <sys/epoll.h>
+#include <string.h>
 
 #include "airspy_adsb.h"
 #include "backend.h"
+
+
+bool backend_autodetect_parse(struct backend *, struct packet *);
 
 
 static parser parsers[] = {
@@ -14,6 +18,14 @@ static parser parsers[] = {
 };
 #define NUM_PARSERS (sizeof(parsers) / sizeof(*parsers))
 
+
+void backend_init(struct backend *backend) {
+	backend->type = PEER_BACKEND;
+	backend->fd = -1;
+	buf_init(&backend->buf);
+	memset(backend->parser_state, 0, PARSER_STATE_LEN);
+	backend->parser = backend_autodetect_parse;
+}
 
 bool backend_connect(char *node, char *service, struct backend *backend, int epoll_fd) {
 	assert(backend->type == PEER_BACKEND);
@@ -28,7 +40,7 @@ bool backend_connect(char *node, char *service, struct backend *backend, int epo
 
 		int gai_err = getaddrinfo(node, service, &hints, &addrs);
 		if (gai_err) {
-			fprintf(stderr, "getaddrinfo(%s/%s): %s\n", node, service, gai_strerror(gai_err));
+			fprintf(stderr, "getaddrinfo(%s %s): %s\n", node, service, gai_strerror(gai_err));
 			return false;
 		}
 	}
@@ -51,13 +63,13 @@ bool backend_connect(char *node, char *service, struct backend *backend, int epo
 
 		if (addr == NULL) {
 			freeaddrinfo(addrs);
-			fprintf(stderr, "Can't connect to %s/%s\n", node, service);
+			fprintf(stderr, "Can't connect to %s %s\n", node, service);
 			return false;
 		}
 
   	char hbuf[NI_MAXHOST], sbuf[NI_MAXSERV];
   	if (getnameinfo(addr->ai_addr, addr->ai_addrlen, hbuf, sizeof(hbuf), sbuf, sizeof(sbuf), NI_NUMERICHOST | NI_NUMERICSERV) == 0) {
-			fprintf(stderr, "Connected to %s/%s\n", hbuf, sbuf);
+			fprintf(stderr, "Connected to %s %s\n", hbuf, sbuf);
 		}
 	}
 

@@ -14,15 +14,7 @@ struct backend {
 	parser parser;
 };
 
-#define BACKEND_INIT { \
-	.type = PEER_BACKEND, \
-	.fd = -1, \
-	.buf = BUF_INIT, \
-	.parser_state = { 0 }, \
-	.parser = backend_autodetect_parse, \
-}
 
-
+void backend_init(struct backend *);
 bool backend_connect(char *, char *, struct backend *, int);
 bool backend_read(struct backend *);
-bool backend_autodetect_parse(struct backend *, struct packet *);

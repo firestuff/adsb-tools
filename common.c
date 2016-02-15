@@ -7,6 +7,11 @@
 #include "common.h"
 
 
+void buf_init(struct buf *buf) {
+	buf->start = 0;
+	buf->length = 0;
+}
+
 ssize_t buf_fill(struct buf *buf, int fd) {
 	if (buf->start + buf->length == BUF_LEN_MAX) {
 		assert(buf->start > 0);

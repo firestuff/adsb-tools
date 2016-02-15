@@ -23,14 +23,11 @@ struct buf {
 	size_t start;
 	size_t length;
 };
-#define BUF_INIT { \
-	.start = 0, \
-	.length = 0, \
-}
 
 #define buf_chr(buff, at) ((buff)->buf[(buff)->start + (at)])
 #define buf_at(buff, at) (&buf_chr(buff, at))
 
+void buf_init(struct buf *);
 ssize_t buf_fill(struct buf *, int);
 void buf_consume(struct buf *, size_t);
 

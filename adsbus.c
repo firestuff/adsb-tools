@@ -9,8 +9,7 @@
 
 
 struct opts {
-	char *backend_node;
-	char *backend_service;
+	bool dump;
 };
 
 struct client {
@@ -20,14 +19,10 @@ struct client {
 
 static int parse_opts(int argc, char *argv[], struct opts *opts) {
 	int opt;
-	while ((opt = getopt(argc, argv, "h:p:")) != -1) {
+	while ((opt = getopt(argc, argv, "d")) != -1) {
 		switch (opt) {
-		  case 'h':
-			  opts->backend_node = optarg;
-				break;
-
-			case 'p':
-				opts->backend_service = optarg;
+		  case 'd':
+			  opts->dump = true;
 				break;
 
 			default:
@@ -69,11 +64,12 @@ int main(int argc, char *argv[]) {
 	airspy_adsb_init();
 
 	struct opts opts = {
-		.backend_node = "localhost",
-		.backend_service = "30006",
+		.dump = false,
 	};
-	if (parse_opts(argc, argv, &opts)) {
-		fprintf(stderr, "Usage: %s [-h backend_host] [-p backend_port]\n", argv[0]);
+	if (parse_opts(argc, argv, &opts) ||
+	    argc - optind < 2 ||
+			(argc - optind) % 2 != 0) {
+		fprintf(stderr, "Usage: %s -d localhost 30006 [ remotehost 30002 ... ]\n", argv[0]);
 		return EXIT_FAILURE;
 	}
 
@@ -83,10 +79,14 @@ int main(int argc, char *argv[]) {
 		return EXIT_FAILURE;
   }
 
-	struct backend backend = BACKEND_INIT;
-	if (!backend_connect(opts.backend_node, opts.backend_service, &backend, epoll_fd)) {
-		fprintf(stderr, "Unable to connect to %s/%s\n", opts.backend_node, opts.backend_service);
-		return EXIT_FAILURE;
+	int nbackends = (argc - optind) / 2;
+	struct backend backends[nbackends];
+	for (int i = 0, j = optind; i < nbackends && j < argc; i++, j += 2) {
+		backend_init(&backends[i]);
+		if (!backend_connect(argv[j], argv[j + 1], &backends[i], epoll_fd)) {
+			fprintf(stderr, "Unable to connect to %s %s\n", argv[j], argv[j + 1]);
+			return EXIT_FAILURE;
+		}
 	}
 
 	loop(epoll_fd);
