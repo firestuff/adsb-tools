@@ -22,7 +22,7 @@ static size_t json_hello(char *buf) {
 
 static size_t json_serialize_mode_s_short(struct packet *packet, char *buf) {
 	char hexbuf[14];
-	hex_from_bin(hexbuf, packet->data, 7);
+	hex_from_bin(hexbuf, packet->payload, 7);
 	int len = snprintf(buf, SERIALIZE_LEN,
 	                   "{\"payload\":\"%.14s\",\"mlat_timestamp\":%ju,\"rssi\":%ju}\n",
 					           hexbuf,
@@ -34,7 +34,7 @@ static size_t json_serialize_mode_s_short(struct packet *packet, char *buf) {
 
 static size_t json_serialize_mode_s_long(struct packet *packet, char *buf) {
 	char hexbuf[28];
-	hex_from_bin(hexbuf, packet->data, 14);
+	hex_from_bin(hexbuf, packet->payload, 14);
 	int len = snprintf(buf, SERIALIZE_LEN,
 	                   "{\"payload\":\"%.28s\",\"mlat_timestamp\":%ju,\"rssi\":%ju}\n",
 					           hexbuf,

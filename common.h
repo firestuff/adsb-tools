@@ -41,7 +41,7 @@ struct packet {
 		MODE_S_SHORT,
 		MODE_S_LONG,
 	} type;
-	char data[DATA_LEN_MAX];
+	char payload[DATA_LEN_MAX];
 	uint64_t mlat_timestamp;
 	uint32_t rssi;
 };
