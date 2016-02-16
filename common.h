@@ -23,6 +23,10 @@ struct buf {
 	size_t start;
 	size_t length;
 };
+#define BUF_INIT { \
+	.start = 0, \
+	.length = 0, \
+}
 
 #define buf_chr(buff, at) ((buff)->buf[(buff)->start + (at)])
 #define buf_at(buff, at) (&buf_chr(buff, at))
@@ -41,7 +45,7 @@ struct packet {
 		MODE_S_SHORT,
 		MODE_S_LONG,
 	} type;
-	char payload[DATA_LEN_MAX];
+	uint8_t payload[DATA_LEN_MAX];
 	uint64_t mlat_timestamp;
 	uint32_t rssi;
 };
@@ -69,9 +73,9 @@ uint32_t rssi_scale_in(uint32_t, uint32_t);
 //////// hex
 
 void hex_init();
-void hex_to_bin(char *, char *, size_t);
+void hex_to_bin(uint8_t *, char *, size_t);
 uint64_t hex_to_int(char *, size_t);
-void hex_from_bin(char *, char *, size_t);
+void hex_from_bin(char *, uint8_t *, size_t);
 
 
 ///////// uuid

@@ -80,7 +80,7 @@ void hex_init() {
 	}
 }
 
-void hex_to_bin(char *out, char *in, size_t bytes) {
+void hex_to_bin(uint8_t *out, char *in, size_t bytes) {
 	uint8_t *in2 = (uint8_t *) in;
 	for (size_t i = 0, j = 0; i < bytes; i++, j += 2) {
 		out[i] = (hex_table[in2[j]] << 4) | hex_table[in2[j + 1]];
@@ -98,11 +98,10 @@ uint64_t hex_to_int(char *in, size_t bytes) {
 	return ret;
 }
 
-void hex_from_bin(char *out, char *in, size_t bytes) {
-	uint8_t *in2 = (uint8_t *) in;
+void hex_from_bin(char *out, uint8_t *in, size_t bytes) {
 	for (size_t i = 0, j = 0; i < bytes; i++, j += 2) {
-		out[j] = hex_char_table[in2[i] >> 4];
-		out[j + 1] = hex_char_table[in2[i] & 0xf];
+		out[j] = hex_char_table[in[i] >> 4];
+		out[j + 1] = hex_char_table[in[i] & 0xf];
 	}
 }
 
