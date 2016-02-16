@@ -44,47 +44,49 @@ void airspy_adsb_init() {
 	assert(sizeof(struct airspy_adsb_parser_state) <= PARSER_STATE_LEN);
 }
 
+static bool airspy_adsb_parse_mode_s_short(struct buf *buf, struct packet *packet, struct airspy_adsb_parser_state *state) {
+	struct airspy_adsb_mode_s_short_overlay *short_overlay = (struct airspy_adsb_mode_s_short_overlay *) buf_at(buf, 0);
+	if (buf->length < 35 ||
+			short_overlay->asterisk != '*' ||
+			short_overlay->semicolon != ';' ||
+			short_overlay->cr != '\r' ||
+			short_overlay->lf != '\n') {
+		return false;
+	}
+	if (!airspy_adsb_parse_common(&short_overlay->common, packet, state)) {
+		return false;
+	}
+	packet->type = MODE_S_SHORT;
+	hex_to_bin(packet->payload, short_overlay->payload, sizeof(short_overlay->payload) / 2);
+	buf_consume(buf, sizeof(*short_overlay));
+	return true;
+}
+
+static bool airspy_adsb_parse_mode_s_long(struct buf *buf, struct packet *packet, struct airspy_adsb_parser_state *state) {
+	struct airspy_adsb_mode_s_long_overlay *long_overlay = (struct airspy_adsb_mode_s_long_overlay *) buf_at(buf, 0);
+	if (buf->length < 49 ||
+			long_overlay->asterisk != '*' ||
+			long_overlay->semicolon != ';' ||
+			long_overlay->cr != '\r' ||
+			long_overlay->lf != '\n') {
+		return false;
+	}
+	if (!airspy_adsb_parse_common(&long_overlay->common, packet, state)) {
+		return false;
+	}
+	packet->type = MODE_S_LONG;
+	hex_to_bin(packet->payload, long_overlay->payload, sizeof(long_overlay->payload) / 2);
+	buf_consume(buf, sizeof(*long_overlay));
+	return true;
+}
+
 bool airspy_adsb_parse(struct backend *backend, struct packet *packet) {
 	struct buf *buf = &backend->buf;
 	struct airspy_adsb_parser_state *state = (struct airspy_adsb_parser_state *) backend->parser_state;
 
-	if (buf->length < 35 ||
-	    buf_chr(buf, 0) != '*') {
-		return false;
-	}
-
-	{
-		struct airspy_adsb_mode_s_short_overlay *short_overlay = (struct airspy_adsb_mode_s_short_overlay *) buf_at(buf, 0);
-		if (short_overlay->cr == '\r' &&
-				short_overlay->lf == '\n' &&
-				short_overlay->semicolon == ';') {
-			if (!airspy_adsb_parse_common(&short_overlay->common, packet, state)) {
-				return false;
-			}
-			packet->type = MODE_S_SHORT;
-			hex_to_bin(packet->payload, short_overlay->payload, sizeof(short_overlay->payload) / 2);
-			buf_consume(buf, sizeof(*short_overlay));
-			return true;
-		}
-	}
-
-	{
-		struct airspy_adsb_mode_s_long_overlay *long_overlay = (struct airspy_adsb_mode_s_long_overlay *) buf_at(buf, 0);
-		if (buf->length >= 49 &&
-				long_overlay->cr == '\r' &&
-				long_overlay->lf == '\n' &&
-				long_overlay->semicolon == ';') {
-			if (!airspy_adsb_parse_common(&long_overlay->common, packet, state)) {
-				return false;
-			}
-			packet->type = MODE_S_LONG;
-			hex_to_bin(packet->payload, long_overlay->payload, sizeof(long_overlay->payload) / 2);
-			buf_consume(buf, sizeof(*long_overlay));
-			return true;
-		}
-	}
-
-	return false;
+	return (
+			airspy_adsb_parse_mode_s_short(buf, packet, state) ||
+			airspy_adsb_parse_mode_s_long(buf, packet, state));
 }
 
 static bool airspy_adsb_parse_common(struct airspy_adsb_common_overlay *overlay, struct packet *packet, struct airspy_adsb_parser_state *state) {
