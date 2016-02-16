@@ -18,7 +18,7 @@ level data. Unlike raw format, lines are terminated with `\r\n` (`0x0d 0x0a`).
 * `;` (`0x3b`)
 * 1 byte MLAT precision (see below)
 * `;` (`0x3b`)
-* 2 byte big-endian RSSI
+* 2 byte big-endian [RSSI](https://en.wikipedia.org/wiki/Received_signal_strength_indication)
 * `;\r\n` (`0x3b 0x0d 0x0a`)
   
 
