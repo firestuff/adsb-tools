@@ -42,6 +42,8 @@ static bool airspy_adsb_parse_common(struct airspy_adsb_common_overlay *, struct
 
 void airspy_adsb_init() {
 	assert(sizeof(struct airspy_adsb_parser_state) <= PARSER_STATE_LEN);
+	assert(sizeof(struct airspy_adsb_mode_s_short_overlay) < BUF_LEN_MAX);
+	assert(sizeof(struct airspy_adsb_mode_s_long_overlay) < BUF_LEN_MAX);
 }
 
 static bool airspy_adsb_parse_mode_s_short(struct buf *buf, struct packet *packet, struct airspy_adsb_parser_state *state) {

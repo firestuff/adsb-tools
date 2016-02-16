@@ -30,6 +30,8 @@ struct beast_parser_state {
 
 void beast_init() {
 	assert(sizeof(struct beast_parser_state) <= PARSER_STATE_LEN);
+	assert(sizeof(struct beast_mode_s_short_overlay) * 2 <= BUF_LEN_MAX);
+	assert(sizeof(struct beast_mode_s_long_overlay) * 2 <= BUF_LEN_MAX);
 }
 
 static uint64_t beast_parse_mlat(uint8_t *mlat_timestamp) {
@@ -40,7 +42,6 @@ static uint64_t beast_parse_mlat(uint8_t *mlat_timestamp) {
 			((uint64_t) mlat_timestamp[3]) << 16 |
 			((uint64_t) mlat_timestamp[4]) << 8 |
 			((uint64_t) mlat_timestamp[5]));
-	 // mlat_timestamp_scale_in(source_mlat, UINT64_C(0xffffffffffff), 12, &state->mlat_state);
 }
 
 ssize_t beast_unescape(struct buf *out, struct buf *in, size_t out_bytes) {
