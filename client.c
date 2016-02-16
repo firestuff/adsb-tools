@@ -3,6 +3,8 @@
 #include <assert.h>
 #include <strings.h>
 #include <stdio.h>
+#include <unistd.h>
+#include <fcntl.h>
 
 #include "json.h"
 #include "client.h"
@@ -51,6 +53,11 @@ static bool client_hello(int fd, struct serializer *serializer) {
 }
 
 void client_add(int fd, struct serializer *serializer) {
+	int flags = fcntl(fd, F_GETFL, 0);
+	assert(flags >= 0);
+	flags |= O_NONBLOCK;
+	assert(fcntl(fd, F_SETFL, flags) == 0);
+
 	if (!client_hello(fd, serializer)) {
 		return;
 	}
