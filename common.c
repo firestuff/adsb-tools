@@ -3,12 +3,9 @@
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
+#include <uuid/uuid.h>
 
 #include "common.h"
-
-
-#define MLAT_MHZ 120
-#define RSSI_MAX UINT32_MAX
 
 
 void buf_init(struct buf *buf) {
@@ -69,6 +66,7 @@ uint32_t rssi_scale_in(uint32_t value, uint32_t max) {
 
 
 static uint8_t hex_table[256] = {0};
+static char hex_char_table[16] = { '0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'A', 'B', 'C', 'D', 'E', 'F', };
 
 void hex_init() {
 	for (int i = '0'; i <= '9'; i++) {
@@ -98,4 +96,19 @@ uint64_t hex_to_int(char *in, size_t bytes) {
 		ret |= hex_table[in2[i]];
 	}
 	return ret;
+}
+
+void hex_from_bin(char *out, char *in, size_t bytes) {
+	uint8_t *in2 = (uint8_t *) in;
+	for (size_t i = 0, j = 0; i < bytes; i++, j += 2) {
+		out[j] = hex_char_table[in2[i] >> 4];
+		out[j + 1] = hex_char_table[in2[i] & 0xf];
+	}
+}
+
+
+void uuid_gen(char *out) {
+	uuid_t uuid;
+	uuid_generate(uuid);
+	uuid_unparse(uuid, out);
 }

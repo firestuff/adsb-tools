@@ -5,31 +5,37 @@
 #include <sys/epoll.h>
 
 #include "common.h"
+#include "backend.h"
+#include "client.h"
 #include "airspy_adsb.h"
+#include "json.h"
 
 
-struct opts {
-	bool dump;
-};
+static bool add_dump(char *format) {
+	struct serializer *serializer = client_get_serializer(format);
+	if (!serializer) {
+		fprintf(stderr, "Unknown dump format: %s\n", format);
+		return false;
+	}
+	client_add(1, serializer);
+	return true;
+}
 
-struct client {
-	int placeholder;
-};
-
-
-static int parse_opts(int argc, char *argv[], struct opts *opts) {
+static bool parse_opts(int argc, char *argv[]) {
 	int opt;
-	while ((opt = getopt(argc, argv, "d")) != -1) {
+	while ((opt = getopt(argc, argv, "d:")) != -1) {
 		switch (opt) {
 		  case 'd':
-			  opts->dump = true;
+				if (!add_dump(optarg)) {
+					return false;
+				}
 				break;
 
 			default:
-				return -1;
+				return false;
 		}
 	}
-	return 0;
+	return true;
 }
 
 static int loop(int epoll_fd) {
@@ -62,22 +68,20 @@ static int loop(int epoll_fd) {
 int main(int argc, char *argv[]) {
 	hex_init();
 	airspy_adsb_init();
-
-	struct opts opts = {
-		.dump = false,
-	};
-	if (parse_opts(argc, argv, &opts) ||
-	    argc - optind < 2 ||
-			(argc - optind) % 2 != 0) {
-		fprintf(stderr, "Usage: %s -d localhost 30006 [ remotehost 30002 ... ]\n", argv[0]);
-		return EXIT_FAILURE;
-	}
+	json_init();
 
 	int epoll_fd = epoll_create1(0);
   if (epoll_fd == -1) {
 		perror("epoll_create1");
 		return EXIT_FAILURE;
   }
+
+	if (!parse_opts(argc, argv) ||
+	    argc - optind < 2 ||
+			(argc - optind) % 2 != 0) {
+		fprintf(stderr, "Usage: %s [ -d format ] localhost 30006 [ remotehost 30002 ... ]\n", argv[0]);
+		return EXIT_FAILURE;
+	}
 
 	int nbackends = (argc - optind) / 2;
 	struct backend backends[nbackends];

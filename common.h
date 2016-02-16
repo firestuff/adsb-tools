@@ -49,6 +49,10 @@ struct packet {
 
 //////// mlat
 
+#define MLAT_MHZ 120
+#define MLAT_MAX UINT64_MAX
+#define RSSI_MAX UINT32_MAX
+
 struct mlat_state {
 	uint64_t timestamp_last;
 	uint64_t timestamp_generation;
@@ -67,8 +71,10 @@ uint32_t rssi_scale_in(uint32_t, uint32_t);
 void hex_init();
 void hex_to_bin(char *, char *, size_t);
 uint64_t hex_to_int(char *, size_t);
+void hex_from_bin(char *, char *, size_t);
 
 
-///////// misc
+///////// uuid
 
 #define UUID_LEN 37
+void uuid_gen(char *);

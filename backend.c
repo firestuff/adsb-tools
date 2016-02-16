@@ -5,9 +5,9 @@
 #include <netdb.h>
 #include <sys/epoll.h>
 #include <string.h>
-#include <uuid/uuid.h>
 
 #include "airspy_adsb.h"
+#include "client.h"
 #include "backend.h"
 
 
@@ -31,11 +31,7 @@ void backend_init(struct backend *backend) {
 bool backend_connect(char *node, char *service, struct backend *backend, int epoll_fd) {
 	assert(backend->type == PEER_BACKEND);
 
-	{
-		uuid_t uuid;
-		uuid_generate(uuid);
-		uuid_unparse(uuid, backend->id);
-	}
+	uuid_gen(backend->id);
 
 	struct addrinfo *addrs;
 
@@ -106,6 +102,7 @@ bool backend_read(struct backend *backend) {
 
 	struct packet packet;
 	while (backend->parser(backend, &packet)) {
+		client_write(&packet);
 	}
 
 	if (backend->buf.length == BUF_LEN_MAX) {
