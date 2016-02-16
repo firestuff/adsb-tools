@@ -7,6 +7,7 @@
 #include <string.h>
 
 #include "airspy_adsb.h"
+#include "beast.h"
 #include "client.h"
 #include "backend.h"
 
@@ -16,6 +17,7 @@ bool backend_autodetect_parse(struct backend *, struct packet *);
 
 static parser parsers[] = {
 	airspy_adsb_parse,
+	beast_parse,
 };
 #define NUM_PARSERS (sizeof(parsers) / sizeof(*parsers))
 

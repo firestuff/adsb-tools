@@ -8,6 +8,7 @@
 #include "backend.h"
 #include "client.h"
 #include "airspy_adsb.h"
+#include "beast.h"
 #include "json.h"
 
 
@@ -68,6 +69,7 @@ static int loop(int epoll_fd) {
 int main(int argc, char *argv[]) {
 	hex_init();
 	airspy_adsb_init();
+	beast_init();
 	json_init();
 
 	int epoll_fd = epoll_create1(0);
