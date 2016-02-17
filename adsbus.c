@@ -3,6 +3,7 @@
 #include <stdio.h>
 #include <getopt.h>
 #include <sys/epoll.h>
+#include <string.h>
 
 #include "common.h"
 #include "backend.h"
@@ -22,20 +23,69 @@ static bool add_dump(char *format) {
 	return true;
 }
 
-static bool parse_opts(int argc, char *argv[]) {
+static void print_usage(char *argv[]) {
+	fprintf(stderr,
+			"Usage: %s [OPTION]...\n"
+			"\n"
+			"Options:\n"
+			"\t--help\n"
+			"\t--backend=HOST:PORT\n"
+			"\t--dump=FORMAT\n"
+			, argv[0]);
+}
+
+static bool parse_opts(int argc, char *argv[], int epoll_fd) {
+	static struct option long_options[] = {
+		{"backend", required_argument, 0, 'b'},
+		{"dump",    required_argument, 0, 'd'},
+		{"help",    no_argument,       0, 'h'},
+	};
+
 	int opt;
-	while ((opt = getopt(argc, argv, "d:")) != -1) {
+	char *delim;
+	while ((opt = getopt_long_only(argc, argv, "", long_options, NULL)) != -1) {
 		switch (opt) {
+			case 'b':
+				// It would be really nice if libc had a standard way to split host:port.
+				delim = strrchr(optarg, ':');
+				if (delim == NULL) {
+					print_usage(argv);
+					return false;
+				}
+				*delim = '\0';
+				delim++;
+
+				// TODO: Fix orphan malloc.
+				struct backend *backend = malloc(sizeof(*backend));
+				assert(backend);
+				backend_init(backend);
+				if (!backend_connect(optarg, delim, backend, epoll_fd)) {
+					return false;
+				}
+				break;
+
 		  case 'd':
 				if (!add_dump(optarg)) {
 					return false;
 				}
 				break;
 
+			case 'h':
+				print_usage(argv);
+				return false;
+
 			default:
+				print_usage(argv);
 				return false;
 		}
 	}
+
+	if (optind != argc) {
+		fprintf(stderr, "Not a flag: %s\n", argv[optind]);
+		print_usage(argv);
+		return false;
+	}
+
 	return true;
 }
 
@@ -79,20 +129,8 @@ int main(int argc, char *argv[]) {
 		return EXIT_FAILURE;
   }
 
-	if (!parse_opts(argc, argv) ||
-	    argc - optind < 2 ||
-			(argc - optind) % 2 != 0) {
-		fprintf(stderr, "Usage: %s [ -d format ] localhost 30006 [ remotehost 30002 ... ]\n", argv[0]);
+	if (!parse_opts(argc, argv, epoll_fd)) {
 		return EXIT_FAILURE;
-	}
-
-	int nbackends = (argc - optind) / 2;
-	struct backend backends[nbackends];
-	for (int i = 0, j = optind; i < nbackends && j < argc; i++, j += 2) {
-		backend_init(&backends[i]);
-		if (!backend_connect(argv[j], argv[j + 1], &backends[i], epoll_fd)) {
-			return EXIT_FAILURE;
-		}
 	}
 
 	loop(epoll_fd);
