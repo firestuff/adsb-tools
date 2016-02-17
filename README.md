@@ -5,6 +5,7 @@ adsbus is a hub and protocol translator for [ADS-B](https://en.wikipedia.org/wik
 
 ## Building
 
-```sudo apt-get -y install uuid-dev libjansson-dev
+```bash
+sudo apt-get -y install uuid-dev libjansson-dev
 make
 ```
