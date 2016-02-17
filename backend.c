@@ -52,7 +52,7 @@ struct backend *backend_new(char *node, char *service, int epoll_fd) {
 }
 
 static void backend_connect(struct backend *backend, int epoll_fd) {
-	fprintf(stderr, "B %s: Connecting to %s %s...\n", backend->id, backend->node, backend->service);
+	fprintf(stderr, "B %s: Resolving %s/%s...\n", backend->id, backend->node, backend->service);
 
 	struct addrinfo hints = {
 		.ai_family = AF_UNSPEC,
@@ -61,7 +61,7 @@ static void backend_connect(struct backend *backend, int epoll_fd) {
 
 	int gai_err = getaddrinfo(backend->node, backend->service, &hints, &backend->addrs);
 	if (gai_err) {
-		fprintf(stderr, "B %s: getaddrinfo(%s %s): %s\n", backend->id, backend->node, backend->service, gai_strerror(gai_err));
+		fprintf(stderr, "B %s: getaddrinfo(%s/%s): %s\n", backend->id, backend->node, backend->service, gai_strerror(gai_err));
 		return;
 	}
 	backend->addr = backend->addrs;
@@ -73,7 +73,7 @@ static void backend_connect_result(struct backend *backend, int epoll_fd, int re
 	assert(getnameinfo(backend->addr->ai_addr, backend->addr->ai_addrlen, hbuf, sizeof(hbuf), sbuf, sizeof(sbuf), NI_NUMERICHOST | NI_NUMERICSERV) == 0);
 	switch (result) {
 		case 0:
-			fprintf(stderr, "B %s: Connected to %s %s\n", backend->id, hbuf, sbuf);
+			fprintf(stderr, "B %s: Connected to %s/%s\n", backend->id, hbuf, sbuf);
 			freeaddrinfo(backend->addrs);
 			backend->peer.event_handler = backend_read;
 			peer_epoll_add((struct peer *) backend, epoll_fd, EPOLLIN);
@@ -85,7 +85,7 @@ static void backend_connect_result(struct backend *backend, int epoll_fd, int re
 			break;
 
 		default:
-			fprintf(stderr, "B %s: Can't connect to %s %s: %s\n", backend->id, hbuf, sbuf, strerror(result));
+			fprintf(stderr, "B %s: Can't connect to %s/%s: %s\n", backend->id, hbuf, sbuf, strerror(result));
 			close(backend->peer.fd);
 			backend->addr = backend->addr->ai_next;
 			// Tail recursion :/
@@ -97,13 +97,13 @@ static void backend_connect_result(struct backend *backend, int epoll_fd, int re
 static void backend_connect_next(struct backend *backend, int epoll_fd) {
 	if (backend->addr == NULL) {
 		freeaddrinfo(backend->addrs);
-		fprintf(stderr, "B %s: Can't connect to %s %s\n", backend->id, backend->node, backend->service);
+		fprintf(stderr, "B %s: Can't connect to any addresses of %s/%s\n", backend->id, backend->node, backend->service);
 		return;
 	}
 
 	char hbuf[NI_MAXHOST], sbuf[NI_MAXSERV];
 	assert(getnameinfo(backend->addr->ai_addr, backend->addr->ai_addrlen, hbuf, sizeof(hbuf), sbuf, sizeof(sbuf), NI_NUMERICHOST | NI_NUMERICSERV) == 0);
-	fprintf(stderr, "B %s: Connecting to %s %s...\n", backend->id, hbuf, sbuf);
+	fprintf(stderr, "B %s: Connecting to %s/%s...\n", backend->id, hbuf, sbuf);
 
 	backend->peer.fd = socket(backend->addr->ai_family, backend->addr->ai_socktype | SOCK_NONBLOCK, backend->addr->ai_protocol);
 	assert(backend->peer.fd >= 0);

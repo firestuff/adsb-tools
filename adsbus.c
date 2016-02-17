@@ -30,7 +30,7 @@ static void print_usage(char *argv[]) {
 			"\n"
 			"Options:\n"
 			"\t--help\n"
-			"\t--backend=HOST:PORT\n"
+			"\t--backend=HOST/PORT\n"
 			"\t--dump=FORMAT\n"
 			, argv[0]);
 }
@@ -48,7 +48,7 @@ static bool parse_opts(int argc, char *argv[], int epoll_fd) {
 		switch (opt) {
 			case 'b':
 				// It would be really nice if libc had a standard way to split host:port.
-				delim = strrchr(optarg, ':');
+				delim = strrchr(optarg, '/');
 				if (delim == NULL) {
 					print_usage(argv);
 					return false;
