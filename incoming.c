@@ -18,6 +18,7 @@ struct incoming {
 	char *node;
 	char *service;
 	incoming_connection_handler handler;
+	void *passthrough;
 };
 
 
@@ -44,16 +45,17 @@ static void incoming_handler(struct peer *peer, int epoll_fd) {
 			local_hbuf, local_sbuf,
 			peer_hbuf, peer_sbuf);
 
-	incoming->handler(fd, epoll_fd);
+	incoming->handler(fd, epoll_fd, incoming->passthrough);
 }
 
-void incoming_new(char *node, char *service, int epoll_fd, incoming_connection_handler handler) {
+void incoming_new(char *node, char *service, int epoll_fd, incoming_connection_handler handler, void *passthrough) {
 	struct incoming *incoming = malloc(sizeof(*incoming));
 	incoming->peer.event_handler = incoming_handler;
 	uuid_gen(incoming->id);
 	incoming->node = node;
 	incoming->service = service;
 	incoming->handler = handler;
+	incoming->passthrough = passthrough;
 
 	fprintf(stderr, "I %s: Resolving %s/%s...\n", incoming->id, incoming->node, incoming->service);
 

@@ -22,4 +22,4 @@ struct backend {
 };
 
 void backend_new(char *, char *, int);
-void backend_new_fd(int, int);
+void backend_new_fd(int, int, void *);

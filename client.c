@@ -77,6 +77,11 @@ void client_add(int fd, struct serializer *serializer) {
 	fprintf(stderr, "C %s (%s): New client\n", client->id, serializer->name);
 }
 
+void client_new_fd(int fd, int epoll_fd, void *passthrough) {
+	struct serializer *serializer = (struct serializer *) passthrough;
+	client_add(fd, serializer);
+}
+
 void client_write(struct packet *packet) {
 	for (int i = 0; i < NUM_SERIALIZERS; i++) {
 		struct serializer *serializer = &serializers[i];

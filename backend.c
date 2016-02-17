@@ -63,7 +63,7 @@ void backend_new(char *node, char *service, int epoll_fd) {
 	backend_connect(backend, epoll_fd);
 }
 
-void backend_new_fd(int fd, int epoll_fd) {
+void backend_new_fd(int fd, int epoll_fd, void *unused) {
 	struct backend *backend = backend_create();
 	backend->peer.fd = fd;
 	backend->peer.event_handler = backend_read;
