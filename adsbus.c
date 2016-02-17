@@ -56,9 +56,7 @@ static bool parse_opts(int argc, char *argv[], int epoll_fd) {
 				*delim = '\0';
 				delim++;
 
-				// TODO: Fix orphan malloc.
-				struct backend *backend = backend_new(optarg, delim, epoll_fd);
-				assert(backend);
+				backend_new(optarg, delim, epoll_fd);
 				break;
 
 		  case 'd':

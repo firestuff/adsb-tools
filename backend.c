@@ -43,7 +43,7 @@ struct parser {
 #define NUM_PARSERS (sizeof(parsers) / sizeof(*parsers))
 
 
-struct backend *backend_new(char *node, char *service, int epoll_fd) {
+void backend_new(char *node, char *service, int epoll_fd) {
 	struct backend *backend = malloc(sizeof(*backend));
 	assert(backend);
 	backend->peer.fd = -1;
@@ -54,7 +54,6 @@ struct backend *backend_new(char *node, char *service, int epoll_fd) {
 	memset(backend->parser_state, 0, PARSER_STATE_LEN);
 	backend->parser = backend_autodetect_parse;
 	backend_connect(backend, epoll_fd);
-	return backend;
 }
 
 static void backend_connect(struct backend *backend, int epoll_fd) {
