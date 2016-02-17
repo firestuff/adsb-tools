@@ -1,9 +1,7 @@
-#include <assert.h>
 #include <stdlib.h>
 #include <stdio.h>
 #include <getopt.h>
 #include <string.h>
-#include <signal.h>
 
 #include "common.h"
 #include "backend.h"
@@ -126,11 +124,10 @@ static bool parse_opts(int argc, char *argv[]) {
 }
 
 int main(int argc, char *argv[]) {
-	signal(SIGPIPE, SIG_IGN);
-
 	server_init();
 	peer_init();
 	hex_init();
+	client_init();
 	airspy_adsb_init();
 	beast_init();
 	json_init();

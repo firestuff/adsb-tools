@@ -5,6 +5,7 @@
 #include <stdio.h>
 #include <unistd.h>
 #include <fcntl.h>
+#include <signal.h>
 
 #include "common.h"
 #include "json.h"
@@ -37,6 +38,10 @@ struct serializer {
 };
 #define NUM_SERIALIZERS (sizeof(serializers) / sizeof(*serializers))
 
+
+void client_init() {
+	signal(SIGPIPE, SIG_IGN);
+}
 
 static void client_hangup(struct client *client) {
 	fprintf(stderr, "C %s (%s): Client disconnected\n", client->id, client->serializer->name);
