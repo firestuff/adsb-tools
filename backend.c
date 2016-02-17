@@ -3,7 +3,6 @@
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <netdb.h>
-#include <sys/epoll.h>
 #include <string.h>
 #include <errno.h>
 
@@ -16,11 +15,11 @@
 
 
 static bool backend_autodetect_parse(struct backend *, struct packet *);
-static void backend_connect(struct backend *, int);
-static void backend_connect_next(struct backend *, int);
+static void backend_connect(struct backend *);
+static void backend_connect_next(struct backend *);
 
-static void backend_connect_handler(struct peer *, int);
-static void backend_read(struct peer *, int);
+static void backend_connect_handler(struct peer *);
+static void backend_read(struct peer *);
 
 
 struct parser {
@@ -56,23 +55,23 @@ static struct backend *backend_create() {
 	return backend;
 }
 
-void backend_new(char *node, char *service, int epoll_fd) {
+void backend_new(char *node, char *service) {
 	struct backend *backend = backend_create();
 	backend->node = node;
 	backend->service = service;
-	backend_connect(backend, epoll_fd);
+	backend_connect(backend);
 }
 
-void backend_new_fd(int fd, int epoll_fd, void *unused) {
+void backend_new_fd(int fd, void *unused) {
 	struct backend *backend = backend_create();
 	backend->peer.fd = fd;
 	backend->peer.event_handler = backend_read;
-	peer_epoll_add((struct peer *) backend, epoll_fd, EPOLLIN);
+	peer_epoll_add((struct peer *) backend, EPOLLIN);
 
 	fprintf(stderr, "B %s: New backend from incoming connection\n", backend->id);
 }
 
-static void backend_connect(struct backend *backend, int epoll_fd) {
+static void backend_connect(struct backend *backend) {
 	fprintf(stderr, "B %s: Resolving %s/%s...\n", backend->id, backend->node, backend->service);
 
 	struct addrinfo hints = {
@@ -86,10 +85,10 @@ static void backend_connect(struct backend *backend, int epoll_fd) {
 		return;
 	}
 	backend->addr = backend->addrs;
-	backend_connect_next(backend, epoll_fd);
+	backend_connect_next(backend);
 }
 
-static void backend_connect_result(struct backend *backend, int epoll_fd, int result) {
+static void backend_connect_result(struct backend *backend, int result) {
 	char hbuf[NI_MAXHOST], sbuf[NI_MAXSERV];
 	assert(getnameinfo(backend->addr->ai_addr, backend->addr->ai_addrlen, hbuf, sizeof(hbuf), sbuf, sizeof(sbuf), NI_NUMERICHOST | NI_NUMERICSERV) == 0);
 	switch (result) {
@@ -97,12 +96,12 @@ static void backend_connect_result(struct backend *backend, int epoll_fd, int re
 			fprintf(stderr, "B %s: Connected to %s/%s\n", backend->id, hbuf, sbuf);
 			freeaddrinfo(backend->addrs);
 			backend->peer.event_handler = backend_read;
-			peer_epoll_add((struct peer *) backend, epoll_fd, EPOLLIN);
+			peer_epoll_add((struct peer *) backend, EPOLLIN);
 			break;
 
 		case EINPROGRESS:
 			backend->peer.event_handler = backend_connect_handler;
-			peer_epoll_add((struct peer *) backend, epoll_fd, EPOLLOUT);
+			peer_epoll_add((struct peer *) backend, EPOLLOUT);
 			break;
 
 		default:
@@ -110,12 +109,12 @@ static void backend_connect_result(struct backend *backend, int epoll_fd, int re
 			close(backend->peer.fd);
 			backend->addr = backend->addr->ai_next;
 			// Tail recursion :/
-			backend_connect_next(backend, epoll_fd);
+			backend_connect_next(backend);
 			break;
 	}
 }
 
-static void backend_connect_next(struct backend *backend, int epoll_fd) {
+static void backend_connect_next(struct backend *backend) {
 	if (backend->addr == NULL) {
 		freeaddrinfo(backend->addrs);
 		fprintf(stderr, "B %s: Can't connect to any addresses of %s/%s\n", backend->id, backend->node, backend->service);
@@ -130,21 +129,21 @@ static void backend_connect_next(struct backend *backend, int epoll_fd) {
 	assert(backend->peer.fd >= 0);
 
 	int result = connect(backend->peer.fd, backend->addr->ai_addr, backend->addr->ai_addrlen);
-	backend_connect_result(backend, epoll_fd, result == 0 ? result : errno);
+	backend_connect_result(backend, result == 0 ? result : errno);
 }
 
-static void backend_connect_handler(struct peer *peer, int epoll_fd) {
+static void backend_connect_handler(struct peer *peer) {
 	struct backend *backend = (struct backend *) peer;
 
-	peer_epoll_del(peer, epoll_fd);
+	peer_epoll_del(peer);
 
 	int error;
   socklen_t len = sizeof(error);
 	assert(getsockopt(backend->peer.fd, SOL_SOCKET, SO_ERROR, &error, &len) == 0);
-	backend_connect_result(backend, epoll_fd, error);
+	backend_connect_result(backend, error);
 }
 
-static void backend_read(struct peer *peer, int epoll_fd) {
+static void backend_read(struct peer *peer) {
 	struct backend *backend = (struct backend *) peer;
 
 	if (buf_fill(&backend->buf, backend->peer.fd) <= 0) {

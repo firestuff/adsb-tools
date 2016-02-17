@@ -3,13 +3,20 @@
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
-#include <sys/epoll.h>
 #include <uuid/uuid.h>
 
 #include "common.h"
 
 
-void peer_epoll_add(struct peer *peer, int epoll_fd, uint32_t events) {
+int epoll_fd;
+
+
+void peer_init() {
+	epoll_fd = epoll_create1(0);
+	assert(epoll_fd >= 0);
+}
+
+void peer_epoll_add(struct peer *peer, uint32_t events) {
 	struct epoll_event ev = {
 		.events = events,
 		.data = {
@@ -19,8 +26,22 @@ void peer_epoll_add(struct peer *peer, int epoll_fd, uint32_t events) {
 	assert(epoll_ctl(epoll_fd, EPOLL_CTL_ADD, peer->fd, &ev) == 0);
 }
 
-void peer_epoll_del(struct peer *peer, int epoll_fd) {
+void peer_epoll_del(struct peer *peer) {
 	assert(epoll_ctl(epoll_fd, EPOLL_CTL_DEL, peer->fd, NULL) == 0);
+}
+
+void peer_loop() {
+	while (1) {
+#define MAX_EVENTS 10
+		struct epoll_event events[MAX_EVENTS];
+		int nfds = epoll_wait(epoll_fd, events, MAX_EVENTS, -1);
+		assert(nfds >= 0);
+
+    for (int n = 0; n < nfds; n++) {
+			struct peer *peer = events[n].data.ptr;
+			peer->event_handler(peer);
+		}
+	}
 }
 
 

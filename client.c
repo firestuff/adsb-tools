@@ -6,13 +6,17 @@
 #include <unistd.h>
 #include <fcntl.h>
 
+#include "common.h"
 #include "json.h"
 #include "stats.h"
 #include "client.h"
 
+
 struct client {
+	struct peer peer;
 	char id[UUID_LEN];
-	int fd;
+	struct serializer *serializer;
+	struct client *prev;
 	struct client *next;
 };
 
@@ -33,6 +37,24 @@ struct serializer {
 };
 #define NUM_SERIALIZERS (sizeof(serializers) / sizeof(*serializers))
 
+
+static void client_hangup(struct client *client) {
+	fprintf(stderr, "C %s (%s): Client disconnected\n", client->id, client->serializer->name);
+	if (client->prev) {
+		client->prev->next = client->next;
+	} else {
+		client->serializer->client_head = client->next;
+	}
+	if (client->next) {
+		client->next->prev = client->prev;
+	}
+	close(client->peer.fd);
+	free(client);
+}
+
+static void client_hangup_wrapper(struct peer *peer) {
+	client_hangup((struct client *) peer);
+}
 
 struct serializer *client_get_serializer(char *name) {
 	for (int i = 0; i < NUM_SERIALIZERS; i++) {
@@ -69,17 +91,23 @@ void client_add(int fd, struct serializer *serializer) {
 	struct client *client = malloc(sizeof(*client));
 	assert(client);
 
+	client->peer.fd = fd;
+	client->peer.event_handler = client_hangup_wrapper;
+
 	uuid_gen(client->id);
-	client->fd = fd;
+	client->serializer = serializer;
+	client->prev = NULL;
 	client->next = serializer->client_head;
 	serializer->client_head = client;
+
+	// Only listen for hangup
+	peer_epoll_add((struct peer *) client, EPOLLIN);
 
 	fprintf(stderr, "C %s (%s): New client\n", client->id, serializer->name);
 }
 
-void client_new_fd(int fd, int epoll_fd, void *passthrough) {
-	struct serializer *serializer = (struct serializer *) passthrough;
-	client_add(fd, serializer);
+void client_add_wrapper(int fd, void *passthrough) {
+	client_add(fd, (struct serializer *) passthrough);
 }
 
 void client_write(struct packet *packet) {
@@ -93,21 +121,14 @@ void client_write(struct packet *packet) {
 		if (buf.length == 0) {
 			continue;
 		}
-		struct client *client = serializer->client_head, *prev_client = NULL;
+		struct client *client = serializer->client_head;
 		while (client) {
-			if (write(client->fd, buf_at(&buf, 0), buf.length) == buf.length) {
-				prev_client = client;
+			if (write(client->peer.fd, buf_at(&buf, 0), buf.length) == buf.length) {
 				client = client->next;
 			} else {
-				fprintf(stderr, "C %s (%s): Client disconnected\n", client->id, serializer->name);
-				if (prev_client) {
-					prev_client->next = client->next;
-				} else {
-					serializer->client_head = client->next;
-				}
-				struct client *del = client;
-				client = client->next;
-				free(del);
+				struct client *next = client->next;
+				client_hangup(client);
+				client = next;
 			}
 		}
 	}

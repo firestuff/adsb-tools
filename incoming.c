@@ -6,7 +6,6 @@
 #include <netdb.h>
 #include <string.h>
 #include <errno.h>
-#include <sys/epoll.h>
 
 #include "common.h"
 #include "incoming.h"
@@ -22,7 +21,7 @@ struct incoming {
 };
 
 
-static void incoming_handler(struct peer *peer, int epoll_fd) {
+static void incoming_handler(struct peer *peer) {
 	struct incoming *incoming = (struct incoming *) peer;
 
 	struct sockaddr peer_addr, local_addr;
@@ -45,10 +44,10 @@ static void incoming_handler(struct peer *peer, int epoll_fd) {
 			local_hbuf, local_sbuf,
 			peer_hbuf, peer_sbuf);
 
-	incoming->handler(fd, epoll_fd, incoming->passthrough);
+	incoming->handler(fd, incoming->passthrough);
 }
 
-void incoming_new(char *node, char *service, int epoll_fd, incoming_connection_handler handler, void *passthrough) {
+void incoming_new(char *node, char *service, incoming_connection_handler handler, void *passthrough) {
 	struct incoming *incoming = malloc(sizeof(*incoming));
 	incoming->peer.event_handler = incoming_handler;
 	uuid_gen(incoming->id);
@@ -103,5 +102,5 @@ void incoming_new(char *node, char *service, int epoll_fd, incoming_connection_h
 		return;
 	}
 
-	peer_epoll_add((struct peer *) incoming, epoll_fd, EPOLLIN);
+	peer_epoll_add((struct peer *) incoming, EPOLLIN);
 }

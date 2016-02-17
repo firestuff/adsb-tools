@@ -2,7 +2,6 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <getopt.h>
-#include <sys/epoll.h>
 #include <string.h>
 #include <signal.h>
 
@@ -40,7 +39,7 @@ static void print_usage(char *argv[]) {
 			, argv[0]);
 }
 
-static bool parse_opts(int argc, char *argv[], int epoll_fd) {
+static bool parse_opts(int argc, char *argv[]) {
 	static struct option long_options[] = {
 		{"backend",  required_argument, 0, 'b'},
 		{"dump",     required_argument, 0, 'd'},
@@ -63,7 +62,7 @@ static bool parse_opts(int argc, char *argv[], int epoll_fd) {
 				*delim1 = '\0';
 				delim1++;
 
-				backend_new(optarg, delim1, epoll_fd);
+				backend_new(optarg, delim1);
 				break;
 
 		  case 'd':
@@ -79,11 +78,11 @@ static bool parse_opts(int argc, char *argv[], int epoll_fd) {
 			case 'i':
 				delim1 = strrchr(optarg, '/');
 				if (delim1 == NULL) {
-					incoming_new(NULL, optarg, epoll_fd, backend_new_fd, NULL);
+					incoming_new(NULL, optarg, backend_new_fd, NULL);
 				} else {
 					*delim1 = '\0';
 					delim1++;
-					incoming_new(optarg, delim1, epoll_fd, backend_new_fd, NULL);
+					incoming_new(optarg, delim1, backend_new_fd, NULL);
 				}
 				break;
 
@@ -103,11 +102,11 @@ static bool parse_opts(int argc, char *argv[], int epoll_fd) {
 
 				delim2 = strrchr(delim1, '/');
 				if (delim2 == NULL) {
-					incoming_new(NULL, delim1, epoll_fd, client_new_fd, serializer);
+					incoming_new(NULL, delim1, client_add_wrapper, serializer);
 				} else {
 					*delim2 = '\0';
 					delim2++;
-					incoming_new(delim1, delim2, epoll_fd, client_new_fd, serializer);
+					incoming_new(delim1, delim2, client_add_wrapper, serializer);
 				}
 				break;
 
@@ -126,44 +125,21 @@ static bool parse_opts(int argc, char *argv[], int epoll_fd) {
 	return true;
 }
 
-static int loop(int epoll_fd) {
-	while (1) {
-#define MAX_EVENTS 10
-		struct epoll_event events[MAX_EVENTS];
-		int nfds = epoll_wait(epoll_fd, events, MAX_EVENTS, -1);
-		if (nfds == -1) {
-			perror("epoll_wait");
-			return -1;
-		}
-
-    for (int n = 0; n < nfds; n++) {
-			struct peer *peer = events[n].data.ptr;
-			peer->event_handler(peer, epoll_fd);
-		}
-	}
-}
-
 int main(int argc, char *argv[]) {
 	signal(SIGPIPE, SIG_IGN);
 
 	server_init();
+	peer_init();
 	hex_init();
 	airspy_adsb_init();
 	beast_init();
 	json_init();
 	stats_init();
 
-	int epoll_fd = epoll_create1(0);
-  if (epoll_fd == -1) {
-		perror("epoll_create1");
-		return EXIT_FAILURE;
-  }
-
-	if (!parse_opts(argc, argv, epoll_fd)) {
+	if (!parse_opts(argc, argv)) {
 		return EXIT_FAILURE;
 	}
 
-	loop(epoll_fd);
-	close(epoll_fd);
+	peer_loop();
 	return EXIT_SUCCESS;
 }

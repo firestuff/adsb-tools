@@ -21,5 +21,5 @@ struct backend {
 	parser parser;
 };
 
-void backend_new(char *, char *, int);
-void backend_new_fd(int, int, void *);
+void backend_new(char *, char *);
+void backend_new_fd(int, void *);
