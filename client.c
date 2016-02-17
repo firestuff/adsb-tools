@@ -29,7 +29,7 @@ struct serializer {
 	{
 		.name = "stats",
 		.serialize = stats_serialize,
-	}
+	},
 };
 #define NUM_SERIALIZERS (sizeof(serializers) / sizeof(*serializers))
 

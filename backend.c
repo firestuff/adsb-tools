@@ -21,9 +21,18 @@ static void backend_connect_handler(struct peer *, int);
 static void backend_read(struct peer *, int);
 
 
-static parser parsers[] = {
-	airspy_adsb_parse,
-	beast_parse,
+struct parser {
+	char *name;
+	parser parse;
+} parsers[] = {
+	{
+		.name = "airspy_adsb",
+		.parse = airspy_adsb_parse,
+	},
+	{
+		.name = "beast",
+		.parse = beast_parse,
+	},
 };
 #define NUM_PARSERS (sizeof(parsers) / sizeof(*parsers))
 
@@ -143,8 +152,9 @@ static void backend_read(struct peer *peer, int epoll_fd) {
 
 static bool backend_autodetect_parse(struct backend *backend, struct packet *packet) {
 	for (int i = 0; i < NUM_PARSERS; i++) {
-		if (parsers[i](backend, packet)) {
-			backend->parser = parsers[i];
+		if (parsers[i].parse(backend, packet)) {
+			fprintf(stderr, "B %s: Detected input format %s\n", backend->id, parsers[i].name);
+			backend->parser = parsers[i].parse;
 			return true;
 		}
 	}
