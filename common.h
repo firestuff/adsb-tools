@@ -44,15 +44,16 @@ void buf_consume(struct buf *, size_t);
 struct backend;
 struct packet {
 	enum {
-		MODE_AC,
 		MODE_S_SHORT,
 		MODE_S_LONG,
+		NUM_TYPES,
 	} type;
 	uint8_t payload[DATA_LEN_MAX];
 	uint64_t mlat_timestamp;
 	uint32_t rssi;
 	struct backend *backend;
 };
+extern char *packet_type_names[];
 
 
 //////// mlat

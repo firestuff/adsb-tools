@@ -57,6 +57,12 @@ void buf_consume(struct buf *buf, size_t length) {
 }
 
 
+char *packet_type_names[] = {
+	"Mode-S short",
+	"Mode-S long",
+};
+
+
 uint64_t mlat_timestamp_scale_mhz_in(uint64_t timestamp, uint32_t mhz) {
 	return timestamp * (MLAT_MHZ / mhz);
 }

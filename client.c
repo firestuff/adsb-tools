@@ -7,6 +7,7 @@
 #include <fcntl.h>
 
 #include "json.h"
+#include "stats.h"
 #include "client.h"
 
 struct client {
@@ -24,8 +25,11 @@ struct serializer {
 	{
 		.name = "json",
 		.serialize = json_serialize,
-		.client_head = NULL,
 	},
+	{
+		.name = "stats",
+		.serialize = stats_serialize,
+	}
 };
 #define NUM_SERIALIZERS (sizeof(serializers) / sizeof(*serializers))
 

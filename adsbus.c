@@ -11,6 +11,7 @@
 #include "airspy_adsb.h"
 #include "beast.h"
 #include "json.h"
+#include "stats.h"
 
 
 static bool add_dump(char *format) {
@@ -108,6 +109,7 @@ int main(int argc, char *argv[]) {
 	airspy_adsb_init();
 	beast_init();
 	json_init();
+	stats_init();
 
 	int epoll_fd = epoll_create1(0);
   if (epoll_fd == -1) {

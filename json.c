@@ -14,7 +14,7 @@ void json_init() {
 	assert(JSON_INTEGER_IS_LONG_LONG);
 }
 
-static int json_buf_append_callback(const char *buffer, size_t size, void *data) {
+int json_buf_append_callback(const char *buffer, size_t size, void *data) {
 	struct buf *buf = data;
 	if (size > BUF_LEN_MAX - buf->length - 1) {
 		return -1;
@@ -70,15 +70,15 @@ void json_serialize(struct packet *packet, struct buf *buf) {
 	}
 
 	switch (packet->type) {
-		case MODE_AC:
-			break;
-
 		case MODE_S_SHORT:
 			json_serialize_mode_s_short(packet, buf);
 			break;
 
 		case MODE_S_LONG:
 			json_serialize_mode_s_long(packet, buf);
+			break;
+
+		case NUM_TYPES:
 			break;
 	}
 }
