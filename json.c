@@ -1,6 +1,9 @@
 #include <assert.h>
 #include <stdio.h>
+#include <string.h>
+#include <jansson.h>
 
+#include "backend.h"
 #include "client.h"
 #include "json.h"
 
@@ -8,57 +11,74 @@
 // Hobo JSON to avoid overhead. Assumes that we can't get quotes in the data.
 
 void json_init() {
+	assert(JSON_INTEGER_IS_LONG_LONG);
 }
 
-static size_t json_hello(char *buf) {
-	int len = snprintf(buf, SERIALIZE_LEN,
-	                   "{\"mlat_timestamp_mhz\":%ju, \"mlat_timestamp_max\":%ju, \"rssi_max\":%ju}\n",
-					       		 (uintmax_t) MLAT_MHZ,
-							       (uintmax_t) MLAT_MAX,
-						         (uintmax_t) RSSI_MAX);
-	assert(len < SERIALIZE_LEN);
-	return len;
+static int json_buf_append_callback(const char *buffer, size_t size, void *data) {
+	struct buf *buf = data;
+	if (size > BUF_LEN_MAX - buf->length - 1) {
+		return -1;
+	}
+	memcpy(buf_at(buf, buf->length), buffer, size);
+	buf->length += size;
+	return 0;
 }
 
-static size_t json_serialize_mode_s_short(struct packet *packet, char *buf) {
+static void json_hello(struct buf *buf) {
+	json_t *hello = json_pack("{sssIsIsI}",
+			"server_id", server_id,
+			"mlat_timestamp_mhz", (json_int_t) MLAT_MHZ,
+			"mlat_timestamp_max", (json_int_t) MLAT_MAX,
+			"rssi_max", (json_int_t) RSSI_MAX);
+	assert(json_dump_callback(hello, json_buf_append_callback, buf, 0) == 0);
+	json_decref(hello);
+	buf_chr(buf, buf->length++) = '\n';
+}
+
+static void json_serialize_mode_s_short(struct packet *packet, struct buf *buf) {
+	assert(packet->mlat_timestamp < MLAT_MAX);
 	char hexbuf[14];
 	hex_from_bin(hexbuf, packet->payload, 7);
-	int len = snprintf(buf, SERIALIZE_LEN,
-	                   "{\"payload\":\"%.14s\", \"mlat_timestamp\":%ju, \"rssi\":%ju}\n",
-					           hexbuf,
-					           (uintmax_t) packet->mlat_timestamp,
-					           (uintmax_t) packet->rssi);
-	assert(len < SERIALIZE_LEN);
-	return len;
+	json_t *out = json_pack("{ssss#sIsI}",
+			"backend_id", packet->backend->id,
+			"payload", hexbuf, 14,
+			"mlat_timestamp", (json_int_t) packet->mlat_timestamp,
+			"rssi", (json_int_t) packet->rssi);
+	assert(json_dump_callback(out, json_buf_append_callback, buf, 0) == 0);
+	json_decref(out);
+	buf_chr(buf, buf->length++) = '\n';
 }
 
-static size_t json_serialize_mode_s_long(struct packet *packet, char *buf) {
-	char hexbuf[28];
+static void json_serialize_mode_s_long(struct packet *packet, struct buf *buf) {
+	assert(packet->mlat_timestamp < MLAT_MAX);
+	char hexbuf[14];
 	hex_from_bin(hexbuf, packet->payload, 14);
-	int len = snprintf(buf, SERIALIZE_LEN,
-	                   "{\"payload\":\"%.28s\", \"mlat_timestamp\":%ju, \"rssi\":%ju}\n",
-					           hexbuf,
-					           (uintmax_t) packet->mlat_timestamp,
-					           (uintmax_t) packet->rssi);
-	assert(len < SERIALIZE_LEN);
-	return len;
+	json_t *out = json_pack("{ssss#sIsI}",
+			"backend_id", packet->backend->id,
+			"payload", hexbuf, 28,
+			"mlat_timestamp", (json_int_t) packet->mlat_timestamp,
+			"rssi", (json_int_t) packet->rssi);
+	assert(json_dump_callback(out, json_buf_append_callback, buf, 0) == 0);
+	json_decref(out);
+	buf_chr(buf, buf->length++) = '\n';
 }
 
-size_t json_serialize(struct packet *packet, char *buf) {
+void json_serialize(struct packet *packet, struct buf *buf) {
 	if (!packet) {
-		return json_hello(buf);
+		json_hello(buf);
+		return;
 	}
 
 	switch (packet->type) {
 		case MODE_AC:
-			return 0;
+			break;
 
 		case MODE_S_SHORT:
-			return json_serialize_mode_s_short(packet, buf);
+			json_serialize_mode_s_short(packet, buf);
+			break;
 
 		case MODE_S_LONG:
-			return json_serialize_mode_s_long(packet, buf);
+			json_serialize_mode_s_long(packet, buf);
+			break;
 	}
-	
-	return 0;
 }

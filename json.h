@@ -4,4 +4,4 @@
 
 
 void json_init();
-size_t json_serialize(struct packet *, char *);
+void json_serialize(struct packet *, struct buf *);

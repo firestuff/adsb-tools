@@ -111,3 +111,11 @@ void uuid_gen(char *out) {
 	uuid_generate(uuid);
 	uuid_unparse(uuid, out);
 }
+
+
+char server_id[UUID_LEN];
+
+void server_init() {
+	uuid_gen(server_id);
+	fprintf(stderr, "S %s: Server start\n", server_id);
+}

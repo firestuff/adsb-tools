@@ -1,7 +1,7 @@
 CC ?= clang
 CFLAGS ?= -Wall -Werror -O4 -g --std=gnu11 --pedantic-errors
 LDFLAGS ?= -Wall -O4
-LIBS ?= -luuid
+LIBS ?= -luuid -ljansson
 
 all: adsbus
 

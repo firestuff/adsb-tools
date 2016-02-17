@@ -45,7 +45,7 @@ bool backend_connect(char *node, char *service, struct backend *backend, int epo
 
 		int gai_err = getaddrinfo(node, service, &hints, &addrs);
 		if (gai_err) {
-			fprintf(stderr, "%s: getaddrinfo(%s %s): %s\n", backend->id, node, service, gai_strerror(gai_err));
+			fprintf(stderr, "B %s: getaddrinfo(%s %s): %s\n", backend->id, node, service, gai_strerror(gai_err));
 			return false;
 		}
 	}
@@ -68,13 +68,13 @@ bool backend_connect(char *node, char *service, struct backend *backend, int epo
 
 		if (addr == NULL) {
 			freeaddrinfo(addrs);
-			fprintf(stderr, "%s: Can't connect to %s %s\n", backend->id, node, service);
+			fprintf(stderr, "B %s: Can't connect to %s %s\n", backend->id, node, service);
 			return false;
 		}
 
   	char hbuf[NI_MAXHOST], sbuf[NI_MAXSERV];
   	if (getnameinfo(addr->ai_addr, addr->ai_addrlen, hbuf, sizeof(hbuf), sbuf, sizeof(sbuf), NI_NUMERICHOST | NI_NUMERICSERV) == 0) {
-			fprintf(stderr, "%s: Connected to %s %s\n", backend->id, hbuf, sbuf);
+			fprintf(stderr, "B %s: Connected to %s %s\n", backend->id, hbuf, sbuf);
 		}
 	}
 
@@ -98,17 +98,19 @@ bool backend_connect(char *node, char *service, struct backend *backend, int epo
 
 bool backend_read(struct backend *backend) {
 	if (buf_fill(&backend->buf, backend->fd) < 0) {
-		fprintf(stderr, "%s: Connection closed by backend\n", backend->id);
+		fprintf(stderr, "B %s: Connection closed by backend\n", backend->id);
 		return false;
 	}
 
-	struct packet packet;
+	struct packet packet = {
+		.backend = backend,
+	};
 	while (backend->parser(backend, &packet)) {
 		client_write(&packet);
 	}
 
 	if (backend->buf.length == BUF_LEN_MAX) {
-		fprintf(stderr, "%s: Input buffer overrun. This probably means that adsbus doesn't understand the protocol that this source is speaking.\n", backend->id);
+		fprintf(stderr, "B %s: Input buffer overrun. This probably means that adsbus doesn't understand the protocol that this source is speaking.\n", backend->id);
 		return false;
 	}
 	return true;

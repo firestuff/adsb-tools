@@ -39,6 +39,7 @@ void buf_consume(struct buf *, size_t);
 //////// packet
 
 #define DATA_LEN_MAX 14
+struct backend;
 struct packet {
 	enum {
 		MODE_AC,
@@ -48,13 +49,15 @@ struct packet {
 	uint8_t payload[DATA_LEN_MAX];
 	uint64_t mlat_timestamp;
 	uint32_t rssi;
+	struct backend *backend;
 };
 
 
 //////// mlat
 
 #define MLAT_MHZ 120
-#define MLAT_MAX UINT64_MAX
+// Use the signed max to avoid problems with some consumers; it's large enough to not matter.
+#define MLAT_MAX INT64_MAX
 #define RSSI_MAX UINT32_MAX
 
 struct mlat_state {
@@ -82,3 +85,9 @@ void hex_from_bin(char *, uint8_t *, size_t);
 
 #define UUID_LEN 37
 void uuid_gen(char *);
+
+
+///////// server
+
+extern char server_id[];
+void server_init();

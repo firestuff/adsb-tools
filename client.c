@@ -15,7 +15,7 @@ struct client {
 	struct client *next;
 };
 
-typedef size_t (*serializer)(struct packet *, char *);
+typedef void (*serializer)(struct packet *, struct buf *);
 struct serializer {
 	char *name;
 	serializer serialize;
@@ -40,13 +40,12 @@ struct serializer *client_get_serializer(char *name) {
 }
 
 static bool client_hello(int fd, struct serializer *serializer) {
-	char buf[SERIALIZE_LEN];
-	size_t len = serializer->serialize(NULL, buf);
-	if (len == 0) {
+	struct buf buf = BUF_INIT;
+	serializer->serialize(NULL, &buf);
+	if (buf.length == 0) {
 		return true;
 	}
-	if (write(fd, buf, len) != len) {
-		fprintf(stderr, "Failed to write hello to client\n");
+	if (write(fd, buf_at(&buf, 0), buf.length) != buf.length) {
 		return false;
 	}
 	return true;
@@ -59,6 +58,7 @@ void client_add(int fd, struct serializer *serializer) {
 	assert(fcntl(fd, F_SETFL, flags) == 0);
 
 	if (!client_hello(fd, serializer)) {
+		fprintf(stderr, "C xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx: Failed to write hello to client\n");
 		return;
 	}
 
@@ -70,7 +70,7 @@ void client_add(int fd, struct serializer *serializer) {
 	client->next = serializer->client_head;
 	serializer->client_head = client;
 
-	fprintf(stderr, "%s (%s): New client\n", client->id, serializer->name);
+	fprintf(stderr, "C %s (%s): New client\n", client->id, serializer->name);
 }
 
 void client_write(struct packet *packet) {
@@ -79,18 +79,18 @@ void client_write(struct packet *packet) {
 		if (serializer->client_head == NULL) {
 			continue;
 		}
-		char buf[SERIALIZE_LEN];
-		size_t len = serializer->serialize(packet, buf);
-		if (len == 0) {
+		struct buf buf = BUF_INIT;
+		serializer->serialize(packet, &buf);
+		if (buf.length == 0) {
 			continue;
 		}
 		struct client *client = serializer->client_head, *prev_client = NULL;
 		while (client) {
-			if (write(client->fd, buf, len) == len) {
+			if (write(client->fd, buf_at(&buf, 0), buf.length) == buf.length) {
 				prev_client = client;
 				client = client->next;
 			} else {
-				fprintf(stderr, "%s (%s): Client disconnected\n", client->id, serializer->name);
+				fprintf(stderr, "C %s (%s): Client disconnected\n", client->id, serializer->name);
 				if (prev_client) {
 					prev_client->next = client->next;
 				} else {

@@ -67,6 +67,7 @@ static int loop(int epoll_fd) {
 }
 
 int main(int argc, char *argv[]) {
+	server_init();
 	hex_init();
 	airspy_adsb_init();
 	beast_init();
