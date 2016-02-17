@@ -7,5 +7,7 @@ adsbus is a hub and protocol translator for [ADS-B](https://en.wikipedia.org/wik
 
 ```bash
 sudo apt-get -y install uuid-dev libjansson-dev
+git clone https://github.com/flamingcowtv/adsb-tools.git
+cd adsb-tools
 make
 ```
