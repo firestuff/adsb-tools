@@ -46,11 +46,12 @@ external time, but receiving software can calculate its offset from other
 receiving stations across multiple packets, and then use the differences between
 station receive timing to calculate signal source position.
 
-FlightAware's dump1090 fork sends 0x000000000000 when it has no MLAT data.
+FlightAware's dump1090 fork sends `0x00 0x00 0x00 0x00 0x00 0x00` when it has
+no MLAT data.
 
 
 ## RSSI
-FlightAware's dump1090 fork sends 0xff when it has no RSSI data.
+FlightAware's dump1090 fork sends `0xff` when it has no RSSI data.
 
 
 ## Examples
