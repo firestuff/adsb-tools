@@ -41,6 +41,7 @@ static void json_hello(struct buf *buf) {
 
 static void json_add_common(struct packet *packet, json_t *obj) {
 	json_object_set_new(obj, "backend_id", json_string(packet->backend->id));
+	json_object_set_new(obj, "type", json_string(packet_type_names[packet->type]));
 	if (packet->mlat_timestamp) {
 		json_object_set_new(obj, "mlat_timestamp", json_integer(packet->mlat_timestamp));
 	}
