@@ -24,43 +24,47 @@ int json_buf_append_callback(const char *buffer, size_t size, void *data) {
 	return 0;
 }
 
+static void json_serialize_to_buf(json_t *obj, struct buf *buf) {
+	assert(json_dump_callback(obj, json_buf_append_callback, buf, 0) == 0);
+	json_decref(obj);
+	buf_chr(buf, buf->length++) = '\n';
+}
+
 static void json_hello(struct buf *buf) {
 	json_t *hello = json_pack("{sssIsIsI}",
 			"server_id", server_id,
 			"mlat_timestamp_mhz", (json_int_t) MLAT_MHZ,
 			"mlat_timestamp_max", (json_int_t) MLAT_MAX,
 			"rssi_max", (json_int_t) RSSI_MAX);
-	assert(json_dump_callback(hello, json_buf_append_callback, buf, 0) == 0);
-	json_decref(hello);
-	buf_chr(buf, buf->length++) = '\n';
+	json_serialize_to_buf(hello, buf);
+}
+
+static void json_add_common(struct packet *packet, json_t *obj) {
+	json_object_set_new(obj, "backend_id", json_string(packet->backend->id));
+	if (packet->mlat_timestamp) {
+		json_object_set_new(obj, "mlat_timestamp", json_integer(packet->mlat_timestamp));
+	}
+	if (packet->rssi) {
+		json_object_set_new(obj, "rssi", json_integer(packet->rssi));
+	}
 }
 
 static void json_serialize_mode_s_short(struct packet *packet, struct buf *buf) {
 	assert(packet->mlat_timestamp < MLAT_MAX);
 	char hexbuf[14];
 	hex_from_bin(hexbuf, packet->payload, 7);
-	json_t *out = json_pack("{ssss#sIsI}",
-			"backend_id", packet->backend->id,
-			"payload", hexbuf, 14,
-			"mlat_timestamp", (json_int_t) packet->mlat_timestamp,
-			"rssi", (json_int_t) packet->rssi);
-	assert(json_dump_callback(out, json_buf_append_callback, buf, 0) == 0);
-	json_decref(out);
-	buf_chr(buf, buf->length++) = '\n';
+	json_t *out = json_pack("{ss#}", "payload", hexbuf, 14);
+	json_add_common(packet, out);
+	json_serialize_to_buf(out, buf);
 }
 
 static void json_serialize_mode_s_long(struct packet *packet, struct buf *buf) {
 	assert(packet->mlat_timestamp < MLAT_MAX);
 	char hexbuf[28];
 	hex_from_bin(hexbuf, packet->payload, 14);
-	json_t *out = json_pack("{ssss#sIsI}",
-			"backend_id", packet->backend->id,
-			"payload", hexbuf, 28,
-			"mlat_timestamp", (json_int_t) packet->mlat_timestamp,
-			"rssi", (json_int_t) packet->rssi);
-	assert(json_dump_callback(out, json_buf_append_callback, buf, 0) == 0);
-	json_decref(out);
-	buf_chr(buf, buf->length++) = '\n';
+	json_t *out = json_pack("{ss#}", "payload", hexbuf, 28);
+	json_add_common(packet, out);
+	json_serialize_to_buf(out, buf);
 }
 
 void json_serialize(struct packet *packet, struct buf *buf) {
