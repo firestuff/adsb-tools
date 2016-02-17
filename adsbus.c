@@ -56,12 +56,8 @@ static bool parse_opts(int argc, char *argv[], int epoll_fd) {
 				delim++;
 
 				// TODO: Fix orphan malloc.
-				struct backend *backend = malloc(sizeof(*backend));
+				struct backend *backend = backend_new(optarg, delim, epoll_fd);
 				assert(backend);
-				backend_init(backend);
-				if (!backend_connect(optarg, delim, backend, epoll_fd)) {
-					return false;
-				}
 				break;
 
 		  case 'd':
@@ -101,17 +97,7 @@ static int loop(int epoll_fd) {
 
     for (int n = 0; n < nfds; n++) {
 			struct peer *peer = events[n].data.ptr;
-			switch (peer->type) {
-				case PEER_BACKEND:
-					if (!backend_read((struct backend *) peer)) {
-						return -1;
-					}
-					break;
-
-				default:
-					fprintf(stderr, "Unpossible: unknown peer type.\n");
-					return -1;
-			}
+			peer->event_handler(peer, epoll_fd);
 		}
 	}
 }

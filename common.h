@@ -7,12 +7,14 @@
 //////// peer
 
 // All specific peer structs must be castable to this.
+struct peer;
+typedef void (*peer_event_handler)(struct peer *, int epoll_fd);
 struct peer {
-	enum peer_type {
-		PEER_BACKEND,
-		PEER_CLIENT,
-	} type;
+	int fd;
+	peer_event_handler event_handler;
 };
+void peer_epoll_add(struct peer *, int, uint32_t);
+void peer_epoll_del(struct peer *, int);
 
 
 //////// buf

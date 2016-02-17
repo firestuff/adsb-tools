@@ -3,9 +3,25 @@
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
+#include <sys/epoll.h>
 #include <uuid/uuid.h>
 
 #include "common.h"
+
+
+void peer_epoll_add(struct peer *peer, int epoll_fd, uint32_t events) {
+	struct epoll_event ev = {
+		.events = events,
+		.data = {
+			.ptr = peer,
+		},
+	};
+	assert(epoll_ctl(epoll_fd, EPOLL_CTL_ADD, peer->fd, &ev) == 0);
+}
+
+void peer_epoll_del(struct peer *peer, int epoll_fd) {
+	assert(epoll_ctl(epoll_fd, EPOLL_CTL_DEL, peer->fd, NULL) == 0);
+}
 
 
 void buf_init(struct buf *buf) {
