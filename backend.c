@@ -43,17 +43,33 @@ struct parser {
 #define NUM_PARSERS (sizeof(parsers) / sizeof(*parsers))
 
 
-void backend_new(char *node, char *service, int epoll_fd) {
+static struct backend *backend_create() {
 	struct backend *backend = malloc(sizeof(*backend));
 	assert(backend);
-	backend->peer.fd = -1;
 	uuid_gen(backend->id);
-	backend->node = node;
-	backend->service = service;
+	backend->peer.fd = -1;
+	backend->node = NULL;
+	backend->service = NULL;
 	buf_init(&backend->buf);
 	memset(backend->parser_state, 0, PARSER_STATE_LEN);
 	backend->parser = backend_autodetect_parse;
+	return backend;
+}
+
+void backend_new(char *node, char *service, int epoll_fd) {
+	struct backend *backend = backend_create();
+	backend->node = node;
+	backend->service = service;
 	backend_connect(backend, epoll_fd);
+}
+
+void backend_new_fd(int fd, int epoll_fd) {
+	struct backend *backend = backend_create();
+	backend->peer.fd = fd;
+	backend->peer.event_handler = backend_read;
+	peer_epoll_add((struct peer *) backend, epoll_fd, EPOLLIN);
+
+	fprintf(stderr, "B %s: New backend from incoming connection\n", backend->id);
 }
 
 static void backend_connect(struct backend *backend, int epoll_fd) {
@@ -66,7 +82,7 @@ static void backend_connect(struct backend *backend, int epoll_fd) {
 
 	int gai_err = getaddrinfo(backend->node, backend->service, &hints, &backend->addrs);
 	if (gai_err) {
-		fprintf(stderr, "B %s: getaddrinfo(%s/%s): %s\n", backend->id, backend->node, backend->service, gai_strerror(gai_err));
+		fprintf(stderr, "B %s: Failed to resolve %s/%s: %s\n", backend->id, backend->node, backend->service, gai_strerror(gai_err));
 		return;
 	}
 	backend->addr = backend->addrs;
@@ -131,10 +147,9 @@ static void backend_connect_handler(struct peer *peer, int epoll_fd) {
 static void backend_read(struct peer *peer, int epoll_fd) {
 	struct backend *backend = (struct backend *) peer;
 
-	if (buf_fill(&backend->buf, backend->peer.fd) < 0) {
+	if (buf_fill(&backend->buf, backend->peer.fd) <= 0) {
 		fprintf(stderr, "B %s: Connection closed by backend\n", backend->id);
 		close(backend->peer.fd);
-		peer_epoll_del(peer, epoll_fd);
 		// TODO: reconnect
 		return;
 	}
@@ -149,7 +164,6 @@ static void backend_read(struct peer *peer, int epoll_fd) {
 	if (backend->buf.length == BUF_LEN_MAX) {
 		fprintf(stderr, "B %s: Input buffer overrun. This probably means that adsbus doesn't understand the protocol that this source is speaking.\n", backend->id);
 		close(backend->peer.fd);
-		peer_epoll_del(peer, epoll_fd);
 		// TODO: reconnect
 		return;
 	}

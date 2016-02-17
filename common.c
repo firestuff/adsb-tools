@@ -38,7 +38,7 @@ ssize_t buf_fill(struct buf *buf, int fd) {
 
 	size_t space = BUF_LEN_MAX - buf->length - buf->start;
 	ssize_t in = read(fd, buf_at(buf, buf->length), space);
-	if (in < 0) {
+	if (in <= 0) {
 		return in;
 	}
 	buf->length += in;

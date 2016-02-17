@@ -8,6 +8,8 @@
 #include "common.h"
 #include "backend.h"
 #include "client.h"
+#include "incoming.h"
+
 #include "airspy_adsb.h"
 #include "beast.h"
 #include "json.h"
@@ -32,14 +34,16 @@ static void print_usage(char *argv[]) {
 			"\t--help\n"
 			"\t--backend=HOST/PORT\n"
 			"\t--dump=FORMAT\n"
+			"\t--incoming=[HOST/]PORT\n"
 			, argv[0]);
 }
 
 static bool parse_opts(int argc, char *argv[], int epoll_fd) {
 	static struct option long_options[] = {
-		{"backend", required_argument, 0, 'b'},
-		{"dump",    required_argument, 0, 'd'},
-		{"help",    no_argument,       0, 'h'},
+		{"backend",  required_argument, 0, 'b'},
+		{"dump",     required_argument, 0, 'd'},
+		{"incoming", required_argument, 0, 'i'},
+		{"help",     no_argument,       0, 'h'},
 	};
 
 	int opt;
@@ -68,6 +72,17 @@ static bool parse_opts(int argc, char *argv[], int epoll_fd) {
 			case 'h':
 				print_usage(argv);
 				return false;
+
+			case 'i':
+				delim = strrchr(optarg, '/');
+				if (delim == NULL) {
+					incoming_new(NULL, optarg, epoll_fd, backend_new_fd);
+				} else {
+					*delim = '\0';
+					delim++;
+					incoming_new(optarg, delim, epoll_fd, backend_new_fd);
+				}
+				break;
 
 			default:
 				print_usage(argv);

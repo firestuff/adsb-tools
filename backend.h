@@ -21,4 +21,5 @@ struct backend {
 	parser parser;
 };
 
-void backend_new(char *node, char *service, int epoll_fd);
+void backend_new(char *, char *, int);
+void backend_new_fd(int, int);
