@@ -48,7 +48,7 @@ void airspy_adsb_init() {
 
 static bool airspy_adsb_parse_mode_s_short(struct buf *buf, struct packet *packet, struct airspy_adsb_parser_state *state) {
 	struct airspy_adsb_mode_s_short_overlay *short_overlay = (struct airspy_adsb_mode_s_short_overlay *) buf_at(buf, 0);
-	if (buf->length < 35 ||
+	if (buf->length < sizeof(*short_overlay) ||
 			short_overlay->asterisk != '*' ||
 			short_overlay->semicolon != ';' ||
 			short_overlay->cr != '\r' ||
@@ -66,7 +66,7 @@ static bool airspy_adsb_parse_mode_s_short(struct buf *buf, struct packet *packe
 
 static bool airspy_adsb_parse_mode_s_long(struct buf *buf, struct packet *packet, struct airspy_adsb_parser_state *state) {
 	struct airspy_adsb_mode_s_long_overlay *long_overlay = (struct airspy_adsb_mode_s_long_overlay *) buf_at(buf, 0);
-	if (buf->length < 49 ||
+	if (buf->length < sizeof(*long_overlay) ||
 			long_overlay->asterisk != '*' ||
 			long_overlay->semicolon != ';' ||
 			long_overlay->cr != '\r' ||

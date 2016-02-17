@@ -9,6 +9,8 @@
 
 #include "airspy_adsb.h"
 #include "beast.h"
+#include "raw.h"
+
 #include "client.h"
 #include "backend.h"
 
@@ -32,6 +34,10 @@ struct parser {
 	{
 		.name = "beast",
 		.parse = beast_parse,
+	},
+	{
+		.name = "raw",
+		.parse = raw_parse,
 	},
 };
 #define NUM_PARSERS (sizeof(parsers) / sizeof(*parsers))
