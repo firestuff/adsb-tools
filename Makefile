@@ -1,6 +1,6 @@
 CC ?= clang
 CFLAGS ?= -Wall -Werror -O4 -g --std=gnu11 --pedantic-errors -fPIE -pie -fstack-protector-strong
-LDFLAGS ?= $(CFLAGS) -z now -z relro
+LDFLAGS ?= $(CFLAGS) -Wl,-z,relro -Wl,-z,now
 LIBS ?= -luuid -ljansson
 
 all: adsbus
