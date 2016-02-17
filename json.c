@@ -16,7 +16,7 @@ void json_init() {
 
 int json_buf_append_callback(const char *buffer, size_t size, void *data) {
 	struct buf *buf = data;
-	if (size > BUF_LEN_MAX - buf->length - 1) {
+	if (buf->length + size + 1 > BUF_LEN_MAX) {
 		return -1;
 	}
 	memcpy(buf_at(buf, buf->length), buffer, size);
@@ -51,7 +51,7 @@ static void json_serialize_mode_s_short(struct packet *packet, struct buf *buf) 
 
 static void json_serialize_mode_s_long(struct packet *packet, struct buf *buf) {
 	assert(packet->mlat_timestamp < MLAT_MAX);
-	char hexbuf[14];
+	char hexbuf[28];
 	hex_from_bin(hexbuf, packet->payload, 14);
 	json_t *out = json_pack("{ssss#sIsI}",
 			"backend_id", packet->backend->id,
