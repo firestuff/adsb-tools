@@ -22,11 +22,13 @@ struct outgoing {
 };
 
 static void outgoing_connect_result(struct outgoing *, int);
+static void outgoing_resolve(struct outgoing *);
 
 static void outgoing_connect_next(struct outgoing *outgoing) {
 	if (outgoing->addr == NULL) {
 		freeaddrinfo(outgoing->addrs);
 		fprintf(stderr, "O %s: Can't connect to any addresses of %s/%s\n", outgoing->id, outgoing->node, outgoing->service);
+		// TODO: timed retry
 		return;
 	}
 
@@ -44,12 +46,20 @@ static void outgoing_connect_next(struct outgoing *outgoing) {
 static void outgoing_connect_handler(struct peer *peer) {
 	struct outgoing *outgoing = (struct outgoing *) peer;
 
-	peer_epoll_del(peer);
+	peer_epoll_del(&outgoing->peer);
 
 	int error;
   socklen_t len = sizeof(error);
 	assert(getsockopt(outgoing->peer.fd, SOL_SOCKET, SO_ERROR, &error, &len) == 0);
 	outgoing_connect_result(outgoing, error);
+}
+
+static void outgoing_disconnect_handler(struct peer *peer) {
+	struct outgoing *outgoing = (struct outgoing *) peer;
+	close(outgoing->peer.fd);
+	fprintf(stderr, "O %s: Peer disconnected; reconnecting...\n", outgoing->id);
+
+	outgoing_resolve(outgoing);
 }
 
 static void outgoing_connect_result(struct outgoing *outgoing, int result) {
@@ -59,7 +69,12 @@ static void outgoing_connect_result(struct outgoing *outgoing, int result) {
 		case 0:
 			fprintf(stderr, "O %s: Connected to %s/%s\n", outgoing->id, hbuf, sbuf);
 			freeaddrinfo(outgoing->addrs);
-			outgoing->handler(outgoing->peer.fd, outgoing->passthrough);
+
+			// We listen for just hangup on this fd. We pass a duplicate to the handler, so our epoll setings are independent.
+			outgoing->peer.event_handler = outgoing_disconnect_handler;
+			peer_epoll_add((struct peer *) outgoing, EPOLLRDHUP);
+
+			outgoing->handler(dup(outgoing->peer.fd), outgoing->passthrough);
 			break;
 
 		case EINPROGRESS:
@@ -88,6 +103,7 @@ static void outgoing_resolve(struct outgoing *outgoing) {
 	int gai_err = getaddrinfo(outgoing->node, outgoing->service, &hints, &outgoing->addrs);
 	if (gai_err) {
 		fprintf(stderr, "O %s: Failed to resolve %s/%s: %s\n", outgoing->id, outgoing->node, outgoing->service, gai_strerror(gai_err));
+		// TODO: timed retry
 		return;
 	}
 	outgoing->addr = outgoing->addrs;

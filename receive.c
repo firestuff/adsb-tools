@@ -67,7 +67,6 @@ static void receive_read(struct peer *peer) {
 	if (buf_fill(&receive->buf, receive->peer.fd) <= 0) {
 		fprintf(stderr, "R %s: Connection closed by peer\n", receive->id);
 		close(receive->peer.fd);
-		// TODO: reconnect
 		return;
 	}
 
@@ -79,7 +78,6 @@ static void receive_read(struct peer *peer) {
 	if (receive->buf.length == BUF_LEN_MAX) {
 		fprintf(stderr, "R %s: Input buffer overrun. This probably means that adsbus doesn't understand the protocol that this source is speaking.\n", receive->id);
 		close(receive->peer.fd);
-		// TODO: reconnect
 		return;
 	}
 }
