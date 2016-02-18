@@ -30,3 +30,5 @@ for i, event in enumerate(adsblib.GetEvents(sys.argv[1], sys.argv[2])):
 			'\r%d samples, %d seconds, advertised: %d MHz, measured: %d MHz' %
 			(i, time_diff, advertised_mhz, measured_mhz),
 			end='', flush=True)
+
+print()
