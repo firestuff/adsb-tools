@@ -120,8 +120,7 @@ void send_add(int fd, struct serializer *serializer) {
 	send->next = serializer->send_head;
 	serializer->send_head = send;
 
-	// Only listen for hangup
-	peer_epoll_add((struct peer *) send, EPOLLIN);
+	peer_epoll_add((struct peer *) send, EPOLLRDHUP);
 
 	fprintf(stderr, "S %s (%s): New send connection\n", send->id, serializer->name);
 }
