@@ -138,3 +138,10 @@ void client_write(struct packet *packet) {
 		}
 	}
 }
+
+void client_print_usage() {
+	fprintf(stderr, "\nSupported output formats:\n");
+	for (int i = 0; i < NUM_SERIALIZERS; i++) {
+		fprintf(stderr, "\t%s\n", serializers[i].name);
+	}
+}

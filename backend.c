@@ -178,3 +178,10 @@ static bool backend_autodetect_parse(struct backend *backend, struct packet *pac
 	}
 	return false;
 }
+
+void backend_print_usage() {
+	fprintf(stderr, "\nSupported input formats (autodetected):\n");
+	for (int i = 0; i < NUM_PARSERS; i++) {
+		fprintf(stderr, "\t%s\n", parsers[i].name);
+	}
+}

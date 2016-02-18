@@ -14,18 +14,9 @@
 #include "stats.h"
 
 
-static bool add_dump(char *format) {
-	struct serializer *serializer = client_get_serializer(format);
-	if (!serializer) {
-		fprintf(stderr, "Unknown dump format: %s\n", format);
-		return false;
-	}
-	client_add(1, serializer);
-	return true;
-}
-
 static void print_usage(char *argv[]) {
 	fprintf(stderr,
+			"\n"
 			"Usage: %s [OPTION]...\n"
 			"\n"
 			"Options:\n"
@@ -35,6 +26,65 @@ static void print_usage(char *argv[]) {
 			"\t--incoming=[HOST/]PORT\n"
 			"\t--listen=FORMAT=[HOST/]PORT\n"
 			, argv[0]);
+	backend_print_usage();
+	client_print_usage();
+}
+
+static bool add_dump(char *arg) {
+	struct serializer *serializer = client_get_serializer(arg);
+	if (!serializer) {
+		fprintf(stderr, "Unknown --dump=FORMAT: %s\n", arg);
+		return false;
+	}
+	client_add(1, serializer);
+	return true;
+}
+
+static bool add_backend(char *arg) {
+	char *port = strrchr(arg, '/');
+	if (!port) {
+		fprintf(stderr, "Invalid --backend=HOST/PORT (missing \"/\"): %s\n", arg);
+		return false;
+	}
+	*(port++) = '\0';
+
+	backend_new(arg, port);
+	return true;
+}
+
+static bool add_incoming(char *arg){
+	char *port = strrchr(arg, '/');
+	if (port) {
+		*(port++) = '\0';
+		incoming_new(arg, port, backend_new_fd, NULL);
+	} else {
+		incoming_new(NULL, arg, backend_new_fd, NULL);
+	}
+	return true;
+}
+
+static bool add_listener(char *arg) {
+	char *host_port = strchr(arg, '=');
+	if (!host_port) {
+		fprintf(stderr, "Invalid --listener=FORMAT=[HOST/]PORT (missing \"=\"): %s\n", arg);
+		return false;
+	}
+	*(host_port++) = '\0';
+
+	struct serializer *serializer = client_get_serializer(arg);
+	if (!serializer) {
+		fprintf(stderr, "Unknown --listener=FORMAT=[HOST/]PORT format: %s\n", arg);
+		return false;
+	}
+
+	char *port = strrchr(host_port, '/');
+	if (port) {
+		*(port++) = '\0';
+		incoming_new(host_port, port, client_add_wrapper, serializer);
+	} else {
+		incoming_new(NULL, host_port, client_add_wrapper, serializer);
+	}
+	return true;
 }
 
 static bool parse_opts(int argc, char *argv[]) {
@@ -47,26 +97,15 @@ static bool parse_opts(int argc, char *argv[]) {
 	};
 
 	int opt;
-	char *delim1, *delim2;
 	while ((opt = getopt_long_only(argc, argv, "", long_options, NULL)) != -1) {
+		bool (*handler)(char *) = NULL;
 		switch (opt) {
 			case 'b':
-				// It would be really nice if libc had a standard way to split host:port.
-				delim1 = strrchr(optarg, '/');
-				if (delim1 == NULL) {
-					print_usage(argv);
-					return false;
-				}
-				*delim1 = '\0';
-				delim1++;
-
-				backend_new(optarg, delim1);
+				handler = add_backend;
 				break;
 
 		  case 'd':
-				if (!add_dump(optarg)) {
-					return false;
-				}
+				handler = add_dump;
 				break;
 
 			case 'h':
@@ -74,43 +113,23 @@ static bool parse_opts(int argc, char *argv[]) {
 				return false;
 
 			case 'i':
-				delim1 = strrchr(optarg, '/');
-				if (delim1 == NULL) {
-					incoming_new(NULL, optarg, backend_new_fd, NULL);
-				} else {
-					*delim1 = '\0';
-					delim1++;
-					incoming_new(optarg, delim1, backend_new_fd, NULL);
-				}
+				handler = add_incoming;
 				break;
 
 			case 'l':
-				delim1 = strchr(optarg, '=');
-				if (delim1 == NULL) {
-					print_usage(argv);
-					return false;
-				}
-				*delim1 = '\0';
-				delim1++;
-				struct serializer *serializer = client_get_serializer(optarg);
-				if (!serializer) {
-					fprintf(stderr, "Unknown format: %s\n", optarg);
-					return false;
-				}
-
-				delim2 = strrchr(delim1, '/');
-				if (delim2 == NULL) {
-					incoming_new(NULL, delim1, client_add_wrapper, serializer);
-				} else {
-					*delim2 = '\0';
-					delim2++;
-					incoming_new(delim1, delim2, client_add_wrapper, serializer);
-				}
+				handler = add_listener;
 				break;
 
 			default:
 				print_usage(argv);
 				return false;
+		}
+
+		if (handler) {
+			if (!handler(optarg)) {
+				print_usage(argv);
+				return false;
+			}
 		}
 	}
 

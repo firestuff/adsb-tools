@@ -23,3 +23,4 @@ struct backend {
 
 void backend_new(char *, char *);
 void backend_new_fd(int, void *);
+void backend_print_usage();
