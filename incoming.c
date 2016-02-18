@@ -1,3 +1,5 @@
+#define _GNU_SOURCE
+
 #include <assert.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -26,7 +28,7 @@ static void incoming_handler(struct peer *peer) {
 	struct sockaddr peer_addr, local_addr;
 	socklen_t peer_addrlen = sizeof(peer_addr), local_addrlen = sizeof(local_addr);
 
-	int fd = accept(incoming->peer.fd, &peer_addr, &peer_addrlen);
+	int fd = accept4(incoming->peer.fd, &peer_addr, &peer_addrlen, SOCK_NONBLOCK);
 	if (fd == -1) {
 		fprintf(stderr, "I %s: Failed to accept new connection on %s/%s: %s\n", incoming->id, incoming->node, incoming->service, strerror(errno));
 		return;
