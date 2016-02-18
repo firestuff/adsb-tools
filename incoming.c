@@ -37,7 +37,7 @@ static void incoming_handler(struct peer *peer) {
 	assert(getnameinfo(&peer_addr, peer_addrlen, peer_hbuf, sizeof(peer_hbuf), peer_sbuf, sizeof(peer_sbuf), NI_NUMERICHOST | NI_NUMERICSERV) == 0);
 	assert(getnameinfo(&local_addr, local_addrlen, local_hbuf, sizeof(local_hbuf), local_sbuf, sizeof(local_sbuf), NI_NUMERICHOST | NI_NUMERICSERV) == 0);
 
-	fprintf(stderr, "I %s: New connection on %s/%s (%s/%s) from %s/%s\n",
+	fprintf(stderr, "I %s: New incoming connection on %s/%s (%s/%s) from %s/%s\n",
 			incoming->id,
 			incoming->node, incoming->service,
 			local_hbuf, local_sbuf,

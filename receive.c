@@ -95,7 +95,7 @@ void receive_new(int fd, void *unused) {
 	receive->peer.event_handler = receive_read;
 	peer_epoll_add((struct peer *) receive, EPOLLIN);
 
-	fprintf(stderr, "R %s: New connection\n", receive->id);
+	fprintf(stderr, "R %s: New receive connection\n", receive->id);
 }
 
 void receive_print_usage() {
