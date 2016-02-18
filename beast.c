@@ -86,7 +86,7 @@ static bool beast_parse_mode_s_short(struct buf *buf, struct packet *packet, str
 	packet->type = MODE_S_SHORT;
 	uint64_t source_mlat = beast_parse_mlat(overlay->mlat_timestamp);
 	packet->mlat_timestamp = mlat_timestamp_scale_in(source_mlat, UINT64_C(0xffffffffffff), 12, &state->mlat_state);
-	packet->rssi = rssi_scale_in(overlay->rssi == UINT8_MAX ? 0 : overlay->rssi, UINT8_MAX);
+	packet->rssi = rssi_scale_in(overlay->rssi, UINT8_MAX);
 	memcpy(packet->payload, overlay->payload, sizeof(overlay->payload));
 	buf_consume(buf, in_bytes);
 	return true;
