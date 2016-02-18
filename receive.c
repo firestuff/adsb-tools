@@ -99,7 +99,7 @@ void receive_new(int fd, void *unused) {
 }
 
 void receive_print_usage() {
-	fprintf(stderr, "\nSupported receive formats (autodetected):\n");
+	fprintf(stderr, "\nSupported receive formats (auto-detected):\n");
 	for (int i = 0; i < NUM_PARSERS; i++) {
 		fprintf(stderr, "\t%s\n", parsers[i].name);
 	}
