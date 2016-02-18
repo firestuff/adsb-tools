@@ -163,6 +163,14 @@ void hex_from_bin(char *out, const uint8_t *in, size_t bytes) {
 	}
 }
 
+void hex_from_int(char *out, uint64_t in, size_t bytes) {
+	bytes *= 2;
+	for (int o = bytes - 1; o >= 0; o--) {
+		out[o] = hex_char_table[in & 0xf];
+		in >>= 4;
+	}
+}
+
 
 void uuid_gen(char *out) {
 	uuid_t uuid;

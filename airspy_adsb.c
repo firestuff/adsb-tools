@@ -6,6 +6,8 @@
 #include "receive.h"
 #include "airspy_adsb.h"
 
+#define SEND_MHZ 20
+
 struct __attribute__((packed)) airspy_adsb_common_overlay {
 	char mlat_timestamp[8];
 	char semicolon1;
@@ -85,6 +87,42 @@ static bool airspy_adsb_parse_mode_s_long(struct buf *buf, struct packet *packet
 	return true;
 }
 
+static void airspy_adsb_fill_common(struct packet *packet, struct airspy_adsb_common_overlay *overlay) {
+	overlay->semicolon1 = overlay->semicolon2 = overlay->semicolon3 = ';';
+	hex_from_int(
+			overlay->mlat_timestamp,
+			mlat_timestamp_scale_out(packet->mlat_timestamp, UINT32_MAX, SEND_MHZ),
+			sizeof(overlay->mlat_timestamp) / 2);
+	hex_from_int(overlay->mlat_precision, SEND_MHZ / 2, sizeof(overlay->mlat_precision) / 2);
+	hex_from_int(overlay->rssi, rssi_scale_out(packet->rssi, UINT16_MAX), sizeof(overlay->rssi) / 2);
+}
+
+static void airspy_adsb_serialize_mode_s_short(struct packet *packet, struct buf *buf) {
+	struct airspy_adsb_mode_s_short_overlay *overlay = (struct airspy_adsb_mode_s_short_overlay *) buf_at(buf, 0);
+	overlay->asterisk = '*';
+	overlay->semicolon = ';';
+	overlay->cr = '\r';
+	overlay->lf = '\n';
+	hex_from_bin(overlay->payload, packet->payload, sizeof(overlay->payload) / 2);
+
+	airspy_adsb_fill_common(packet, &overlay->common);
+
+	buf->length = sizeof(*overlay);
+}
+
+static void airspy_adsb_serialize_mode_s_long(struct packet *packet, struct buf *buf) {
+	struct airspy_adsb_mode_s_long_overlay *overlay = (struct airspy_adsb_mode_s_long_overlay *) buf_at(buf, 0);
+	overlay->asterisk = '*';
+	overlay->semicolon = ';';
+	overlay->cr = '\r';
+	overlay->lf = '\n';
+	hex_from_bin(overlay->payload, packet->payload, sizeof(overlay->payload) / 2);
+
+	airspy_adsb_fill_common(packet, &overlay->common);
+
+	buf->length = sizeof(*overlay);
+}
+
 void airspy_adsb_init() {
 	assert(sizeof(struct airspy_adsb_parser_state) <= PARSER_STATE_LEN);
 	assert(sizeof(struct airspy_adsb_mode_s_short_overlay) < BUF_LEN_MAX);
@@ -97,4 +135,20 @@ bool airspy_adsb_parse(struct buf *buf, struct packet *packet, void *state_in) {
 	return (
 			airspy_adsb_parse_mode_s_short(buf, packet, state) ||
 			airspy_adsb_parse_mode_s_long(buf, packet, state));
+}
+
+void airspy_adsb_serialize(struct packet *packet, struct buf *buf) {
+	if (!packet) {
+		return;
+	}
+
+	switch (packet->type) {
+		case MODE_S_SHORT:
+			airspy_adsb_serialize_mode_s_short(packet, buf);
+			break;
+
+		case MODE_S_LONG:
+			airspy_adsb_serialize_mode_s_long(packet, buf);
+			break;
+	}
 }
