@@ -13,6 +13,7 @@
 
 #include "beast.h"
 #include "json.h"
+#include "raw.h"
 #include "stats.h"
 
 struct send {
@@ -36,6 +37,10 @@ struct serializer {
 	{
 		.name = "json",
 		.serialize = json_serialize,
+	},
+	{
+		.name = "raw",
+		.serialize = raw_serialize,
 	},
 	{
 		.name = "stats",
