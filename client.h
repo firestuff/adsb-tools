@@ -2,7 +2,6 @@
 
 #include "common.h"
 
-
 void client_init();
 struct serializer *client_get_serializer(char *);
 void client_add(int, struct serializer *);

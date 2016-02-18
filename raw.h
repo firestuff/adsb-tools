@@ -1,8 +1,9 @@
 #pragma once
 
 #include <stdbool.h>
-#include "backend.h"
-#include "common.h"
+
+struct buf;
+struct packet;
 
 void raw_init();
-bool raw_parse(struct backend *, struct packet *);
+bool raw_parse(struct buf *, struct packet *, void *);

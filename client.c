@@ -12,7 +12,6 @@
 #include "stats.h"
 #include "client.h"
 
-
 struct client {
 	struct peer peer;
 	char id[UUID_LEN];
@@ -38,11 +37,6 @@ struct serializer {
 };
 #define NUM_SERIALIZERS (sizeof(serializers) / sizeof(*serializers))
 
-
-void client_init() {
-	signal(SIGPIPE, SIG_IGN);
-}
-
 static void client_hangup(struct client *client) {
 	fprintf(stderr, "C %s (%s): Client disconnected\n", client->id, client->serializer->name);
 	if (client->prev) {
@@ -61,15 +55,6 @@ static void client_hangup_wrapper(struct peer *peer) {
 	client_hangup((struct client *) peer);
 }
 
-struct serializer *client_get_serializer(char *name) {
-	for (int i = 0; i < NUM_SERIALIZERS; i++) {
-		if (strcasecmp(serializers[i].name, name) == 0) {
-			return &serializers[i];
-		}
-	}
-	return NULL;
-}
-
 static bool client_hello(int fd, struct serializer *serializer) {
 	struct buf buf = BUF_INIT;
 	serializer->serialize(NULL, &buf);
@@ -80,6 +65,19 @@ static bool client_hello(int fd, struct serializer *serializer) {
 		return false;
 	}
 	return true;
+}
+
+void client_init() {
+	signal(SIGPIPE, SIG_IGN);
+}
+
+struct serializer *client_get_serializer(char *name) {
+	for (int i = 0; i < NUM_SERIALIZERS; i++) {
+		if (strcasecmp(serializers[i].name, name) == 0) {
+			return &serializers[i];
+		}
+	}
+	return NULL;
 }
 
 void client_add(int fd, struct serializer *serializer) {

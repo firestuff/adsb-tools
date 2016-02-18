@@ -7,23 +7,6 @@
 #include "client.h"
 #include "json.h"
 
-
-// Hobo JSON to avoid overhead. Assumes that we can't get quotes in the data.
-
-void json_init() {
-	assert(JSON_INTEGER_IS_LONG_LONG);
-}
-
-int json_buf_append_callback(const char *buffer, size_t size, void *data) {
-	struct buf *buf = data;
-	if (buf->length + size + 1 > BUF_LEN_MAX) {
-		return -1;
-	}
-	memcpy(buf_at(buf, buf->length), buffer, size);
-	buf->length += size;
-	return 0;
-}
-
 static void json_serialize_to_buf(json_t *obj, struct buf *buf) {
 	assert(json_dump_callback(obj, json_buf_append_callback, buf, 0) == 0);
 	json_decref(obj);
@@ -32,7 +15,6 @@ static void json_serialize_to_buf(json_t *obj, struct buf *buf) {
 
 static void json_hello(struct buf *buf) {
 	json_t *hello = json_pack("{sssIsIsI}",
-			"server_id", server_id,
 			"mlat_timestamp_mhz", (json_int_t) MLAT_MHZ,
 			"mlat_timestamp_max", (json_int_t) MLAT_MAX,
 			"rssi_max", (json_int_t) RSSI_MAX);
@@ -40,7 +22,6 @@ static void json_hello(struct buf *buf) {
 }
 
 static void json_add_common(struct packet *packet, json_t *obj) {
-	json_object_set_new(obj, "backend_id", json_string(packet->backend->id));
 	json_object_set_new(obj, "type", json_string(packet_type_names[packet->type]));
 	if (packet->mlat_timestamp) {
 		json_object_set_new(obj, "mlat_timestamp", json_integer(packet->mlat_timestamp));
@@ -68,6 +49,10 @@ static void json_serialize_mode_s_long(struct packet *packet, struct buf *buf) {
 	json_serialize_to_buf(out, buf);
 }
 
+void json_init() {
+	assert(JSON_INTEGER_IS_LONG_LONG);
+}
+
 void json_serialize(struct packet *packet, struct buf *buf) {
 	if (!packet) {
 		json_hello(buf);
@@ -86,4 +71,14 @@ void json_serialize(struct packet *packet, struct buf *buf) {
 		case NUM_TYPES:
 			break;
 	}
+}
+
+int json_buf_append_callback(const char *buffer, size_t size, void *data) {
+	struct buf *buf = data;
+	if (buf->length + size + 1 > BUF_LEN_MAX) {
+		return -1;
+	}
+	memcpy(buf_at(buf, buf->length), buffer, size);
+	buf->length += size;
+	return 0;
 }

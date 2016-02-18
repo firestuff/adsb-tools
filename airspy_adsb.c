@@ -1,9 +1,9 @@
 #include <assert.h>
-#include <stdbool.h>
 #include <stdio.h>
 #include <string.h>
 
 #include "common.h"
+#include "backend.h"
 #include "airspy_adsb.h"
 
 struct __attribute__((packed)) airspy_adsb_common_overlay {
@@ -37,13 +37,16 @@ struct airspy_adsb_parser_state {
 	struct mlat_state mlat_state;
 };
 
-static bool airspy_adsb_parse_common(struct airspy_adsb_common_overlay *, struct packet *, struct airspy_adsb_parser_state *);
-
-
-void airspy_adsb_init() {
-	assert(sizeof(struct airspy_adsb_parser_state) <= PARSER_STATE_LEN);
-	assert(sizeof(struct airspy_adsb_mode_s_short_overlay) < BUF_LEN_MAX);
-	assert(sizeof(struct airspy_adsb_mode_s_long_overlay) < BUF_LEN_MAX);
+static bool airspy_adsb_parse_common(const struct airspy_adsb_common_overlay *overlay, struct packet *packet, struct airspy_adsb_parser_state *state) {
+	if (overlay->semicolon1 != ';' ||
+	    overlay->semicolon2 != ';' ||
+			overlay->semicolon3 != ';') {
+		return false;
+	}
+	uint16_t mlat_mhz = 2 * hex_to_int(overlay->mlat_precision, sizeof(overlay->mlat_precision) / 2);
+	packet->mlat_timestamp = mlat_timestamp_scale_in(hex_to_int(overlay->mlat_timestamp, sizeof(overlay->mlat_timestamp) / 2), UINT32_MAX, mlat_mhz, &state->mlat_state);
+	packet->rssi = rssi_scale_in(hex_to_int(overlay->rssi, sizeof(overlay->rssi) / 2), UINT16_MAX);
+	return true;
 }
 
 static bool airspy_adsb_parse_mode_s_short(struct buf *buf, struct packet *packet, struct airspy_adsb_parser_state *state) {
@@ -82,23 +85,16 @@ static bool airspy_adsb_parse_mode_s_long(struct buf *buf, struct packet *packet
 	return true;
 }
 
-bool airspy_adsb_parse(struct backend *backend, struct packet *packet) {
-	struct buf *buf = &backend->buf;
-	struct airspy_adsb_parser_state *state = (struct airspy_adsb_parser_state *) backend->parser_state;
+void airspy_adsb_init() {
+	assert(sizeof(struct airspy_adsb_parser_state) <= PARSER_STATE_LEN);
+	assert(sizeof(struct airspy_adsb_mode_s_short_overlay) < BUF_LEN_MAX);
+	assert(sizeof(struct airspy_adsb_mode_s_long_overlay) < BUF_LEN_MAX);
+}
+
+bool airspy_adsb_parse(struct buf *buf, struct packet *packet, void *state_in) {
+	struct airspy_adsb_parser_state *state = (struct airspy_adsb_parser_state *) state_in;
 
 	return (
 			airspy_adsb_parse_mode_s_short(buf, packet, state) ||
 			airspy_adsb_parse_mode_s_long(buf, packet, state));
-}
-
-static bool airspy_adsb_parse_common(struct airspy_adsb_common_overlay *overlay, struct packet *packet, struct airspy_adsb_parser_state *state) {
-	if (overlay->semicolon1 != ';' ||
-	    overlay->semicolon2 != ';' ||
-			overlay->semicolon3 != ';') {
-		return false;
-	}
-	uint16_t mlat_mhz = 2 * hex_to_int(overlay->mlat_precision, sizeof(overlay->mlat_precision) / 2);
-	packet->mlat_timestamp = mlat_timestamp_scale_in(hex_to_int(overlay->mlat_timestamp, sizeof(overlay->mlat_timestamp) / 2), UINT32_MAX, mlat_mhz, &state->mlat_state);
-	packet->rssi = rssi_scale_in(hex_to_int(overlay->rssi, sizeof(overlay->rssi) / 2), UINT16_MAX);
-	return true;
 }

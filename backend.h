@@ -4,23 +4,9 @@
 
 #include "common.h"
 
-
 #define PARSER_STATE_LEN 256
-struct backend;
-struct addrinfo;
-typedef bool (*parser)(struct backend *, struct packet *);
-struct backend {
-	struct peer peer;
-	char id[UUID_LEN];
-	char *node;
-	char *service;
-	struct addrinfo *addrs;
-	struct addrinfo *addr;
-	struct buf buf;
-	char parser_state[PARSER_STATE_LEN];
-	parser parser;
-};
 
-void backend_new(char *, char *);
-void backend_new_fd(int, void *);
+void backend_new(const char *, const char *);
+void backend_new_fd(int);
+void backend_new_fd_wrapper(int, void *);
 void backend_print_usage();

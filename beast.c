@@ -1,9 +1,11 @@
 #include <assert.h>
 #include <stdio.h>
 #include <string.h>
+#include <stdint.h>
 
+#include "common.h"
+#include "backend.h"
 #include "beast.h"
-
 
 struct __attribute__((packed)) beast_common_overlay {
 	uint8_t one_a;
@@ -28,12 +30,6 @@ struct beast_parser_state {
 	struct mlat_state mlat_state;
 };
 
-void beast_init() {
-	assert(sizeof(struct beast_parser_state) <= PARSER_STATE_LEN);
-	assert(sizeof(struct beast_mode_s_short_overlay) * 2 <= BUF_LEN_MAX);
-	assert(sizeof(struct beast_mode_s_long_overlay) * 2 <= BUF_LEN_MAX);
-}
-
 static uint64_t beast_parse_mlat(uint8_t *mlat_timestamp) {
 	return (
 			((uint64_t) mlat_timestamp[0]) << 40 |
@@ -44,7 +40,7 @@ static uint64_t beast_parse_mlat(uint8_t *mlat_timestamp) {
 			((uint64_t) mlat_timestamp[5]));
 }
 
-ssize_t beast_unescape(struct buf *out, struct buf *in, size_t out_bytes) {
+static ssize_t beast_unescape(struct buf *out, const struct buf *in, size_t out_bytes) {
 	int o = 0, i = 0;
 	for (; i < in->length && o < out_bytes; i++, o++) {
 		if (i > 0 && buf_chr(in, i) == 0x1a) {
@@ -98,9 +94,14 @@ static bool beast_parse_mode_s_long(struct buf *buf, struct packet *packet, stru
 	return true;
 }
 
-bool beast_parse(struct backend *backend, struct packet *packet) {
-	struct buf *buf = &backend->buf;
-	struct beast_parser_state *state = (struct beast_parser_state *) backend->parser_state;
+void beast_init() {
+	assert(sizeof(struct beast_parser_state) <= PARSER_STATE_LEN);
+	assert(sizeof(struct beast_mode_s_short_overlay) * 2 <= BUF_LEN_MAX);
+	assert(sizeof(struct beast_mode_s_long_overlay) * 2 <= BUF_LEN_MAX);
+}
+
+bool beast_parse(struct buf *buf, struct packet *packet, void *state_in) {
+	struct beast_parser_state *state = (struct beast_parser_state *) state_in;
 
 	if (buf->length < sizeof(struct beast_common_overlay) ||
 			buf_chr(buf, 0) != 0x1a) {

@@ -13,8 +13,7 @@
 #include "json.h"
 #include "stats.h"
 
-
-static void print_usage(char *argv[]) {
+static void print_usage(const char *name) {
 	fprintf(stderr,
 			"\n"
 			"Usage: %s [OPTION]...\n"
@@ -25,7 +24,7 @@ static void print_usage(char *argv[]) {
 			"\t--dump=FORMAT\n"
 			"\t--incoming=[HOST/]PORT\n"
 			"\t--listen=FORMAT=[HOST/]PORT\n"
-			, argv[0]);
+			, name);
 	backend_print_usage();
 	client_print_usage();
 }
@@ -56,9 +55,9 @@ static bool add_incoming(char *arg){
 	char *port = strrchr(arg, '/');
 	if (port) {
 		*(port++) = '\0';
-		incoming_new(arg, port, backend_new_fd, NULL);
+		incoming_new(arg, port, backend_new_fd_wrapper, NULL);
 	} else {
-		incoming_new(NULL, arg, backend_new_fd, NULL);
+		incoming_new(NULL, arg, backend_new_fd_wrapper, NULL);
 	}
 	return true;
 }
@@ -94,6 +93,7 @@ static bool parse_opts(int argc, char *argv[]) {
 		{"incoming", required_argument, 0, 'i'},
 		{"listen",   required_argument, 0, 'l'},
 		{"help",     no_argument,       0, 'h'},
+		{0,          0,                 0, 0  },
 	};
 
 	int opt;
@@ -109,7 +109,7 @@ static bool parse_opts(int argc, char *argv[]) {
 				break;
 
 			case 'h':
-				print_usage(argv);
+				print_usage(argv[0]);
 				return false;
 
 			case 'i':
@@ -121,13 +121,13 @@ static bool parse_opts(int argc, char *argv[]) {
 				break;
 
 			default:
-				print_usage(argv);
+				print_usage(argv[0]);
 				return false;
 		}
 
 		if (handler) {
 			if (!handler(optarg)) {
-				print_usage(argv);
+				print_usage(argv[0]);
 				return false;
 			}
 		}
@@ -135,7 +135,7 @@ static bool parse_opts(int argc, char *argv[]) {
 
 	if (optind != argc) {
 		fprintf(stderr, "Not a flag: %s\n", argv[optind]);
-		print_usage(argv);
+		print_usage(argv[0]);
 		return false;
 	}
 
@@ -143,7 +143,6 @@ static bool parse_opts(int argc, char *argv[]) {
 }
 
 int main(int argc, char *argv[]) {
-	server_init();
 	peer_init();
 	hex_init();
 	client_init();

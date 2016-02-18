@@ -1,7 +1,6 @@
 #pragma once
 
 #include <stdint.h>
-#include <unistd.h>
 #include <sys/epoll.h>
 
 
@@ -83,18 +82,12 @@ uint32_t rssi_scale_in(uint32_t, uint32_t);
 //////// hex
 
 void hex_init();
-void hex_to_bin(uint8_t *, char *, size_t);
-uint64_t hex_to_int(char *, size_t);
-void hex_from_bin(char *, uint8_t *, size_t);
+void hex_to_bin(uint8_t *, const char *, size_t);
+uint64_t hex_to_int(const char *, size_t);
+void hex_from_bin(char *, const uint8_t *, size_t);
 
 
 ///////// uuid
 
 #define UUID_LEN 37
 void uuid_gen(char *);
-
-
-///////// server
-
-extern char server_id[];
-void server_init();

@@ -6,20 +6,19 @@
 #include <netdb.h>
 #include <string.h>
 #include <errno.h>
+#include <unistd.h>
 
 #include "common.h"
 #include "incoming.h"
 
-
 struct incoming {
 	struct peer peer;
 	char id[UUID_LEN];
-	char *node;
-	char *service;
+	const char *node;
+	const char *service;
 	incoming_connection_handler handler;
 	void *passthrough;
 };
-
 
 static void incoming_handler(struct peer *peer) {
 	struct incoming *incoming = (struct incoming *) peer;
@@ -47,7 +46,7 @@ static void incoming_handler(struct peer *peer) {
 	incoming->handler(fd, incoming->passthrough);
 }
 
-void incoming_new(char *node, char *service, incoming_connection_handler handler, void *passthrough) {
+void incoming_new(const char *node, const char *service, incoming_connection_handler handler, void *passthrough) {
 	struct incoming *incoming = malloc(sizeof(*incoming));
 	incoming->peer.event_handler = incoming_handler;
 	uuid_gen(incoming->id);

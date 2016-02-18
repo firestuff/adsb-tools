@@ -3,10 +3,8 @@
 #include <jansson.h>
 
 #include "common.h"
-#include "backend.h"
 #include "json.h"
 #include "stats.h"
-
 
 static struct stats_state {
 	uint64_t total_count;
@@ -14,11 +12,9 @@ static struct stats_state {
 	struct timespec start;
 } stats_state = { 0 };
 
-
 void stats_init() {
 	assert(clock_gettime(CLOCK_MONOTONIC, &stats_state.start) == 0);
 }
-
 
 void stats_serialize(struct packet *packet, struct buf *buf) {
 	if (packet) {

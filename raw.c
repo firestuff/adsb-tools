@@ -1,11 +1,9 @@
 #include <assert.h>
-#include <stdbool.h>
 #include <stdio.h>
 #include <string.h>
 
 #include "common.h"
 #include "raw.h"
-
 
 struct __attribute__((packed)) raw_mode_s_short_overlay {
 	char asterisk;
@@ -20,12 +18,6 @@ struct __attribute__((packed)) raw_mode_s_long_overlay {
 	char semicolon;
 	char lf;
 };
-
-
-void raw_init() {
-	assert(sizeof(struct raw_mode_s_short_overlay) < BUF_LEN_MAX);
-	assert(sizeof(struct raw_mode_s_long_overlay) < BUF_LEN_MAX);
-}
 
 static bool raw_parse_mode_s_short(struct buf *buf, struct packet *packet) {
 	struct raw_mode_s_short_overlay *short_overlay = (struct raw_mode_s_short_overlay *) buf_at(buf, 0);
@@ -55,9 +47,12 @@ static bool raw_parse_mode_s_long(struct buf *buf, struct packet *packet) {
 	return true;
 }
 
-bool raw_parse(struct backend *backend, struct packet *packet) {
-	struct buf *buf = &backend->buf;
+void raw_init() {
+	assert(sizeof(struct raw_mode_s_short_overlay) < BUF_LEN_MAX);
+	assert(sizeof(struct raw_mode_s_long_overlay) < BUF_LEN_MAX);
+}
 
+bool raw_parse(struct buf *buf, struct packet *packet, void *state_in) {
 	return (
 			raw_parse_mode_s_short(buf, packet) ||
 			raw_parse_mode_s_long(buf, packet));

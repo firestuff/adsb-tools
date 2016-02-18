@@ -1,8 +1,9 @@
 #pragma once
 
 #include <stdbool.h>
-#include "backend.h"
-#include "common.h"
+
+struct buf;
+struct packet;
 
 void airspy_adsb_init();
-bool airspy_adsb_parse(struct backend *, struct packet *);
+bool airspy_adsb_parse(struct buf *, struct packet *, void *);
