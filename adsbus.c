@@ -4,6 +4,7 @@
 #include <string.h>
 
 #include "common.h"
+#include "wakeup.h"
 
 #include "receive.h"
 #include "send.h"
@@ -174,9 +175,13 @@ static bool parse_opts(int argc, char *argv[]) {
 }
 
 int main(int argc, char *argv[]) {
-	peer_init();
 	hex_init();
+
+	peer_init();
+	wakeup_init();
+
 	send_init();
+
 	airspy_adsb_init();
 	beast_init();
 	json_init();
