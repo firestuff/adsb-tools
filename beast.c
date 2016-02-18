@@ -4,7 +4,7 @@
 #include <stdint.h>
 
 #include "common.h"
-#include "backend.h"
+#include "receive.h"
 #include "beast.h"
 
 struct __attribute__((packed)) beast_common_overlay {

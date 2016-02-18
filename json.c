@@ -3,8 +3,8 @@
 #include <string.h>
 #include <jansson.h>
 
-#include "backend.h"
-#include "client.h"
+#include "receive.h"
+#include "send.h"
 #include "json.h"
 
 static void json_serialize_to_buf(json_t *obj, struct buf *buf) {
@@ -14,7 +14,7 @@ static void json_serialize_to_buf(json_t *obj, struct buf *buf) {
 }
 
 static void json_hello(struct buf *buf) {
-	json_t *hello = json_pack("{sssIsIsI}",
+	json_t *hello = json_pack("{sIsIsI}",
 			"mlat_timestamp_mhz", (json_int_t) MLAT_MHZ,
 			"mlat_timestamp_max", (json_int_t) MLAT_MAX,
 			"rssi_max", (json_int_t) RSSI_MAX);

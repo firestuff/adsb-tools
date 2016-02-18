@@ -4,9 +4,12 @@
 #include <string.h>
 
 #include "common.h"
-#include "backend.h"
-#include "client.h"
+
+#include "receive.h"
+#include "send.h"
+
 #include "incoming.h"
+#include "outgoing.h"
 
 #include "airspy_adsb.h"
 #include "beast.h"
@@ -20,106 +23,134 @@ static void print_usage(const char *name) {
 			"\n"
 			"Options:\n"
 			"\t--help\n"
-			"\t--backend=HOST/PORT\n"
 			"\t--dump=FORMAT\n"
-			"\t--incoming=[HOST/]PORT\n"
-			"\t--listen=FORMAT=[HOST/]PORT\n"
+			"\t--connect-receive=HOST/PORT\n"
+			"\t--connect-send=FORMAT=HOST/PORT\n"
+			"\t--listen-receive=[HOST/]PORT\n"
+			"\t--listen-send=FORMAT=[HOST/]PORT\n"
 			, name);
-	backend_print_usage();
-	client_print_usage();
+	receive_print_usage();
+	send_print_usage();
 }
 
 static bool add_dump(char *arg) {
-	struct serializer *serializer = client_get_serializer(arg);
+	struct serializer *serializer = send_get_serializer(arg);
 	if (!serializer) {
 		fprintf(stderr, "Unknown --dump=FORMAT: %s\n", arg);
 		return false;
 	}
-	client_add(1, serializer);
+	send_add(1, serializer);
 	return true;
 }
 
-static bool add_backend(char *arg) {
+static bool add_connect_receive(char *arg) {
 	char *port = strrchr(arg, '/');
 	if (!port) {
-		fprintf(stderr, "Invalid --backend=HOST/PORT (missing \"/\"): %s\n", arg);
+		fprintf(stderr, "Invalid --connect-receive=HOST/PORT (missing \"/\"): %s\n", arg);
 		return false;
 	}
 	*(port++) = '\0';
 
-	backend_new(arg, port);
+	outgoing_new(arg, port, receive_new, NULL);
 	return true;
 }
 
-static bool add_incoming(char *arg){
-	char *port = strrchr(arg, '/');
-	if (port) {
-		*(port++) = '\0';
-		incoming_new(arg, port, backend_new_fd_wrapper, NULL);
-	} else {
-		incoming_new(NULL, arg, backend_new_fd_wrapper, NULL);
-	}
-	return true;
-}
-
-static bool add_listener(char *arg) {
+static bool add_connect_send(char *arg) {
 	char *host_port = strchr(arg, '=');
 	if (!host_port) {
-		fprintf(stderr, "Invalid --listener=FORMAT=[HOST/]PORT (missing \"=\"): %s\n", arg);
+		fprintf(stderr, "Invalid --connect-send=FORMAT=HOST/PORT (missing \"=\"): %s\n", arg);
 		return false;
 	}
 	*(host_port++) = '\0';
 
-	struct serializer *serializer = client_get_serializer(arg);
+	struct serializer *serializer = send_get_serializer(arg);
 	if (!serializer) {
-		fprintf(stderr, "Unknown --listener=FORMAT=[HOST/]PORT format: %s\n", arg);
+		fprintf(stderr, "Unknown --connect-send=FORMAT=HOST/PORT format: %s\n", arg);
+		return false;
+	}
+
+	char *port = strrchr(host_port, '/');
+	if (!port) {
+		fprintf(stderr, "Invalid --connect-send=FORMAT=HOST/PORT (missing \"/\"): %s\n", host_port);
+		return false;
+	}
+	*(port++) = '\0';
+
+	incoming_new(host_port, port, send_add_wrapper, serializer);
+	return true;
+}
+
+static bool add_listen_receive(char *arg){
+	char *port = strrchr(arg, '/');
+	if (port) {
+		*(port++) = '\0';
+		incoming_new(arg, port, receive_new, NULL);
+	} else {
+		incoming_new(NULL, arg, receive_new, NULL);
+	}
+	return true;
+}
+
+static bool add_listen_send(char *arg) {
+	char *host_port = strchr(arg, '=');
+	if (!host_port) {
+		fprintf(stderr, "Invalid --listen-send=FORMAT=[HOST/]PORT (missing \"=\"): %s\n", arg);
+		return false;
+	}
+	*(host_port++) = '\0';
+
+	struct serializer *serializer = send_get_serializer(arg);
+	if (!serializer) {
+		fprintf(stderr, "Unknown --listen-send=FORMAT=[HOST/]PORT format: %s\n", arg);
 		return false;
 	}
 
 	char *port = strrchr(host_port, '/');
 	if (port) {
 		*(port++) = '\0';
-		incoming_new(host_port, port, client_add_wrapper, serializer);
+		incoming_new(host_port, port, send_add_wrapper, serializer);
 	} else {
-		incoming_new(NULL, host_port, client_add_wrapper, serializer);
+		incoming_new(NULL, host_port, send_add_wrapper, serializer);
 	}
 	return true;
 }
 
 static bool parse_opts(int argc, char *argv[]) {
 	static struct option long_options[] = {
-		{"backend",  required_argument, 0, 'b'},
-		{"dump",     required_argument, 0, 'd'},
-		{"incoming", required_argument, 0, 'i'},
-		{"listen",   required_argument, 0, 'l'},
-		{"help",     no_argument,       0, 'h'},
-		{0,          0,                 0, 0  },
+		{"dump",            required_argument, 0, 'd'},
+		{"connect-receive", required_argument, 0, 'c'},
+		{"connect-send",    required_argument, 0, 's'},
+		{"listen-receive",  required_argument, 0, 'l'},
+		{"listen-send",     required_argument, 0, 'm'},
+		{"help",            no_argument,       0, 'h'},
+		{0,                 0,                 0, 0  },
 	};
 
 	int opt;
 	while ((opt = getopt_long_only(argc, argv, "", long_options, NULL)) != -1) {
 		bool (*handler)(char *) = NULL;
 		switch (opt) {
-			case 'b':
-				handler = add_backend;
-				break;
-
 		  case 'd':
 				handler = add_dump;
 				break;
 
-			case 'h':
-				print_usage(argv[0]);
-				return false;
+			case 'c':
+				handler = add_connect_receive;
+				break;
 
-			case 'i':
-				handler = add_incoming;
+			case 's':
+				handler = add_connect_send;
 				break;
 
 			case 'l':
-				handler = add_listener;
+				handler = add_listen_receive;
 				break;
 
+			case 'm':
+				handler = add_listen_send;
+				break;
+
+			case 'h':
 			default:
 				print_usage(argv[0]);
 				return false;
@@ -145,7 +176,7 @@ static bool parse_opts(int argc, char *argv[]) {
 int main(int argc, char *argv[]) {
 	peer_init();
 	hex_init();
-	client_init();
+	send_init();
 	airspy_adsb_init();
 	beast_init();
 	json_init();
