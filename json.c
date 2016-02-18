@@ -67,9 +67,6 @@ void json_serialize(struct packet *packet, struct buf *buf) {
 		case MODE_S_LONG:
 			json_serialize_mode_s_long(packet, buf);
 			break;
-
-		case NUM_TYPES:
-			break;
 	}
 }
 

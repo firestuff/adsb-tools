@@ -8,9 +8,12 @@
 #include <signal.h>
 
 #include "common.h"
+
+#include "send.h"
+
+#include "beast.h"
 #include "json.h"
 #include "stats.h"
-#include "send.h"
 
 struct send {
 	struct peer peer;
@@ -26,6 +29,10 @@ struct serializer {
 	serializer serialize;
 	struct send *send_head;
 } serializers[] = {
+	{
+		.name = "beast",
+		.serialize = beast_serialize,
+	},
 	{
 		.name = "json",
 		.serialize = json_serialize,
