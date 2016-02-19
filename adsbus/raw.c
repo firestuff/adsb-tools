@@ -9,6 +9,7 @@ struct __attribute__((packed)) raw_mode_s_short_overlay {
 	char asterisk;
 	char payload[14];
 	char semicolon;
+	char cr_lf;
 	char lf;
 };
 
@@ -16,34 +17,37 @@ struct __attribute__((packed)) raw_mode_s_long_overlay {
 	char asterisk;
 	char payload[28];
 	char semicolon;
+	char cr_lf;
 	char lf;
 };
 
 static bool raw_parse_mode_s_short(struct buf *buf, struct packet *packet) {
-	struct raw_mode_s_short_overlay *short_overlay = (struct raw_mode_s_short_overlay *) buf_at(buf, 0);
-	if (buf->length < sizeof(*short_overlay) ||
-			short_overlay->asterisk != '*' ||
-			short_overlay->semicolon != ';' ||
-			short_overlay->lf != '\n') {
+	struct raw_mode_s_short_overlay *overlay = (struct raw_mode_s_short_overlay *) buf_at(buf, 0);
+	if (buf->length < sizeof(*overlay) ||
+			overlay->asterisk != '*' ||
+			overlay->semicolon != ';' ||
+			((overlay->cr_lf != '\n') &&
+			 (overlay->cr_lf != '\r' || overlay->lf != '\n'))) {
 		return false;
 	}
 	packet->type = MODE_S_SHORT;
-	hex_to_bin(packet->payload, short_overlay->payload, sizeof(short_overlay->payload) / 2);
-	buf_consume(buf, sizeof(*short_overlay));
+	hex_to_bin(packet->payload, overlay->payload, sizeof(overlay->payload) / 2);
+	buf_consume(buf, overlay->cr_lf == '\r' ? sizeof(*overlay) : sizeof(*overlay) - 1);
 	return true;
 }
 
 static bool raw_parse_mode_s_long(struct buf *buf, struct packet *packet) {
-	struct raw_mode_s_long_overlay *long_overlay = (struct raw_mode_s_long_overlay *) buf_at(buf, 0);
-	if (buf->length < sizeof(*long_overlay) ||
-			long_overlay->asterisk != '*' ||
-			long_overlay->semicolon != ';' ||
-			long_overlay->lf != '\n') {
+	struct raw_mode_s_long_overlay *overlay = (struct raw_mode_s_long_overlay *) buf_at(buf, 0);
+	if (buf->length < sizeof(*overlay) ||
+			overlay->asterisk != '*' ||
+			overlay->semicolon != ';' ||
+			((overlay->cr_lf != '\n') &&
+			 (overlay->cr_lf != '\r' || overlay->lf != '\n'))) {
 		return false;
 	}
 	packet->type = MODE_S_LONG;
-	hex_to_bin(packet->payload, long_overlay->payload, sizeof(long_overlay->payload) / 2);
-	buf_consume(buf, sizeof(*long_overlay));
+	hex_to_bin(packet->payload, overlay->payload, sizeof(overlay->payload) / 2);
+	buf_consume(buf, overlay->cr_lf == '\r' ? sizeof(*overlay) : sizeof(*overlay) - 1);
 	return true;
 }
 
