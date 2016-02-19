@@ -10,7 +10,6 @@
 
 #include "send.h"
 
-#include "airspy_adsb.h"
 #include "beast.h"
 #include "json.h"
 #include "raw.h"
@@ -30,10 +29,6 @@ struct serializer {
 	serializer serialize;
 	struct send *send_head;
 } serializers[] = {
-	{
-		.name = "airspy_adsb",
-		.serialize = airspy_adsb_serialize,
-	},
 	{
 		.name = "beast",
 		.serialize = beast_serialize,

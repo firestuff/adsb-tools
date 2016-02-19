@@ -12,7 +12,6 @@
 #include "incoming.h"
 #include "outgoing.h"
 
-#include "airspy_adsb.h"
 #include "beast.h"
 #include "json.h"
 #include "stats.h"
@@ -182,7 +181,6 @@ int main(int argc, char *argv[]) {
 
 	send_init();
 
-	airspy_adsb_init();
 	beast_init();
 	json_init();
 	stats_init();
