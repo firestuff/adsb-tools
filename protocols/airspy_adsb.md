@@ -2,7 +2,7 @@
 
 **DEPRECATED**
 
-*This protocol is no longer used by airspy_adsb*
+This protocol is no longer used by airspy_adsb.
 
 ## Ports
 
