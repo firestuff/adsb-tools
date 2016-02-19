@@ -1,5 +1,7 @@
 # Raw protocol
 
+Sometimes known as "AVR".
+
 ## Ports
 
 * 30001: client -> server feed
@@ -13,7 +15,8 @@ Simple textual format.
 ## Frame structure
 * `*` (`0x2a`)
 * 7 or 14 byte frame
-* `;\n` (`0x3b 0x0a`)
+* `;` (`0x3b`)
+* `\n` (`0x0a`) **OR** `\r\n` (`0x0d 0x0a`)
   
 
 ## Examples
