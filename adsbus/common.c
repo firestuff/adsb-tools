@@ -30,11 +30,11 @@ void peer_epoll_add(struct peer *peer, uint32_t events) {
 			.ptr = peer,
 		},
 	};
-	assert(epoll_ctl(epoll_fd, EPOLL_CTL_ADD, peer->fd, &ev) == 0);
+	assert(!epoll_ctl(epoll_fd, EPOLL_CTL_ADD, peer->fd, &ev));
 }
 
 void peer_epoll_del(struct peer *peer) {
-	assert(epoll_ctl(epoll_fd, EPOLL_CTL_DEL, peer->fd, NULL) == 0);
+	assert(!epoll_ctl(epoll_fd, EPOLL_CTL_DEL, peer->fd, NULL));
 }
 
 void peer_loop() {

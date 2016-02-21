@@ -109,6 +109,8 @@ int main(int argc, char *argv[]) {
 
 	peer_loop();
 
+	wakeup_cleanup();
 	send_cleanup();
+
 	return EXIT_SUCCESS;
 }
