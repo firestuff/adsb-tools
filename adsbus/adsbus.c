@@ -2,9 +2,14 @@
 #include <stdio.h>
 #include <getopt.h>
 #include <string.h>
+#include <unistd.h>
+#include <assert.h>
 
 #include "common.h"
 #include "wakeup.h"
+
+#include "incoming.h"
+#include "outgoing.h"
 
 #include "receive.h"
 #include "send.h"
@@ -92,6 +97,8 @@ static bool parse_opts(int argc, char *argv[]) {
 }
 
 int main(int argc, char *argv[]) {
+	assert(!close(0));
+
 	hex_init();
 
 	peer_init();
@@ -111,6 +118,9 @@ int main(int argc, char *argv[]) {
 
 	wakeup_cleanup();
 	send_cleanup();
+
+	incoming_cleanup();
+	outgoing_cleanup();
 
 	return EXIT_SUCCESS;
 }

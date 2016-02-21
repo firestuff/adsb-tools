@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <assert.h>
 #include <unistd.h>
+#include <errno.h>
 #include <sys/epoll.h>
 #include <pthread.h>
 
@@ -22,15 +23,19 @@ static void *wakeup_main(void *arg) {
 	};
 	assert(!epoll_ctl(epoll_fd, EPOLL_CTL_ADD, read_fd, &ev));
 
+	while (1) {
 #define MAX_EVENTS 10
-	struct epoll_event events[MAX_EVENTS];
-	int nfds = epoll_wait(epoll_fd, events, MAX_EVENTS, -1);
-	if (nfds < 0) {
-		perror("epoll_wait");
+		struct epoll_event events[MAX_EVENTS];
+		int nfds = epoll_wait(epoll_fd, events, MAX_EVENTS, -1);
+		if (nfds == -1 && errno == EINTR) {
+			continue;
+		}
+		assert(nfds >= 0);
+		break; // XXX
 	}
 
-	close(read_fd);
-	close(epoll_fd);
+	assert(!close(read_fd));
+	assert(!close(epoll_fd));
 	return NULL;
 }
 
@@ -42,7 +47,7 @@ void wakeup_init() {
 }
 
 void wakeup_cleanup() {
-	close(wakeup_write_fd);
+	assert(!close(wakeup_write_fd));
 	assert(!pthread_join(wakeup_thread, NULL));
 }
 

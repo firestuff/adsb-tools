@@ -1,3 +1,4 @@
+#include <stdlib.h>
 #include <stdio.h>
 #include <assert.h>
 #include <string.h>
@@ -56,12 +57,17 @@ static bool receive_autodetect_parse(struct receive *receive, struct packet *pac
 	return false;
 }
 
+static void receive_del(struct receive *receive) {
+	assert(!close(receive->peer.fd));
+	free(receive);
+}
+
 static void receive_read(struct peer *peer) {
 	struct receive *receive = (struct receive *) peer;
 
 	if (buf_fill(&receive->buf, receive->peer.fd) <= 0) {
 		fprintf(stderr, "R %s: Connection closed by peer\n", receive->id);
-		close(receive->peer.fd);
+		receive_del(receive);
 		return;
 	}
 
@@ -72,7 +78,7 @@ static void receive_read(struct peer *peer) {
 
 	if (receive->buf.length == BUF_LEN_MAX) {
 		fprintf(stderr, "R %s: Input buffer overrun. This probably means that adsbus doesn't understand the protocol that this source is speaking.\n", receive->id);
-		close(receive->peer.fd);
+		receive_del(receive);
 		return;
 	}
 }

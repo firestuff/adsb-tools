@@ -1,3 +1,4 @@
+#include <stdlib.h>
 #include <stdio.h>
 #include <assert.h>
 #include <sys/types.h>
@@ -10,16 +11,20 @@
 #include "common.h"
 #include "outgoing.h"
 
+struct outgoing;
 struct outgoing {
 	struct peer peer;
 	char id[UUID_LEN];
-	const char *node;
-	const char *service;
+	char *node;
+	char *service;
 	struct addrinfo *addrs;
 	struct addrinfo *addr;
 	outgoing_connection_handler handler;
 	void *passthrough;
+	struct outgoing *next;
 };
+
+static struct outgoing *outgoing_head = NULL;
 
 static void outgoing_connect_result(struct outgoing *, int);
 static void outgoing_resolve(struct outgoing *);
@@ -56,7 +61,7 @@ static void outgoing_connect_handler(struct peer *peer) {
 
 static void outgoing_disconnect_handler(struct peer *peer) {
 	struct outgoing *outgoing = (struct outgoing *) peer;
-	close(outgoing->peer.fd);
+	assert(!close(outgoing->peer.fd));
 	fprintf(stderr, "O %s: Peer disconnected; reconnecting...\n", outgoing->id);
 
 	outgoing_resolve(outgoing);
@@ -84,7 +89,7 @@ static void outgoing_connect_result(struct outgoing *outgoing, int result) {
 
 		default:
 			fprintf(stderr, "O %s: Can't connect to %s/%s: %s\n", outgoing->id, hbuf, sbuf, strerror(result));
-			close(outgoing->peer.fd);
+			assert(!close(outgoing->peer.fd));
 			outgoing->addr = outgoing->addr->ai_next;
 			// Tail recursion :/
 			outgoing_connect_next(outgoing);
@@ -110,12 +115,32 @@ static void outgoing_resolve(struct outgoing *outgoing) {
 	outgoing_connect_next(outgoing);
 }
 
-void outgoing_new(const char *node, const char *service, outgoing_connection_handler handler, void *passthrough) {
+static void outgoing_del(struct outgoing *outgoing) {
+	assert(!close(outgoing->peer.fd));
+	free(outgoing->node);
+	free(outgoing->service);
+	free(outgoing);
+}
+
+void outgoing_cleanup() {
+	struct outgoing *iter = outgoing_head;
+	while (iter) {
+		struct outgoing *next = iter->next;
+		outgoing_del(iter);
+		iter = next;
+	}
+}
+
+void outgoing_new(char *node, char *service, outgoing_connection_handler handler, void *passthrough) {
 	struct outgoing *outgoing = malloc(sizeof(*outgoing));
 	uuid_gen(outgoing->id);
 	outgoing->node = strdup(node);
 	outgoing->service = strdup(service);
 	outgoing->handler = handler;
 	outgoing->passthrough = passthrough;
+
+	outgoing->next = outgoing_head;
+	outgoing_head = outgoing;
+
 	outgoing_resolve(outgoing);
 }
