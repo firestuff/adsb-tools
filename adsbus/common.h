@@ -13,7 +13,6 @@ struct peer {
 	int fd;
 	peer_event_handler event_handler;
 };
-extern int epoll_fd;
 void peer_init();
 void peer_epoll_add(struct peer *, uint32_t);
 void peer_epoll_del(struct peer *);

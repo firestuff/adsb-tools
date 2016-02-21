@@ -9,12 +9,11 @@
 #include "receive.h"
 #include "send.h"
 
-#include "incoming.h"
-#include "outgoing.h"
-
 #include "beast.h"
 #include "json.h"
 #include "stats.h"
+
+#include "opts.h"
 
 static void print_usage(const char *name) {
 	fprintf(stderr,
@@ -33,88 +32,6 @@ static void print_usage(const char *name) {
 	send_print_usage();
 }
 
-static bool add_dump(char *arg) {
-	struct serializer *serializer = send_get_serializer(arg);
-	if (!serializer) {
-		fprintf(stderr, "Unknown --dump=FORMAT: %s\n", arg);
-		return false;
-	}
-	send_add(1, serializer);
-	return true;
-}
-
-static bool add_connect_receive(char *arg) {
-	char *port = strrchr(arg, '/');
-	if (!port) {
-		fprintf(stderr, "Invalid --connect-receive=HOST/PORT (missing \"/\"): %s\n", arg);
-		return false;
-	}
-	*(port++) = '\0';
-
-	outgoing_new(arg, port, receive_new, NULL);
-	return true;
-}
-
-static bool add_connect_send(char *arg) {
-	char *host_port = strchr(arg, '=');
-	if (!host_port) {
-		fprintf(stderr, "Invalid --connect-send=FORMAT=HOST/PORT (missing \"=\"): %s\n", arg);
-		return false;
-	}
-	*(host_port++) = '\0';
-
-	struct serializer *serializer = send_get_serializer(arg);
-	if (!serializer) {
-		fprintf(stderr, "Unknown --connect-send=FORMAT=HOST/PORT format: %s\n", arg);
-		return false;
-	}
-
-	char *port = strrchr(host_port, '/');
-	if (!port) {
-		fprintf(stderr, "Invalid --connect-send=FORMAT=HOST/PORT (missing \"/\"): %s\n", host_port);
-		return false;
-	}
-	*(port++) = '\0';
-
-	incoming_new(host_port, port, send_add_wrapper, serializer);
-	return true;
-}
-
-static bool add_listen_receive(char *arg){
-	char *port = strrchr(arg, '/');
-	if (port) {
-		*(port++) = '\0';
-		incoming_new(arg, port, receive_new, NULL);
-	} else {
-		incoming_new(NULL, arg, receive_new, NULL);
-	}
-	return true;
-}
-
-static bool add_listen_send(char *arg) {
-	char *host_port = strchr(arg, '=');
-	if (!host_port) {
-		fprintf(stderr, "Invalid --listen-send=FORMAT=[HOST/]PORT (missing \"=\"): %s\n", arg);
-		return false;
-	}
-	*(host_port++) = '\0';
-
-	struct serializer *serializer = send_get_serializer(arg);
-	if (!serializer) {
-		fprintf(stderr, "Unknown --listen-send=FORMAT=[HOST/]PORT format: %s\n", arg);
-		return false;
-	}
-
-	char *port = strrchr(host_port, '/');
-	if (port) {
-		*(port++) = '\0';
-		incoming_new(host_port, port, send_add_wrapper, serializer);
-	} else {
-		incoming_new(NULL, host_port, send_add_wrapper, serializer);
-	}
-	return true;
-}
-
 static bool parse_opts(int argc, char *argv[]) {
 	static struct option long_options[] = {
 		{"dump",            required_argument, 0, 'd'},
@@ -131,23 +48,23 @@ static bool parse_opts(int argc, char *argv[]) {
 		bool (*handler)(char *) = NULL;
 		switch (opt) {
 		  case 'd':
-				handler = add_dump;
+				handler = opts_add_dump;
 				break;
 
 			case 'c':
-				handler = add_connect_receive;
+				handler = opts_add_connect_receive;
 				break;
 
 			case 's':
-				handler = add_connect_send;
+				handler = opts_add_connect_send;
 				break;
 
 			case 'l':
-				handler = add_listen_receive;
+				handler = opts_add_listen_receive;
 				break;
 
 			case 'm':
-				handler = add_listen_send;
+				handler = opts_add_listen_send;
 				break;
 
 			case 'h':
@@ -158,6 +75,7 @@ static bool parse_opts(int argc, char *argv[]) {
 
 		if (handler) {
 			if (!handler(optarg)) {
+				fprintf(stderr, "Invalid flag value: %s\n", optarg);
 				print_usage(argv[0]);
 				return false;
 			}
@@ -190,5 +108,7 @@ int main(int argc, char *argv[]) {
 	}
 
 	peer_loop();
+
+	send_cleanup();
 	return EXIT_SUCCESS;
 }

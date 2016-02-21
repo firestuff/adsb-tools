@@ -1,16 +1,24 @@
 #include <stdio.h>
+#include <stdbool.h>
 #include <assert.h>
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
+#include <signal.h>
 #include <uuid/uuid.h>
 
 #include "common.h"
 
 
-int epoll_fd;
+static int epoll_fd;
+static bool peer_canceled = false;
+
+static void peer_cancel(int signal) {
+	peer_canceled = true;
+}
 
 void peer_init() {
+	signal(SIGINT, peer_cancel);
 	epoll_fd = epoll_create1(0);
 	assert(epoll_fd >= 0);
 }
@@ -30,11 +38,14 @@ void peer_epoll_del(struct peer *peer) {
 }
 
 void peer_loop() {
-	while (1) {
+	while (!peer_canceled) {
 #define MAX_EVENTS 10
 		struct epoll_event events[MAX_EVENTS];
 		int nfds = epoll_wait(epoll_fd, events, MAX_EVENTS, -1);
-		assert(nfds >= 0);
+		if (nfds < 0) {
+			perror("epoll_wait");
+			break;
+		}
 
     for (int n = 0; n < nfds; n++) {
 			struct peer *peer = events[n].data.ptr;

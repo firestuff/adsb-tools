@@ -113,8 +113,8 @@ static void outgoing_resolve(struct outgoing *outgoing) {
 void outgoing_new(const char *node, const char *service, outgoing_connection_handler handler, void *passthrough) {
 	struct outgoing *outgoing = malloc(sizeof(*outgoing));
 	uuid_gen(outgoing->id);
-	outgoing->node = node;
-	outgoing->service = service;
+	outgoing->node = strdup(node);
+	outgoing->service = strdup(service);
 	outgoing->handler = handler;
 	outgoing->passthrough = passthrough;
 	outgoing_resolve(outgoing);

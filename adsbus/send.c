@@ -82,6 +82,18 @@ void send_init() {
 	signal(SIGPIPE, SIG_IGN);
 }
 
+void send_cleanup() {
+	for (int i = 0; i < NUM_SERIALIZERS; i++) {
+		struct serializer *serializer = &serializers[i];
+		struct send *send = serializer->send_head;
+		while (send) {
+			struct send *next = send->next;
+			free(send);
+			send = next;
+		}
+	}
+}
+
 struct serializer *send_get_serializer(char *name) {
 	for (int i = 0; i < NUM_SERIALIZERS; i++) {
 		if (strcasecmp(serializers[i].name, name) == 0) {

@@ -52,8 +52,8 @@ void incoming_new(const char *node, const char *service, incoming_connection_han
 	struct incoming *incoming = malloc(sizeof(*incoming));
 	incoming->peer.event_handler = incoming_handler;
 	uuid_gen(incoming->id);
-	incoming->node = node;
-	incoming->service = service;
+	incoming->node = strdup(node);
+	incoming->service = strdup(service);
 	incoming->handler = handler;
 	incoming->passthrough = passthrough;
 
@@ -69,6 +69,7 @@ void incoming_new(const char *node, const char *service, incoming_connection_han
 	int gai_err = getaddrinfo(incoming->node, incoming->service, &hints, &addrs);
 	if (gai_err) {
 		fprintf(stderr, "I %s: Failed to resolve %s/%s: %s\n", incoming->id, incoming->node, incoming->service, gai_strerror(gai_err));
+		// TODO: add incoming_del, free strdup values
 		free(incoming);
 		return;
 	}
@@ -99,6 +100,7 @@ void incoming_new(const char *node, const char *service, incoming_connection_han
 
 	if (addr == NULL) {
 		fprintf(stderr, "I %s: Failed to bind any addresses for %s/%s...\n", incoming->id, incoming->node, incoming->service);
+		// TODO: use incoming_del
 		free(incoming);
 		return;
 	}
