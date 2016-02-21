@@ -93,6 +93,13 @@ void hex_from_int(char *, uint64_t, size_t);
 void uuid_gen(char *);
 
 
+///////// rand
+
+void rand_init();
+void rand_cleanup();
+void rand_fill(void *, size_t);
+
+
 ///////// retry timing
 
 void retry_init();

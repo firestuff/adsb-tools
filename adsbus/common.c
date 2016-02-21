@@ -218,16 +218,21 @@ void uuid_gen(char *out) {
 }
 
 
-static int retry_rand_fd;
+static int rand_fd;
 
-void retry_init() {
-	retry_rand_fd = open("/dev/urandom", O_RDONLY);
-	assert(retry_rand_fd >= 0);
+void rand_init() {
+	rand_fd = open("/dev/urandom", O_RDONLY);
+	assert(rand_fd >= 0);
 }
 
-void retry_cleanup() {
-	assert(!close(retry_rand_fd));
+void rand_cleanup() {
+	assert(!close(rand_fd));
 }
+
+void rand_fill(void *value, size_t size) {
+	assert(read(rand_fd, value, size) == size);
+}
+
 
 #define RETRY_MIN_MS 2000
 #define RETRY_MAX_MS 64000
@@ -240,7 +245,7 @@ uint32_t retry_get_delay_ms(uint32_t prev_delay) {
 
 	uint32_t max_jitter = delay / RETRY_MAX_JITTER_DIV;
 	uint32_t jitter;
-	assert(read(retry_rand_fd, &jitter, sizeof(jitter)) == sizeof(jitter));
+	rand_fill(&jitter, sizeof(jitter));
 	delay += jitter % max_jitter;
 
 	delay = delay > RETRY_MAX_MS ? RETRY_MAX_MS : delay;
