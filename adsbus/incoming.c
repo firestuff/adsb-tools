@@ -13,7 +13,6 @@
 #include "common.h"
 #include "incoming.h"
 
-struct incoming;
 struct incoming {
 	struct peer peer;
 	char id[UUID_LEN];

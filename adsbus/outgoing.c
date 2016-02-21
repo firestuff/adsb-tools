@@ -11,7 +11,6 @@
 #include "common.h"
 #include "outgoing.h"
 
-struct outgoing;
 struct outgoing {
 	struct peer peer;
 	char id[UUID_LEN];

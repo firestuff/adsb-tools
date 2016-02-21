@@ -91,3 +91,10 @@ void hex_from_int(char *, uint64_t, size_t);
 
 #define UUID_LEN 37
 void uuid_gen(char *);
+
+
+///////// retry timing
+
+void retry_init();
+void retry_cleanup();
+uint32_t retry_get_delay_ms(uint32_t);

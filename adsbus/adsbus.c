@@ -102,6 +102,7 @@ int main(int argc, char *argv[]) {
 	hex_init();
 
 	peer_init();
+	retry_init();
 	wakeup_init();
 
 	send_init();
@@ -116,6 +117,7 @@ int main(int argc, char *argv[]) {
 
 	peer_loop();
 
+	retry_cleanup();
 	wakeup_cleanup();
 	send_cleanup();
 
