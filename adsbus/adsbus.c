@@ -5,9 +5,6 @@
 #include <unistd.h>
 #include <assert.h>
 
-#include "common.h"
-#include "wakeup.h"
-
 #include "incoming.h"
 #include "outgoing.h"
 
@@ -18,7 +15,10 @@
 #include "json.h"
 #include "stats.h"
 
+#include "rand.h"
 #include "opts.h"
+#include "common.h"
+#include "wakeup.h"
 
 static void print_usage(const char *name) {
 	fprintf(stderr,

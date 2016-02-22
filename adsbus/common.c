@@ -12,6 +12,7 @@
 #include <uuid/uuid.h>
 
 #include "common.h"
+#include "rand.h"
 #include "wakeup.h"
 
 static char server_id[UUID_LEN];
@@ -217,22 +218,6 @@ void uuid_gen(char *out) {
 	uuid_t uuid;
 	uuid_generate(uuid);
 	uuid_unparse(uuid, out);
-}
-
-
-static int rand_fd;
-
-void rand_init() {
-	rand_fd = open("/dev/urandom", O_RDONLY);
-	assert(rand_fd >= 0);
-}
-
-void rand_cleanup() {
-	assert(!close(rand_fd));
-}
-
-void rand_fill(void *value, size_t size) {
-	assert(read(rand_fd, value, size) == size);
 }
 
 

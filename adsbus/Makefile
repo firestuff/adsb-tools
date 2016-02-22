@@ -3,6 +3,10 @@ CFLAGS ?= -Wall -Werror -O4 -g --std=gnu11 --pedantic-errors -fPIE -pie -fstack-
 LDFLAGS ?= $(CFLAGS) -Wl,-z,relro -Wl,-z,now
 LIBS ?= -luuid -ljansson
 
+OBJ_NETWORK = receive.o send.o incoming.o outgoing.o
+OBJ_PROTOCOL = airspy_adsb.o beast.o json.o raw.o stats.o
+OBJ_UTIL = rand.o wakeup.o opts.o common.o
+
 all: adsbus
 
 clean:
@@ -11,5 +15,5 @@ clean:
 %.o: %.c *.h
 	$(CC) -c $(CFLAGS) $< -o $@
 
-adsbus: adsbus.o receive.o send.o incoming.o outgoing.o airspy_adsb.o beast.o json.o raw.o stats.o wakeup.o opts.o common.o
-	$(CC) $(LDFLAGS) -o adsbus adsbus.o receive.o send.o incoming.o outgoing.o airspy_adsb.o beast.o json.o raw.o stats.o wakeup.o opts.o common.o $(LIBS)
+adsbus: adsbus.o $(OBJ_NETWORK) $(OBJ_PROTOCOL) $(OBJ_UTIL)
+	$(CC) $(LDFLAGS) -o adsbus adsbus.o $(OBJ_NETWORK) $(OBJ_PROTOCOL) $(OBJ_UTIL) $(LIBS)
