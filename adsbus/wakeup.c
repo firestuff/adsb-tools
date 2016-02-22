@@ -109,7 +109,7 @@ static void *wakeup_main(void *arg) {
 		}
 
 		uint64_t now = wakeup_get_time_ms();
-		while (head && head->request.absolute_time_ms < now) {
+		while (head && head->request.absolute_time_ms <= now) {
 			close(head->request.fd);
 			struct wakeup_entry *next = head->next;
 			free(head);
