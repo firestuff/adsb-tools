@@ -100,6 +100,7 @@ static void outgoing_connect_result(struct outgoing *outgoing, int result) {
 		default:
 			fprintf(stderr, "O %s: Can't connect to %s/%s: %s\n", outgoing->id, hbuf, sbuf, strerror(result));
 			assert(!close(outgoing->peer.fd));
+			outgoing->peer.fd = -1;
 			outgoing->addr = outgoing->addr->ai_next;
 			// Tail recursion :/
 			outgoing_connect_next(outgoing);
@@ -130,7 +131,9 @@ static void outgoing_resolve_wrapper(struct peer *peer) {
 }
 
 static void outgoing_del(struct outgoing *outgoing) {
-	assert(!close(outgoing->peer.fd));
+	if (outgoing->peer.fd >= 0) {
+		assert(!close(outgoing->peer.fd));
+	}
 	free(outgoing->node);
 	free(outgoing->service);
 	free(outgoing);

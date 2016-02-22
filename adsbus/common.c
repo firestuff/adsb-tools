@@ -12,7 +12,7 @@
 #include <uuid/uuid.h>
 
 #include "common.h"
-
+#include "wakeup.h"
 
 static char server_id[UUID_LEN];
 static int peer_epoll_fd;
@@ -68,16 +68,18 @@ void peer_loop() {
 	while (!peer_canceled) {
 #define MAX_EVENTS 10
 		struct epoll_event events[MAX_EVENTS];
-		int nfds = epoll_wait(peer_epoll_fd, events, MAX_EVENTS, -1);
+		int nfds = epoll_wait(peer_epoll_fd, events, MAX_EVENTS, wakeup_get_delay());
 		if (nfds == -1 && errno == EINTR) {
 			continue;
 		}
-		assert(nfds > 0);
+		assert(nfds >= 0);
 
     for (int n = 0; n < nfds; n++) {
 			struct peer *peer = events[n].data.ptr;
 			peer->event_handler(peer);
 		}
+
+		wakeup_dispatch();
 	}
 	assert(!close(peer_epoll_fd));
 }
