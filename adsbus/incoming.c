@@ -11,6 +11,7 @@
 #include <unistd.h>
 
 #include "common.h"
+#include "wakeup.h"
 #include "incoming.h"
 
 struct incoming {
@@ -18,12 +19,22 @@ struct incoming {
 	char id[UUID_LEN];
 	char *node;
 	char *service;
+	uint32_t attempt;
 	incoming_connection_handler handler;
 	void *passthrough;
 	struct incoming *next;
 };
 
 static struct incoming *incoming_head = NULL;
+
+static void incoming_resolve_wrapper(struct peer *);
+
+static void incoming_retry(struct incoming *incoming) {
+	uint32_t delay = retry_get_delay_ms(incoming->attempt++);
+	fprintf(stderr, "I %s: Will retry in %ds\n", incoming->id, delay / 1000);
+	incoming->peer.event_handler = incoming_resolve_wrapper;
+	wakeup_add((struct peer *) incoming, delay);
+}
 
 static void incoming_handler(struct peer *peer) {
 	struct incoming *incoming = (struct incoming *) peer;
@@ -58,24 +69,7 @@ static void incoming_del(struct incoming *incoming) {
 	free(incoming);
 }
 
-void incoming_cleanup() {
-	struct incoming *iter = incoming_head;
-	while (iter) {
-		struct incoming *next = iter->next;
-		incoming_del(iter);
-		iter = next;
-	}
-}
-
-void incoming_new(char *node, char *service, incoming_connection_handler handler, void *passthrough) {
-	struct incoming *incoming = malloc(sizeof(*incoming));
-	incoming->peer.event_handler = incoming_handler;
-	uuid_gen(incoming->id);
-	incoming->node = strdup(node);
-	incoming->service = strdup(service);
-	incoming->handler = handler;
-	incoming->passthrough = passthrough;
-
+static void incoming_resolve(struct incoming *incoming) {
 	fprintf(stderr, "I %s: Resolving %s/%s...\n", incoming->id, incoming->node, incoming->service);
 
 	struct addrinfo hints = {
@@ -88,8 +82,7 @@ void incoming_new(char *node, char *service, incoming_connection_handler handler
 	int gai_err = getaddrinfo(incoming->node, incoming->service, &hints, &addrs);
 	if (gai_err) {
 		fprintf(stderr, "I %s: Failed to resolve %s/%s: %s\n", incoming->id, incoming->node, incoming->service, gai_strerror(gai_err));
-		// TODO: retry
-		free(incoming);
+		incoming_retry(incoming);
 		return;
 	}
 
@@ -119,13 +112,39 @@ void incoming_new(char *node, char *service, incoming_connection_handler handler
 
 	if (addr == NULL) {
 		fprintf(stderr, "I %s: Failed to bind any addresses for %s/%s...\n", incoming->id, incoming->node, incoming->service);
-		// TODO: retry
-		free(incoming);
+		incoming_retry(incoming);
 		return;
 	}
 
+	incoming->attempt = 0;
 	peer_epoll_add((struct peer *) incoming, EPOLLIN);
+}
+
+static void incoming_resolve_wrapper(struct peer *peer) {
+	incoming_resolve((struct incoming *) peer);
+}
+
+void incoming_cleanup() {
+	struct incoming *iter = incoming_head;
+	while (iter) {
+		struct incoming *next = iter->next;
+		incoming_del(iter);
+		iter = next;
+	}
+}
+
+void incoming_new(char *node, char *service, incoming_connection_handler handler, void *passthrough) {
+	struct incoming *incoming = malloc(sizeof(*incoming));
+	incoming->peer.event_handler = incoming_handler;
+	uuid_gen(incoming->id);
+	incoming->node = strdup(node);
+	incoming->service = strdup(service);
+	incoming->attempt = 0;
+	incoming->handler = handler;
+	incoming->passthrough = passthrough;
 
 	incoming->next = incoming_head;
 	incoming_head = incoming;
+
+	incoming_resolve(incoming);
 }

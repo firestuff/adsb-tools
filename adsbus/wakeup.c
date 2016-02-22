@@ -36,8 +36,9 @@ static int wakeup_write_fd;
 static uint64_t wakeup_get_time_ms() {
 	struct timespec tp;
 	assert(!clock_gettime(CLOCK_MONOTONIC_COARSE, &tp));
+#define MS_PER_S 1000
 #define NS_PER_MS 1000000
-	return tp.tv_sec + (tp.tv_nsec / NS_PER_MS);
+	return (tp.tv_sec * MS_PER_S) + (tp.tv_nsec / NS_PER_MS);
 }
 
 static void wakeup_request_add(struct wakeup_entry **head, struct wakeup_request *request) {
@@ -79,9 +80,16 @@ static void *wakeup_main(void *arg) {
 	struct wakeup_entry *head = NULL;
 
 	while (1) {
+		int delay = -1;
+		if (head) {
+			// This call is the whole reason we need a separate thread: we want to avoid getting the time inside the tight main thread loop.
+			delay = head->request.absolute_time_ms - wakeup_get_time_ms();
+			delay = delay < 0 ? 0 : delay;
+		}
+
 #define MAX_EVENTS 1
 		struct epoll_event events[MAX_EVENTS];
-		int nfds = epoll_wait(epoll_fd, events, MAX_EVENTS, -1);
+		int nfds = epoll_wait(epoll_fd, events, MAX_EVENTS, delay);
 		if (nfds == -1 && errno == EINTR) {
 			continue;
 		}
@@ -146,10 +154,9 @@ void wakeup_add(struct peer *peer, uint32_t delay_ms) {
 	int pipefd[2];
 	assert(!pipe2(pipefd, O_NONBLOCK));
 
-	struct wakeup_request request = {
-		.fd = pipefd[1],
-		.absolute_time_ms = wakeup_get_time_ms() + delay_ms,
-	};
+	struct wakeup_request request = { 0 };
+	request.fd = pipefd[1],
+	request.absolute_time_ms = wakeup_get_time_ms() + delay_ms;
 	assert(write(wakeup_write_fd, &request, sizeof(request)) == sizeof(request));
 
 	struct wakeup_peer *outer_peer = malloc(sizeof(*outer_peer));

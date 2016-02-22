@@ -236,19 +236,12 @@ void rand_fill(void *value, size_t size) {
 
 #define RETRY_MIN_MS 2000
 #define RETRY_MAX_MS 64000
-#define RETRY_MULT 2
-#define RETRY_MAX_JITTER_DIV 2
-uint32_t retry_get_delay_ms(uint32_t prev_delay) {
-	uint32_t delay = prev_delay * RETRY_MULT;
-	delay = delay < RETRY_MIN_MS ? RETRY_MIN_MS : delay;
-	delay = delay > RETRY_MAX_MS ? RETRY_MAX_MS : delay;
+uint32_t retry_get_delay_ms(uint32_t attempt) {
+	uint32_t max_delay = RETRY_MIN_MS * (1 << attempt);
+	max_delay = max_delay > RETRY_MAX_MS ? RETRY_MAX_MS : max_delay;
 
-	uint32_t max_jitter = delay / RETRY_MAX_JITTER_DIV;
 	uint32_t jitter;
 	rand_fill(&jitter, sizeof(jitter));
-	delay += jitter % max_jitter;
 
-	delay = delay > RETRY_MAX_MS ? RETRY_MAX_MS : delay;
-
-	return delay;
+	return jitter % max_delay;
 }
