@@ -4,6 +4,7 @@
 #include <string.h>
 #include <unistd.h>
 
+#include "airspy_adsb.h"
 #include "beast.h"
 #include "raw.h"
 
@@ -27,6 +28,10 @@ struct parser {
 	char *name;
 	parser parse;
 } parsers[] = {
+	{
+		.name = "airspy_adsb",
+		.parse = airspy_adsb_parse,
+	},
 	{
 		.name = "beast",
 		.parse = beast_parse,
