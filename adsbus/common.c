@@ -235,7 +235,7 @@ void rand_fill(void *value, size_t size) {
 
 
 #define RETRY_MIN_MS 2000
-#define RETRY_MAX_MS 64000
+#define RETRY_MAX_MS 60000
 uint32_t retry_get_delay_ms(uint32_t attempt) {
 	uint32_t max_delay = RETRY_MIN_MS * (1 << attempt);
 	max_delay = max_delay > RETRY_MAX_MS ? RETRY_MAX_MS : max_delay;
