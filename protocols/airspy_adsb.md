@@ -1,9 +1,5 @@
 # Airspy ADSB protocol
 
-**DEPRECATED**
-
-This protocol is no longer used by airspy_adsb.
-
 ## Ports
 
 * ??: server -> client feed
