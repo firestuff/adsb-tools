@@ -98,6 +98,72 @@ static bool json_parse_common(json_t *in, struct packet *packet, struct json_par
 	return true;
 }
 
+static bool json_parse_header(json_t *in, struct packet *packet, struct json_parser_state *state) {
+	json_t *mlat_timestamp_mhz = json_object_get(in, "mlat_timestamp_mhz");
+	if (!mlat_timestamp_mhz || !json_is_integer(mlat_timestamp_mhz)) {
+		return false;
+	}
+	state->mlat_timestamp_mhz = json_integer_value(mlat_timestamp_mhz);
+
+	json_t *mlat_timestamp_max = json_object_get(in, "mlat_timestamp_max");
+	if (!mlat_timestamp_max || !json_is_integer(mlat_timestamp_max)) {
+		return false;
+	}
+	state->mlat_timestamp_max = json_integer_value(mlat_timestamp_max);
+
+	json_t *rssi_max = json_object_get(in, "rssi_max");
+	if (!rssi_max || !json_is_integer(rssi_max)) {
+		return false;
+	}
+	state->rssi_max = json_integer_value(rssi_max);
+
+	json_t *json_server_id = json_object_get(in, "server_id");
+	if (!json_server_id || !json_is_string(json_server_id)) {
+		return false;
+	}
+	const char *server_id_str = json_string_value(json_server_id);
+	if (!strcmp(server_id_str, server_id)) {
+		fprintf(stderr, "R %s: Attempt to receive json data from our own server ID (%s); loop!\n", packet->source_id, server_id);
+		return false;
+	}
+
+	fprintf(stderr, "R %s: Connected to server ID: %s\n", packet->source_id, server_id_str);
+
+	state->have_header = true;
+	packet->type = PACKET_TYPE_NONE;
+	return true;
+}
+
+static bool json_parse_mode_s_short(json_t *in, struct packet *packet, struct json_parser_state *state) {
+	if (!json_parse_common(in, packet, state)) {
+		return false;
+	}
+
+	json_t *payload = json_object_get(in, "payload");
+	if (!payload || !json_is_string(payload) || json_string_length(payload) != 14) {
+		return false;
+	}
+
+	hex_to_bin(packet->payload, json_string_value(payload), 7);
+	packet->type = PACKET_TYPE_MODE_S_SHORT;
+	return true;
+}
+
+static bool json_parse_mode_s_long(json_t *in, struct packet *packet, struct json_parser_state *state) {
+	if (!json_parse_common(in, packet, state)) {
+		return false;
+	}
+
+	json_t *payload = json_object_get(in, "payload");
+	if (!payload || !json_is_string(payload) || json_string_length(payload) != 28) {
+		return false;
+	}
+
+	hex_to_bin(packet->payload, json_string_value(payload), 14);
+	packet->type = PACKET_TYPE_MODE_S_LONG;
+	return true;
+}
+
 void json_init() {
 	assert(sizeof(struct json_parser_state) <= PARSER_STATE_LEN);
 	assert(JSON_INTEGER_IS_LONG_LONG);
@@ -130,79 +196,23 @@ bool json_parse(struct buf *buf, struct packet *packet, void *state_in) {
 		json_decref(in);
 		return false;
 	}
+
 	json_t *type = json_object_get(in, "type");
 	if (!type || !json_is_string(type)) {
 		json_decref(in);
 		return false;
 	}
 	const char *type_str = json_string_value(type);
+	bool (*parser)(json_t *, struct packet *, struct json_parser_state *) = NULL;
 	if (!strcmp(type_str, "header")) {
-		json_t *mlat_timestamp_mhz = json_object_get(in, "mlat_timestamp_mhz");
-		if (!mlat_timestamp_mhz || !json_is_integer(mlat_timestamp_mhz)) {
-			json_decref(in);
-			return false;
-		}
-		state->mlat_timestamp_mhz = json_integer_value(mlat_timestamp_mhz);
-
-		json_t *mlat_timestamp_max = json_object_get(in, "mlat_timestamp_max");
-		if (!mlat_timestamp_max || !json_is_integer(mlat_timestamp_max)) {
-			json_decref(in);
-			return false;
-		}
-		state->mlat_timestamp_max = json_integer_value(mlat_timestamp_max);
-
-		json_t *rssi_max = json_object_get(in, "rssi_max");
-		if (!rssi_max || !json_is_integer(rssi_max)) {
-			json_decref(in);
-			return false;
-		}
-		state->rssi_max = json_integer_value(rssi_max);
-
-		json_t *json_server_id = json_object_get(in, "server_id");
-		if (!json_server_id || !json_is_string(json_server_id)) {
-			json_decref(in);
-			return false;
-		}
-		const char *server_id_str = json_string_value(json_server_id);
-		if (!strcmp(server_id_str, server_id)) {
-			fprintf(stderr, "R %s: Attempt to receive json data from our own server ID (%s); loop!\n", packet->source_id, server_id);
-			json_decref(in);
-			return false;
-		}
-
-		fprintf(stderr, "R %s: Connected to server ID: %s\n", packet->source_id, server_id_str);
-
-		state->have_header = true;
-		packet->type = PACKET_TYPE_NONE;
+		parser = json_parse_header;
 	} else if (!strcmp(type_str, "Mode-S short")) {
-		if (!json_parse_common(in, packet, state)) {
-			json_decref(in);
-			return false;
-		}
-
-		json_t *payload = json_object_get(in, "payload");
-		if (!payload || !json_is_string(payload) || json_string_length(payload) != 14) {
-			json_decref(in);
-			return false;
-		}
-
-		hex_to_bin(packet->payload, json_string_value(payload), 7);
-		packet->type = PACKET_TYPE_MODE_S_SHORT;
+		parser = json_parse_mode_s_short;
 	} else if (!strcmp(type_str, "Mode-S long")) {
-		if (!json_parse_common(in, packet, state)) {
-			json_decref(in);
-			return false;
-		}
+		parser = json_parse_mode_s_long;
+	}
 
-		json_t *payload = json_object_get(in, "payload");
-		if (!payload || !json_is_string(payload) || json_string_length(payload) != 28) {
-			json_decref(in);
-			return false;
-		}
-
-		hex_to_bin(packet->payload, json_string_value(payload), 14);
-		packet->type = PACKET_TYPE_MODE_S_LONG;
-	} else {
+	if (!parser || !parser(in, packet, state)) {
 		json_decref(in);
 		return false;
 	}
