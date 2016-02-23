@@ -14,6 +14,8 @@
 
 #include "json.h"
 
+#define JSON_MAGIC "aDsB"
+
 struct json_parser_state {
 	struct packet_mlat_state mlat_state;
 	uint16_t mlat_timestamp_mhz;
@@ -31,8 +33,10 @@ static void json_serialize_to_buf(json_t *obj, struct buf *buf) {
 }
 
 static void json_hello(struct buf *buf) {
-	json_t *hello = json_pack("{sssssssIsIsI}",
+	json_t *hello = json_pack(
+			"{s:s, s:s, s:s, s:s, s:I, s:I, s:I}",
 			"type", "header",
+			"magic", JSON_MAGIC,
 			"server_version", server_version,
 			"server_id", server_id,
 			"mlat_timestamp_mhz", (json_int_t) PACKET_MLAT_MHZ,
@@ -70,16 +74,47 @@ static void json_serialize_mode_s_long(struct packet *packet, struct buf *buf) {
 	json_serialize_to_buf(out, buf);
 }
 
+static bool json_parse_header(json_t *in, struct packet *packet, struct json_parser_state *state) {
+	const char *magic, *json_server_id;
+	json_int_t mlat_timestamp_mhz, mlat_timestamp_max, rssi_max;
+	if (json_unpack(
+			in, "{s:s, s:s, s:I, s:I, s:I}",
+			"magic", &magic,
+			"server_id", &json_server_id,
+			"mlat_timestamp_mhz", &mlat_timestamp_mhz,
+			"mlat_timestamp_max", &mlat_timestamp_max,
+			"rssi_max", &rssi_max)) {
+		return false;
+	}
+
+	if (strcmp(magic, JSON_MAGIC)) {
+		return false;
+	}
+
+	state->mlat_timestamp_mhz = mlat_timestamp_mhz;
+	state->mlat_timestamp_max = mlat_timestamp_max;
+	state->rssi_max = rssi_max;
+
+	if (!strcmp(json_server_id, server_id)) {
+		fprintf(stderr, "R %s: Attempt to receive json data from our own server ID (%s); loop!\n", packet->source_id, server_id);
+		return false;
+	}
+
+	fprintf(stderr, "R %s: Connected to server ID: %s\n", packet->source_id, json_server_id);
+
+	state->have_header = true;
+	packet->type = PACKET_TYPE_NONE;
+	return true;
+}
+
 static bool json_parse_common(json_t *in, struct packet *packet, struct json_parser_state *state) {
 	if (!state->have_header) {
 		return false;
 	}
 
-	json_t *source_id = json_object_get(in, "source_id");
-	if (!source_id || !json_is_string(source_id)) {
+	if (json_unpack(in, "{s:s}", "source_id", &packet->source_id)) {
 		return false;
 	}
-	packet->source_id = json_string_value(source_id);
 
 	json_t *mlat_timestamp = json_object_get(in, "mlat_timestamp");
 	if (mlat_timestamp && json_is_integer(mlat_timestamp)) {
@@ -95,42 +130,6 @@ static bool json_parse_common(json_t *in, struct packet *packet, struct json_par
 		packet->rssi = packet_rssi_scale_in(json_integer_value(rssi), state->rssi_max);
 	}
 
-	return true;
-}
-
-static bool json_parse_header(json_t *in, struct packet *packet, struct json_parser_state *state) {
-	json_t *mlat_timestamp_mhz = json_object_get(in, "mlat_timestamp_mhz");
-	if (!mlat_timestamp_mhz || !json_is_integer(mlat_timestamp_mhz)) {
-		return false;
-	}
-	state->mlat_timestamp_mhz = json_integer_value(mlat_timestamp_mhz);
-
-	json_t *mlat_timestamp_max = json_object_get(in, "mlat_timestamp_max");
-	if (!mlat_timestamp_max || !json_is_integer(mlat_timestamp_max)) {
-		return false;
-	}
-	state->mlat_timestamp_max = json_integer_value(mlat_timestamp_max);
-
-	json_t *rssi_max = json_object_get(in, "rssi_max");
-	if (!rssi_max || !json_is_integer(rssi_max)) {
-		return false;
-	}
-	state->rssi_max = json_integer_value(rssi_max);
-
-	json_t *json_server_id = json_object_get(in, "server_id");
-	if (!json_server_id || !json_is_string(json_server_id)) {
-		return false;
-	}
-	const char *server_id_str = json_string_value(json_server_id);
-	if (!strcmp(server_id_str, server_id)) {
-		fprintf(stderr, "R %s: Attempt to receive json data from our own server ID (%s); loop!\n", packet->source_id, server_id);
-		return false;
-	}
-
-	fprintf(stderr, "R %s: Connected to server ID: %s\n", packet->source_id, server_id_str);
-
-	state->have_header = true;
-	packet->type = PACKET_TYPE_NONE;
 	return true;
 }
 
