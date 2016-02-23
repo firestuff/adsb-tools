@@ -31,7 +31,7 @@ void stats_serialize(struct packet *packet, struct buf *buf) {
 		json_object_set_new(counts, packet_type_names[i], json_integer(stats_state.type_count[i]));
 	}
 	struct timespec now;
-	assert(clock_gettime(CLOCK_MONOTONIC, &now) == 0);
+	assert(clock_gettime(CLOCK_MONOTONIC_COARSE, &now) == 0);
 	json_t *out = json_pack("{sIso}",
 			"uptime_seconds", (json_int_t) (now.tv_sec - stats_state.start.tv_sec),
 			"packet_counts", counts);
