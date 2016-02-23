@@ -12,6 +12,7 @@
 #include "beast.h"
 #include "buf.h"
 #include "json.h"
+#include "peer.h"
 #include "raw.h"
 #include "stats.h"
 #include "uuid.h"

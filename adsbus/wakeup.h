@@ -1,5 +1,7 @@
 #pragma once
 
+#include <stdint.h>
+
 struct peer;
 
 void wakeup_init();

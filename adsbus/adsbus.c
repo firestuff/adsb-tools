@@ -1,24 +1,22 @@
-#include <stdlib.h>
-#include <stdio.h>
+#include <assert.h>
 #include <getopt.h>
+#include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
-#include <assert.h>
-
-#include "incoming.h"
-#include "outgoing.h"
-
-#include "receive.h"
-#include "send.h"
 
 #include "beast.h"
-#include "json.h"
-#include "stats.h"
-
 #include "common.h"
 #include "hex.h"
+#include "incoming.h"
+#include "json.h"
 #include "opts.h"
+#include "outgoing.h"
+#include "peer.h"
 #include "rand.h"
+#include "receive.h"
+#include "send.h"
+#include "stats.h"
 #include "wakeup.h"
 
 static void print_usage(const char *name) {
