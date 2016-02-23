@@ -3,6 +3,7 @@
 #include <string.h>
 
 #include "common.h"
+#include "uuid.h"
 #include "raw.h"
 
 struct __attribute__((packed)) raw_mode_s_short_overlay {
@@ -56,7 +57,7 @@ static void raw_serialize_mode_s_short(struct packet *packet, struct buf *buf) {
 	overlay->asterisk = '*';
 	overlay->semicolon = ';';
 	overlay->lf = '\n';
-	hex_from_bin(overlay->payload, packet->payload, sizeof(overlay->payload) / 2);
+	hex_from_bin_upper(overlay->payload, packet->payload, sizeof(overlay->payload) / 2);
 	buf->length = sizeof(*overlay);
 }
 
@@ -65,7 +66,7 @@ static void raw_serialize_mode_s_long(struct packet *packet, struct buf *buf) {
 	overlay->asterisk = '*';
 	overlay->semicolon = ';';
 	overlay->lf = '\n';
-	hex_from_bin(overlay->payload, packet->payload, sizeof(overlay->payload) / 2);
+	hex_from_bin_upper(overlay->payload, packet->payload, sizeof(overlay->payload) / 2);
 	buf->length = sizeof(*overlay);
 }
 

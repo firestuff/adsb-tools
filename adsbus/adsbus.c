@@ -100,10 +100,9 @@ int main(int argc, char *argv[]) {
 	assert(!close(0));
 
 	hex_init();
-
-	peer_init();
 	rand_init();
 	wakeup_init();
+	peer_init();
 
 	send_init();
 

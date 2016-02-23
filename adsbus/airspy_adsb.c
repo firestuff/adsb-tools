@@ -3,6 +3,7 @@
 #include <string.h>
 
 #include "common.h"
+#include "uuid.h"
 #include "receive.h"
 #include "airspy_adsb.h"
 
@@ -89,12 +90,12 @@ static bool airspy_adsb_parse_mode_s_long(struct buf *buf, struct packet *packet
 
 static void airspy_adsb_fill_common(struct packet *packet, struct airspy_adsb_common_overlay *overlay) {
 	overlay->semicolon1 = overlay->semicolon2 = overlay->semicolon3 = ';';
-	hex_from_int(
+	hex_from_int_upper(
 			overlay->mlat_timestamp,
 			mlat_timestamp_scale_out(packet->mlat_timestamp, UINT32_MAX, SEND_MHZ),
 			sizeof(overlay->mlat_timestamp) / 2);
-	hex_from_int(overlay->mlat_precision, SEND_MHZ / 2, sizeof(overlay->mlat_precision) / 2);
-	hex_from_int(overlay->rssi, rssi_scale_out(packet->rssi, UINT16_MAX), sizeof(overlay->rssi) / 2);
+	hex_from_int_upper(overlay->mlat_precision, SEND_MHZ / 2, sizeof(overlay->mlat_precision) / 2);
+	hex_from_int_upper(overlay->rssi, rssi_scale_out(packet->rssi, UINT16_MAX), sizeof(overlay->rssi) / 2);
 }
 
 static void airspy_adsb_serialize_mode_s_short(struct packet *packet, struct buf *buf) {
@@ -103,7 +104,7 @@ static void airspy_adsb_serialize_mode_s_short(struct packet *packet, struct buf
 	overlay->semicolon = ';';
 	overlay->cr = '\r';
 	overlay->lf = '\n';
-	hex_from_bin(overlay->payload, packet->payload, sizeof(overlay->payload) / 2);
+	hex_from_bin_upper(overlay->payload, packet->payload, sizeof(overlay->payload) / 2);
 
 	airspy_adsb_fill_common(packet, &overlay->common);
 
@@ -116,7 +117,7 @@ static void airspy_adsb_serialize_mode_s_long(struct packet *packet, struct buf 
 	overlay->semicolon = ';';
 	overlay->cr = '\r';
 	overlay->lf = '\n';
-	hex_from_bin(overlay->payload, packet->payload, sizeof(overlay->payload) / 2);
+	hex_from_bin_upper(overlay->payload, packet->payload, sizeof(overlay->payload) / 2);
 
 	airspy_adsb_fill_common(packet, &overlay->common);
 

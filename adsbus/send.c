@@ -8,13 +8,15 @@
 
 #include "common.h"
 
-#include "send.h"
-
 #include "airspy_adsb.h"
 #include "beast.h"
 #include "json.h"
 #include "raw.h"
 #include "stats.h"
+
+#include "uuid.h"
+
+#include "send.h"
 
 struct send {
 	struct peer peer;

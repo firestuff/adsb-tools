@@ -10,6 +10,8 @@
 
 #include "common.h"
 #include "wakeup.h"
+#include "uuid.h"
+
 #include "outgoing.h"
 
 struct outgoing {

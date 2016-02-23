@@ -9,10 +9,10 @@
 #include <unistd.h>
 #include <signal.h>
 #include <errno.h>
-#include <uuid/uuid.h>
 
 #include "common.h"
 #include "rand.h"
+#include "uuid.h"
 #include "wakeup.h"
 
 static char server_id[UUID_LEN];
@@ -166,7 +166,8 @@ uint32_t rssi_scale_out(uint32_t value, uint32_t max) {
 
 
 static uint8_t hex_table[256] = {0};
-static char hex_char_table[16] = { '0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'A', 'B', 'C', 'D', 'E', 'F', };
+static char hex_upper_table[16] = { '0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'A', 'B', 'C', 'D', 'E', 'F', };
+static char hex_lower_table[16] = { '0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'a', 'b', 'c', 'd', 'e', 'f', };
 
 void hex_init() {
 	for (int i = '0'; i <= '9'; i++) {
@@ -198,26 +199,35 @@ uint64_t hex_to_int(const char *in, size_t bytes) {
 	return ret;
 }
 
-void hex_from_bin(char *out, const uint8_t *in, size_t bytes) {
+static void hex_from_bin(char *out, const uint8_t *in, size_t bytes, char table[]) {
 	for (size_t i = 0, j = 0; i < bytes; i++, j += 2) {
-		out[j] = hex_char_table[in[i] >> 4];
-		out[j + 1] = hex_char_table[in[i] & 0xf];
+		out[j] = table[in[i] >> 4];
+		out[j + 1] = table[in[i] & 0xf];
 	}
 }
 
-void hex_from_int(char *out, uint64_t in, size_t bytes) {
+static void hex_from_int(char *out, uint64_t in, size_t bytes, char table[]) {
 	bytes *= 2;
 	for (int o = bytes - 1; o >= 0; o--) {
-		out[o] = hex_char_table[in & 0xf];
+		out[o] = table[in & 0xf];
 		in >>= 4;
 	}
 }
 
+void hex_from_bin_upper(char *out, const uint8_t *in, size_t bytes) {
+	hex_from_bin(out, in, bytes, hex_upper_table);
+}
 
-void uuid_gen(char *out) {
-	uuid_t uuid;
-	uuid_generate(uuid);
-	uuid_unparse(uuid, out);
+void hex_from_bin_lower(char *out, const uint8_t *in, size_t bytes) {
+	hex_from_bin(out, in, bytes, hex_lower_table);
+}
+
+void hex_from_int_upper(char *out, uint64_t in, size_t bytes) {
+	hex_from_int(out, in, bytes, hex_upper_table);
+}
+
+void hex_from_int_lower(char *out, uint64_t in, size_t bytes) {
+	hex_from_int(out, in, bytes, hex_lower_table);
 }
 
 

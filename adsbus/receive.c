@@ -10,6 +10,8 @@
 
 #include "send.h"
 
+#include "uuid.h"
+
 #include "receive.h"
 
 struct receive;

@@ -5,6 +5,8 @@
 
 #include "receive.h"
 #include "send.h"
+#include "rand.h"
+#include "uuid.h"
 #include "json.h"
 
 static void json_serialize_to_buf(json_t *obj, struct buf *buf) {
@@ -34,7 +36,7 @@ static void json_add_common(struct packet *packet, json_t *obj) {
 static void json_serialize_mode_s_short(struct packet *packet, struct buf *buf) {
 	assert(packet->mlat_timestamp < MLAT_MAX);
 	char hexbuf[14];
-	hex_from_bin(hexbuf, packet->payload, 7);
+	hex_from_bin_upper(hexbuf, packet->payload, 7);
 	json_t *out = json_pack("{ss#}", "payload", hexbuf, 14);
 	json_add_common(packet, out);
 	json_serialize_to_buf(out, buf);
@@ -43,7 +45,7 @@ static void json_serialize_mode_s_short(struct packet *packet, struct buf *buf) 
 static void json_serialize_mode_s_long(struct packet *packet, struct buf *buf) {
 	assert(packet->mlat_timestamp < MLAT_MAX);
 	char hexbuf[28];
-	hex_from_bin(hexbuf, packet->payload, 14);
+	hex_from_bin_upper(hexbuf, packet->payload, 14);
 	json_t *out = json_pack("{ss#}", "payload", hexbuf, 28);
 	json_add_common(packet, out);
 	json_serialize_to_buf(out, buf);
@@ -51,6 +53,10 @@ static void json_serialize_mode_s_long(struct packet *packet, struct buf *buf) {
 
 void json_init() {
 	assert(JSON_INTEGER_IS_LONG_LONG);
+
+	size_t seed;
+	rand_fill(&seed, sizeof(seed));
+	json_object_seed(seed);
 }
 
 void json_serialize(struct packet *packet, struct buf *buf) {
