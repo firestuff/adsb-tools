@@ -127,5 +127,8 @@ int main(int argc, char *argv[]) {
 	resolve_cleanup();
 	wakeup_cleanup();
 
+	assert(!close(1));
+	assert(!close(2));
+
 	return EXIT_SUCCESS;
 }
