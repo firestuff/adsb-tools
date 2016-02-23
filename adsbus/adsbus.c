@@ -15,6 +15,7 @@
 #include "rand.h"
 #include "receive.h"
 #include "send.h"
+#include "server.h"
 #include "stats.h"
 #include "wakeup.h"
 
@@ -99,6 +100,7 @@ int main(int argc, char *argv[]) {
 
 	hex_init();
 	rand_init();
+	server_init();
 	wakeup_init();
 	peer_init();
 

@@ -10,12 +10,12 @@
 #include <sys/epoll.h>
 #include <unistd.h>
 
+#include "server.h"
 #include "uuid.h"
 #include "wakeup.h"
 
 #include "peer.h"
 
-static char server_id[UUID_LEN];
 static int peer_epoll_fd;
 static int peer_cancel_fd;
 static bool peer_canceled = false;
@@ -32,8 +32,6 @@ static void peer_cancel_handler(struct peer *peer) {
 }
 
 void peer_init() {
-	uuid_gen(server_id);
-
 	peer_epoll_fd = epoll_create1(0);
 	assert(peer_epoll_fd >= 0);
 
