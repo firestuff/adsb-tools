@@ -36,7 +36,7 @@ void peer_init() {
 	assert(peer_epoll_fd >= 0);
 
 	int cancel_fds[2];
-	assert(!pipe2(cancel_fds, O_NONBLOCK));
+	assert(!pipe2(cancel_fds, O_CLOEXEC));
 
 	struct peer *cancel_peer = malloc(sizeof(*cancel_peer));
 	assert(cancel_peer);

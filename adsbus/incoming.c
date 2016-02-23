@@ -47,7 +47,7 @@ static void incoming_handler(struct peer *peer) {
 	struct sockaddr peer_addr, local_addr;
 	socklen_t peer_addrlen = sizeof(peer_addr), local_addrlen = sizeof(local_addr);
 
-	int fd = accept4(incoming->peer.fd, &peer_addr, &peer_addrlen, SOCK_NONBLOCK);
+	int fd = accept4(incoming->peer.fd, &peer_addr, &peer_addrlen, SOCK_NONBLOCK | SOCK_CLOEXEC);
 	if (fd == -1) {
 		fprintf(stderr, "I %s: Failed to accept new connection on %s/%s: %s\n", incoming->id, incoming->node, incoming->service, strerror(errno));
 		return;
@@ -81,7 +81,7 @@ static void incoming_listen(struct incoming *incoming) {
 		assert(getnameinfo(addr->ai_addr, addr->ai_addrlen, hbuf, sizeof(hbuf), sbuf, sizeof(sbuf), NI_NUMERICHOST | NI_NUMERICSERV) == 0);
 		fprintf(stderr, "I %s: Listening on %s/%s...\n", incoming->id, hbuf, sbuf);
 
-		incoming->peer.fd = socket(addr->ai_family, addr->ai_socktype, addr->ai_protocol);
+		incoming->peer.fd = socket(addr->ai_family, addr->ai_socktype | SOCK_CLOEXEC, addr->ai_protocol);
 		assert(incoming->peer.fd >= 0);
 
 		int optval = 1;
