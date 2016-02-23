@@ -59,6 +59,7 @@ static void *resolve_main(void *arg) {
 		free(request);
 	}
 	assert(!ret);
+	assert(!close(fd));
 	return NULL;
 }
 
