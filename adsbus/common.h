@@ -19,27 +19,6 @@ void peer_epoll_del(struct peer *);
 void peer_loop();
 
 
-//////// buf
-
-#define BUF_LEN_MAX 256
-struct buf {
-	char buf[BUF_LEN_MAX];
-	size_t start;
-	size_t length;
-};
-#define BUF_INIT { \
-	.start = 0, \
-	.length = 0, \
-}
-
-#define buf_chr(buff, at) ((buff)->buf[(buff)->start + (at)])
-#define buf_at(buff, at) (&buf_chr(buff, at))
-
-void buf_init(struct buf *);
-ssize_t buf_fill(struct buf *, int);
-void buf_consume(struct buf *, size_t);
-
-
 //////// packet
 
 #define DATA_LEN_MAX 14

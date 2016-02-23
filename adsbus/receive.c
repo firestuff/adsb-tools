@@ -6,10 +6,9 @@
 
 #include "airspy_adsb.h"
 #include "beast.h"
+#include "buf.h"
 #include "raw.h"
-
 #include "send.h"
-
 #include "uuid.h"
 
 #include "receive.h"

@@ -7,7 +7,7 @@
 #include <unistd.h>
 #include <string.h>
 
-#include "common.h"
+#include "buf.h"
 
 #include "rand.h"
 

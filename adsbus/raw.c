@@ -3,6 +3,7 @@
 #include <string.h>
 
 #include "common.h"
+#include "buf.h"
 #include "hex.h"
 #include "uuid.h"
 

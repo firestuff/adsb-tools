@@ -4,6 +4,7 @@
 #include <jansson.h>
 
 #include "hex.h"
+#include "buf.h"
 #include "rand.h"
 #include "receive.h"
 #include "send.h"

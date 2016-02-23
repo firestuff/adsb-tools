@@ -3,7 +3,9 @@
 #include <jansson.h>
 
 #include "common.h"
+#include "buf.h"
 #include "json.h"
+
 #include "stats.h"
 
 static struct stats_state {
