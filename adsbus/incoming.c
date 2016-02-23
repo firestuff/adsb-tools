@@ -11,6 +11,7 @@
 #include <unistd.h>
 
 #include "peer.h"
+#include "resolve.h"
 #include "wakeup.h"
 #include "uuid.h"
 
@@ -21,6 +22,8 @@ struct incoming {
 	char id[UUID_LEN];
 	char *node;
 	char *service;
+	struct addrinfo *addrs;
+	const char *error;
 	uint32_t attempt;
 	incoming_connection_handler handler;
 	void *passthrough;
@@ -71,25 +74,9 @@ static void incoming_del(struct incoming *incoming) {
 	free(incoming);
 }
 
-static void incoming_resolve(struct incoming *incoming) {
-	fprintf(stderr, "I %s: Resolving %s/%s...\n", incoming->id, incoming->node, incoming->service);
-
-	struct addrinfo hints = {
-		.ai_family = AF_UNSPEC,
-		.ai_socktype = SOCK_STREAM,
-		.ai_flags = AI_PASSIVE | AI_V4MAPPED | AI_ADDRCONFIG,
-	};
-
-	struct addrinfo *addrs;
-	int gai_err = getaddrinfo(incoming->node, incoming->service, &hints, &addrs);
-	if (gai_err) {
-		fprintf(stderr, "I %s: Failed to resolve %s/%s: %s\n", incoming->id, incoming->node, incoming->service, gai_strerror(gai_err));
-		incoming_retry(incoming);
-		return;
-	}
-
+static void incoming_listen(struct incoming *incoming) {
 	struct addrinfo *addr;
-	for (addr = addrs; addr; addr = addr->ai_next) {
+	for (addr = incoming->addrs; addr; addr = addr->ai_next) {
 		char hbuf[NI_MAXHOST], sbuf[NI_MAXSERV];
 		assert(getnameinfo(addr->ai_addr, addr->ai_addrlen, hbuf, sizeof(hbuf), sbuf, sizeof(sbuf), NI_NUMERICHOST | NI_NUMERICSERV) == 0);
 		fprintf(stderr, "I %s: Listening on %s/%s...\n", incoming->id, hbuf, sbuf);
@@ -110,7 +97,7 @@ static void incoming_resolve(struct incoming *incoming) {
 		break;
 	}
 
-	freeaddrinfo(addrs);
+	freeaddrinfo(incoming->addrs);
 
 	if (addr == NULL) {
 		fprintf(stderr, "I %s: Failed to bind any addresses for %s/%s...\n", incoming->id, incoming->node, incoming->service);
@@ -120,6 +107,23 @@ static void incoming_resolve(struct incoming *incoming) {
 
 	incoming->attempt = 0;
 	peer_epoll_add((struct peer *) incoming, EPOLLIN);
+}
+
+static void incoming_resolve_handler(struct peer *peer) {
+	struct incoming *incoming = (struct incoming *) peer;
+	if (incoming->addrs) {
+		incoming_listen(incoming);
+	} else {
+		fprintf(stderr, "I %s: Failed to resolve %s/%s: %s\n", incoming->id, incoming->node, incoming->service, incoming->error);
+		incoming_retry(incoming);
+	}
+}
+
+static void incoming_resolve(struct incoming *incoming) {
+	fprintf(stderr, "I %s: Resolving %s/%s...\n", incoming->id, incoming->node, incoming->service);
+	incoming->peer.fd = -1;
+	incoming->peer.event_handler = incoming_resolve_handler;
+	resolve((struct peer *) incoming, incoming->node, incoming->service, AI_PASSIVE, &incoming->addrs, &incoming->error);
 }
 
 static void incoming_resolve_wrapper(struct peer *peer) {

@@ -9,6 +9,7 @@
 #include <unistd.h>
 
 #include "peer.h"
+#include "resolve.h"
 #include "wakeup.h"
 #include "uuid.h"
 
@@ -21,6 +22,7 @@ struct outgoing {
 	char *service;
 	struct addrinfo *addrs;
 	struct addrinfo *addr;
+	const char *error;
 	uint32_t attempt;
 	outgoing_connection_handler handler;
 	void *passthrough;
@@ -110,22 +112,22 @@ static void outgoing_connect_result(struct outgoing *outgoing, int result) {
 	}
 }
 
+static void outgoing_resolve_handler(struct peer *peer) {
+	struct outgoing *outgoing = (struct outgoing *) peer;
+	if (outgoing->addrs) {
+		outgoing->addr = outgoing->addrs;
+		outgoing_connect_next(outgoing);
+	} else {
+		fprintf(stderr, "O %s: Failed to resolve %s/%s: %s\n", outgoing->id, outgoing->node, outgoing->service, outgoing->error);
+		outgoing_retry(outgoing);
+	}
+}
+
 static void outgoing_resolve(struct outgoing *outgoing) {
 	fprintf(stderr, "O %s: Resolving %s/%s...\n", outgoing->id, outgoing->node, outgoing->service);
-
-	struct addrinfo hints = {
-		.ai_family = AF_UNSPEC,
-		.ai_socktype = SOCK_STREAM,
-	};
-
-	int gai_err = getaddrinfo(outgoing->node, outgoing->service, &hints, &outgoing->addrs);
-	if (gai_err) {
-		fprintf(stderr, "O %s: Failed to resolve %s/%s: %s\n", outgoing->id, outgoing->node, outgoing->service, gai_strerror(gai_err));
-		outgoing_retry(outgoing);
-		return;
-	}
-	outgoing->addr = outgoing->addrs;
-	outgoing_connect_next(outgoing);
+	outgoing->peer.fd = -1;
+	outgoing->peer.event_handler = outgoing_resolve_handler;
+	resolve((struct peer *) outgoing, outgoing->node, outgoing->service, 0, &outgoing->addrs, &outgoing->error);
 }
 
 static void outgoing_resolve_wrapper(struct peer *peer) {
