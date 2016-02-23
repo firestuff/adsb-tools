@@ -106,6 +106,7 @@ static void incoming_listen(struct incoming *incoming) {
 	}
 
 	incoming->attempt = 0;
+	incoming->peer.event_handler = incoming_handler;
 	peer_epoll_add((struct peer *) incoming, EPOLLIN);
 }
 
