@@ -1,7 +1,7 @@
 CC ?= clang
-CFLAGS ?= -Wall -Werror -O4 -g --std=gnu11 --pedantic-errors -fPIE -pie -fstack-protector-strong
+CFLAGS ?= -Wall -Werror -O4 -g --std=gnu11 --pedantic-errors -fPIE -pie -fstack-protector-strong -pthread
 LDFLAGS ?= $(CFLAGS) -Wl,-z,relro -Wl,-z,now
-LIBS ?= -ljansson -lanl
+LIBS ?= -ljansson
 
 OBJ_NETWORK = incoming.o outgoing.o receive.o send.o
 OBJ_PROTOCOL = airspy_adsb.o beast.o json.o raw.o stats.o

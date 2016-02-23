@@ -14,6 +14,7 @@
 #include "peer.h"
 #include "rand.h"
 #include "receive.h"
+#include "resolve.h"
 #include "send.h"
 #include "server.h"
 #include "stats.h"
@@ -100,6 +101,7 @@ int main(int argc, char *argv[]) {
 
 	hex_init();
 	rand_init();
+	resolve_init();
 	server_init();
 	wakeup_init();
 	peer_init();
@@ -117,6 +119,7 @@ int main(int argc, char *argv[]) {
 	peer_loop();
 
 	rand_cleanup();
+	resolve_cleanup();
 	wakeup_cleanup();
 	send_cleanup();
 

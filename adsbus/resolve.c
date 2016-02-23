@@ -5,73 +5,91 @@
 #include <netdb.h>
 #include <stdlib.h>
 #include <unistd.h>
+#include <pthread.h>
 
 #include "peer.h"
 
 #include "resolve.h"
 
-struct resolve {
-	struct peer peer;
-
+struct resolve_request {
+	int fd;
+	const char *node;
+	const char *service;
+	int flags;
 	struct addrinfo **addrs;
 	const char **error;
-
-	struct peer *inner_peer;
-
-	struct addrinfo ar_request;
-	struct gaicb gaicb;
-	struct gaicb *requests[1];
-
-	struct sigevent sev;
 };
 
+struct resolve_peer {
+	struct peer peer;
+	struct peer *inner_peer;
+};
+
+static pthread_t resolve_thread;
+static int resolve_write_fd;
+
 static void resolve_handler(struct peer *peer) {
-	struct resolve *res = (struct resolve *) peer;
+	struct resolve_peer *resolve_peer = (struct resolve_peer *) peer;
 
-	assert(!close(res->peer.fd));
+	assert(!close(resolve_peer->peer.fd));
 
-	int err = gai_error(&res->gaicb);
-	if (err == 0) {
-		*res->addrs = res->gaicb.ar_result;
-		*res->error = NULL;
-	} else {
-		*res->addrs = NULL;
-		*res->error = gai_strerror(err);
-	}
-	struct peer *inner_peer = res->inner_peer;
-	free(res);
+	struct peer *inner_peer = resolve_peer->inner_peer;
+	free(resolve_peer);
 	inner_peer->event_handler(inner_peer);
 }
 
-static void resolve_callback(union sigval val) {
-	assert(!close(val.sival_int));
+static void *resolve_main(void *arg) {
+	int fd = (intptr_t) arg;
+	struct resolve_request *request;
+	ssize_t ret;
+	while ((ret = read(fd, &request, sizeof(request))) == sizeof(request)) {
+		struct addrinfo hints = {
+			.ai_family = AF_UNSPEC,
+			.ai_socktype = SOCK_STREAM,
+			.ai_flags = AI_V4MAPPED | AI_ADDRCONFIG | request->flags,
+		};
+		int err = getaddrinfo(request->node, request->service, &hints, request->addrs);
+		if (err) {
+			*request->addrs = NULL;
+			*request->error = gai_strerror(err);
+		} else {
+			*request->error = NULL;
+		}
+		close(request->fd);
+		free(request);
+	}
+	assert(!ret);
+	return NULL;
+}
+
+void resolve_init() {
+	int fds[2];
+	assert(!pipe2(fds, O_CLOEXEC));
+	resolve_write_fd = fds[1];
+	assert(!pthread_create(&resolve_thread, NULL, resolve_main, (void *) (intptr_t) fds[0]));
+}
+
+void resolve_cleanup() {
+	assert(!close(resolve_write_fd));
+	assert(!pthread_join(resolve_thread, NULL));
 }
 
 void resolve(struct peer *peer, const char *node, const char *service, int flags, struct addrinfo **addrs, const char **error) {
-	struct resolve *res = malloc(sizeof(*res));
-	res->addrs = addrs;
-	res->error = error;
-	res->inner_peer = peer;
-
 	int fds[2];
-	assert(!pipe2(fds, O_NONBLOCK));
-	res->peer.fd = fds[0];
-	res->peer.event_handler = resolve_handler;
-	peer_epoll_add((struct peer *) res, EPOLLRDHUP);
+	assert(!pipe2(fds, O_CLOEXEC));
 
-	res->requests[0] = &res->gaicb;
-	res->gaicb.ar_name = node;
-	res->gaicb.ar_service = service;
-	res->gaicb.ar_request = &res->ar_request;
-	res->ar_request.ai_family = AF_UNSPEC;
-	res->ar_request.ai_socktype = SOCK_STREAM;
-	res->ar_request.ai_protocol = 0;
-	res->ar_request.ai_flags = AI_V4MAPPED | AI_ADDRCONFIG | flags;
+	struct resolve_request *request = malloc(sizeof(*request));
+	request->fd = fds[1];
+	request->node = node;
+	request->service = service;
+	request->flags = flags;
+	request->addrs = addrs;
+	request->error = error;
+	assert(write(resolve_write_fd, &request, sizeof(request)) == sizeof(request));
 
-	res->sev.sigev_notify = SIGEV_THREAD;
-	res->sev.sigev_value.sival_int = fds[1];
-	res->sev.sigev_notify_function = resolve_callback;
-	res->sev.sigev_notify_attributes = NULL;
-
-	assert(!getaddrinfo_a(GAI_NOWAIT, res->requests, 1, &res->sev));
+	struct resolve_peer *resolve_peer = malloc(sizeof(*resolve_peer));
+	resolve_peer->peer.fd = fds[0];
+	resolve_peer->peer.event_handler = resolve_handler;
+	resolve_peer->inner_peer = peer;
+	peer_epoll_add((struct peer *) resolve_peer, EPOLLRDHUP);
 }
