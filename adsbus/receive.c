@@ -25,7 +25,10 @@ struct receive {
 	char parser_state[PARSER_STATE_LEN];
 	parser_wrapper parser_wrapper;
 	parser parser;
+	struct receive *prev;
+	struct receive *next;
 };
+struct receive *receive_head = NULL;
 
 struct parser {
 	char *name;
@@ -67,6 +70,14 @@ static bool receive_autodetect_parse(struct receive *receive, struct packet *pac
 
 static void receive_del(struct receive *receive) {
 	assert(!close(receive->peer.fd));
+	if (receive->prev) {
+		receive->prev->next = receive->next;
+	} else {
+		receive_head = receive->next;
+	}
+	if (receive->next) {
+		receive->next->prev = receive->prev;
+	}
 	free(receive);
 }
 
@@ -93,6 +104,12 @@ static void receive_read(struct peer *peer) {
 	}
 }
 
+void receive_cleanup() {
+	while (receive_head) {
+		receive_del(receive_head);
+	}
+}
+
 void receive_new(int fd, void *unused) {
 	struct receive *receive = malloc(sizeof(*receive));
 	assert(receive);
@@ -101,6 +118,9 @@ void receive_new(int fd, void *unused) {
 	buf_init(&receive->buf);
 	memset(receive->parser_state, 0, PARSER_STATE_LEN);
 	receive->parser_wrapper = receive_autodetect_parse;
+	receive->prev = NULL;
+	receive->next = receive_head;
+	receive_head = receive;
 	receive->peer.event_handler = receive_read;
 	peer_epoll_add((struct peer *) receive, EPOLLIN);
 

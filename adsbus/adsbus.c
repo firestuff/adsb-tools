@@ -118,13 +118,14 @@ int main(int argc, char *argv[]) {
 
 	peer_loop();
 
+	receive_cleanup();
+	send_cleanup();
+	incoming_cleanup();
+	outgoing_cleanup();
+
 	rand_cleanup();
 	resolve_cleanup();
 	wakeup_cleanup();
-	send_cleanup();
-
-	incoming_cleanup();
-	outgoing_cleanup();
 
 	return EXIT_SUCCESS;
 }
