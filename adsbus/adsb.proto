@@ -1,0 +1,23 @@
+message AdsbHeader {
+	required string magic = 1;
+	required string server_version = 2;
+	required string server_id = 3;
+	required fixed32 mlat_timestamp_mhz = 4;
+	required fixed64 mlat_timestamp_max = 5;
+	required fixed32 rssi_max = 6;
+}
+
+message AdsbPacket {
+	required string source_id = 1;
+	optional fixed64 mlat_timestamp = 2;
+	optional fixed32 rssi = 3;
+	required bytes payload = 4;
+}
+
+message Adsb {
+	oneof record {
+		AdsbHeader header = 1;
+		AdsbPacket mode_s_short = 2;
+		AdsbPacket mode_s_long = 3;
+	}
+}

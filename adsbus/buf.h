@@ -1,6 +1,7 @@
 #pragma once
 
 #include <stddef.h>
+#include <unistd.h>
 
 #define BUF_LEN_MAX 256
 struct buf {
