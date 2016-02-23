@@ -79,7 +79,9 @@ static void receive_read(struct peer *peer) {
 		return;
 	}
 
-	struct packet packet = { 0 };
+	struct packet packet = {
+		.source_id = receive->id,
+	};
 	while (receive->parser_wrapper(receive, &packet)) {
 		send_write(&packet);
 	}

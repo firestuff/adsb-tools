@@ -4,6 +4,7 @@
 
 #define PACKET_DATA_LEN_MAX 14
 struct packet {
+	char *source_id;
 	enum {
 		MODE_S_SHORT,
 		MODE_S_LONG,
