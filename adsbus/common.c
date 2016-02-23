@@ -11,7 +11,6 @@
 #include <errno.h>
 
 #include "common.h"
-#include "rand.h"
 #include "uuid.h"
 #include "wakeup.h"
 
@@ -228,17 +227,4 @@ void hex_from_int_upper(char *out, uint64_t in, size_t bytes) {
 
 void hex_from_int_lower(char *out, uint64_t in, size_t bytes) {
 	hex_from_int(out, in, bytes, hex_lower_table);
-}
-
-
-#define RETRY_MIN_MS 2000
-#define RETRY_MAX_MS 60000
-uint32_t retry_get_delay_ms(uint32_t attempt) {
-	uint32_t max_delay = RETRY_MIN_MS * (1 << attempt);
-	max_delay = max_delay > RETRY_MAX_MS ? RETRY_MAX_MS : max_delay;
-
-	uint32_t jitter;
-	rand_fill(&jitter, sizeof(jitter));
-
-	return jitter % max_delay;
 }

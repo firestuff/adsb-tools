@@ -11,6 +11,7 @@
 #include <sys/epoll.h>
 
 #include "common.h"
+#include "rand.h"
 
 #include "wakeup.h"
 
@@ -82,4 +83,16 @@ void wakeup_add(struct peer *peer, uint32_t delay_ms) {
 		entry->next = head;
 		head = entry;
 	}
+}
+
+#define RETRY_MIN_MS 2000
+#define RETRY_MAX_MS 60000
+uint32_t wakeup_get_retry_delay_ms(uint32_t attempt) {
+	uint32_t max_delay = RETRY_MIN_MS * (1 << attempt);
+	max_delay = max_delay > RETRY_MAX_MS ? RETRY_MAX_MS : max_delay;
+
+	uint32_t jitter;
+	rand_fill(&jitter, sizeof(jitter));
+
+	return jitter % max_delay;
 }

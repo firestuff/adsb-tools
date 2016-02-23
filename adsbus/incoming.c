@@ -32,7 +32,7 @@ static struct incoming *incoming_head = NULL;
 static void incoming_resolve_wrapper(struct peer *);
 
 static void incoming_retry(struct incoming *incoming) {
-	uint32_t delay = retry_get_delay_ms(incoming->attempt++);
+	uint32_t delay = wakeup_get_retry_delay_ms(incoming->attempt++);
 	fprintf(stderr, "I %s: Will retry in %ds\n", incoming->id, delay / 1000);
 	incoming->peer.event_handler = incoming_resolve_wrapper;
 	wakeup_add((struct peer *) incoming, delay);
