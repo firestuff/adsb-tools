@@ -9,6 +9,7 @@
 #include "rand.h"
 #include "receive.h"
 #include "send.h"
+#include "server.h"
 #include "uuid.h"
 
 #include "json.h"
@@ -20,7 +21,10 @@ static void json_serialize_to_buf(json_t *obj, struct buf *buf) {
 }
 
 static void json_hello(struct buf *buf) {
-	json_t *hello = json_pack("{sIsIsI}",
+	json_t *hello = json_pack("{sssssssIsIsI}",
+			"type", "header",
+			"server_version", server_version,
+			"server_id", server_id,
 			"mlat_timestamp_mhz", (json_int_t) PACKET_MLAT_MHZ,
 			"mlat_timestamp_max", (json_int_t) PACKET_MLAT_MAX,
 			"rssi_max", (json_int_t) PACKET_RSSI_MAX);
