@@ -85,7 +85,7 @@ static bool beast_parse_mode_s_short(struct buf *buf, struct packet *packet, str
 		return false;
 	}
 	struct beast_mode_s_short_overlay *overlay = (struct beast_mode_s_short_overlay *) buf_at(&buf2, 0);
-	packet->type = MODE_S_SHORT;
+	packet->type = PACKET_TYPE_MODE_S_SHORT;
 	uint64_t source_mlat = beast_parse_mlat(overlay->mlat_timestamp);
 	packet->mlat_timestamp = packet_mlat_timestamp_scale_in(source_mlat, UINT64_C(0xffffffffffff), 12, &state->mlat_state);
 	packet->rssi = packet_rssi_scale_in(overlay->rssi, UINT8_MAX);
@@ -101,7 +101,7 @@ static bool beast_parse_mode_s_long(struct buf *buf, struct packet *packet, stru
 		return false;
 	}
 	struct beast_mode_s_long_overlay *overlay = (struct beast_mode_s_long_overlay *) buf_at(&buf2, 0);
-	packet->type = MODE_S_LONG;
+	packet->type = PACKET_TYPE_MODE_S_LONG;
 	uint64_t source_mlat = beast_parse_mlat(overlay->mlat_timestamp);
 	packet->mlat_timestamp = packet_mlat_timestamp_scale_in(source_mlat, UINT64_C(0xffffffffffff), 12, &state->mlat_state);
 	packet->rssi = packet_rssi_scale_in(overlay->rssi == UINT8_MAX ? 0 : overlay->rssi, UINT8_MAX);
@@ -133,7 +133,7 @@ bool beast_parse(struct buf *buf, struct packet *packet, void *state_in) {
 			return beast_parse_mode_s_long(buf, packet, state);
 
 		default:
-			fprintf(stderr, "unknown beast type %x\n", overlay->type);
+			fprintf(stderr, "R %s: Unknown beast type %x\n", packet->source_id, overlay->type);
 			return false;
 	}
 	return false;
@@ -185,11 +185,14 @@ void beast_serialize(struct packet *packet, struct buf *buf) {
 	}
 
 	switch (packet->type) {
-		case MODE_S_SHORT:
+		case PACKET_TYPE_NONE:
+			break;
+
+		case PACKET_TYPE_MODE_S_SHORT:
 			beast_serialize_mode_s_short(packet, buf);
 			break;
 
-		case MODE_S_LONG:
+		case PACKET_TYPE_MODE_S_LONG:
 			beast_serialize_mode_s_long(packet, buf);
 			break;
 	}

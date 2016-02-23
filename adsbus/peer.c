@@ -48,6 +48,10 @@ void peer_init() {
 	signal(SIGINT, peer_cancel);
 }
 
+void peer_cleanup() {
+	assert(!close(peer_epoll_fd));
+}
+
 void peer_epoll_add(struct peer *peer, uint32_t events) {
 	struct epoll_event ev = {
 		.events = events,
@@ -80,5 +84,4 @@ void peer_loop() {
 
 		wakeup_dispatch();
 	}
-	assert(!close(peer_epoll_fd));
 }

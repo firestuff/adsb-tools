@@ -64,7 +64,8 @@ static void send_hangup(struct send *send) {
 	if (send->next) {
 		send->next->prev = send->prev;
 	}
-	close(send->peer.fd);
+	peer_epoll_del((struct peer *) send);
+	assert(!close(send->peer.fd));
 	free(send);
 }
 
@@ -94,6 +95,8 @@ void send_cleanup() {
 		struct send *send = serializer->send_head;
 		while (send) {
 			struct send *next = send->next;
+			peer_epoll_del((struct peer *) send);
+			assert(!close(send->peer.fd));
 			free(send);
 			send = next;
 		}

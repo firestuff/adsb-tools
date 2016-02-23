@@ -116,7 +116,11 @@ int main(int argc, char *argv[]) {
 		return EXIT_FAILURE;
 	}
 
+	assert(!close(1));
+
 	peer_loop();
+
+	json_cleanup();
 
 	receive_cleanup();
 	send_cleanup();
@@ -127,7 +131,8 @@ int main(int argc, char *argv[]) {
 	resolve_cleanup();
 	wakeup_cleanup();
 
-	assert(!close(1));
+	peer_cleanup();
+
 	assert(!close(2));
 
 	return EXIT_SUCCESS;

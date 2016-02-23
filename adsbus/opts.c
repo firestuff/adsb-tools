@@ -1,5 +1,6 @@
 #include <stdlib.h>
 #include <string.h>
+#include <unistd.h>
 
 #include "incoming.h"
 #include "outgoing.h"
@@ -49,7 +50,7 @@ bool opts_add_dump(char *arg) {
 	if (!serializer) {
 		return false;
 	}
-	send_add(1, serializer);
+	send_add(dup(1), serializer);
 	return true;
 }
 

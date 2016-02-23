@@ -67,7 +67,7 @@ static bool airspy_adsb_parse_mode_s_short(struct buf *buf, struct packet *packe
 	if (!airspy_adsb_parse_common(&short_overlay->common, packet, state)) {
 		return false;
 	}
-	packet->type = MODE_S_SHORT;
+	packet->type = PACKET_TYPE_MODE_S_SHORT;
 	hex_to_bin(packet->payload, short_overlay->payload, sizeof(short_overlay->payload) / 2);
 	buf_consume(buf, sizeof(*short_overlay));
 	return true;
@@ -85,7 +85,7 @@ static bool airspy_adsb_parse_mode_s_long(struct buf *buf, struct packet *packet
 	if (!airspy_adsb_parse_common(&long_overlay->common, packet, state)) {
 		return false;
 	}
-	packet->type = MODE_S_LONG;
+	packet->type = PACKET_TYPE_MODE_S_LONG;
 	hex_to_bin(packet->payload, long_overlay->payload, sizeof(long_overlay->payload) / 2);
 	buf_consume(buf, sizeof(*long_overlay));
 	return true;
@@ -147,11 +147,14 @@ void airspy_adsb_serialize(struct packet *packet, struct buf *buf) {
 	}
 
 	switch (packet->type) {
-		case MODE_S_SHORT:
+		case PACKET_TYPE_NONE:
+			break;
+
+		case PACKET_TYPE_MODE_S_SHORT:
 			airspy_adsb_serialize_mode_s_short(packet, buf);
 			break;
 
-		case MODE_S_LONG:
+		case PACKET_TYPE_MODE_S_LONG:
 			airspy_adsb_serialize_mode_s_long(packet, buf);
 			break;
 	}

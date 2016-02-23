@@ -4,10 +4,11 @@
 
 #define PACKET_DATA_LEN_MAX 14
 struct packet {
-	char *source_id;
+	const char *source_id;
 	enum {
-		MODE_S_SHORT,
-		MODE_S_LONG,
+		PACKET_TYPE_NONE,
+		PACKET_TYPE_MODE_S_SHORT,
+		PACKET_TYPE_MODE_S_LONG,
 	} type;
 	#define NUM_TYPES 2
 	uint8_t payload[PACKET_DATA_LEN_MAX];

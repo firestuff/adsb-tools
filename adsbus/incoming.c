@@ -68,7 +68,9 @@ static void incoming_handler(struct peer *peer) {
 }
 
 static void incoming_del(struct incoming *incoming) {
-	assert(!close(incoming->peer.fd));
+	if (incoming->peer.fd >= 0) {
+		assert(!close(incoming->peer.fd));
+	}
 	free(incoming->node);
 	free(incoming->service);
 	free(incoming);

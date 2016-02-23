@@ -1,6 +1,7 @@
 #include "packet.h"
 
 char *packet_type_names[] = {
+	"INVALID",
 	"Mode-S short",
 	"Mode-S long",
 };

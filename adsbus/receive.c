@@ -7,6 +7,7 @@
 #include "airspy_adsb.h"
 #include "beast.h"
 #include "buf.h"
+#include "json.h"
 #include "packet.h"
 #include "peer.h"
 #include "raw.h"
@@ -43,6 +44,10 @@ struct parser {
 		.parse = beast_parse,
 	},
 	{
+		.name = "json",
+		.parse = json_parse,
+	},
+	{
 		.name = "raw",
 		.parse = raw_parse,
 	},
@@ -69,6 +74,7 @@ static bool receive_autodetect_parse(struct receive *receive, struct packet *pac
 }
 
 static void receive_del(struct receive *receive) {
+	peer_epoll_del((struct peer *) receive);
 	assert(!close(receive->peer.fd));
 	if (receive->prev) {
 		receive->prev->next = receive->next;
@@ -94,6 +100,9 @@ static void receive_read(struct peer *peer) {
 		.source_id = receive->id,
 	};
 	while (receive->parser_wrapper(receive, &packet)) {
+		if (packet.type == PACKET_TYPE_NONE) {
+			continue;
+		}
 		send_write(&packet);
 	}
 

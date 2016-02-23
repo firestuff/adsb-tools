@@ -10,6 +10,7 @@ struct peer {
 	peer_event_handler event_handler;
 };
 void peer_init();
+void peer_cleanup();
 void peer_epoll_add(struct peer *, uint32_t);
 void peer_epoll_del(struct peer *);
 void peer_loop();
