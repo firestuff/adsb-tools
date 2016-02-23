@@ -1,7 +1,8 @@
 #include <stdint.h>
 
-#include "rand.h"
 #include "common.h"
+#include "hex.h"
+#include "rand.h"
 
 #include "uuid.h"
 

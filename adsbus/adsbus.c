@@ -15,9 +15,10 @@
 #include "json.h"
 #include "stats.h"
 
-#include "rand.h"
-#include "opts.h"
 #include "common.h"
+#include "hex.h"
+#include "opts.h"
+#include "rand.h"
 #include "wakeup.h"
 
 static void print_usage(const char *name) {

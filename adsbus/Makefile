@@ -5,7 +5,7 @@ LIBS ?= -ljansson
 
 OBJ_NETWORK = receive.o send.o incoming.o outgoing.o
 OBJ_PROTOCOL = airspy_adsb.o beast.o json.o raw.o stats.o
-OBJ_UTIL = rand.o uuid.o wakeup.o opts.o common.o
+OBJ_UTIL = rand.o uuid.o wakeup.o opts.o hex.o common.o
 
 all: adsbus
 

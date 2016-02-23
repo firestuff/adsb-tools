@@ -3,7 +3,9 @@
 #include <string.h>
 
 #include "common.h"
+#include "hex.h"
 #include "uuid.h"
+
 #include "raw.h"
 
 struct __attribute__((packed)) raw_mode_s_short_overlay {

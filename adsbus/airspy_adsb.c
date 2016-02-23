@@ -3,8 +3,10 @@
 #include <string.h>
 
 #include "common.h"
-#include "uuid.h"
+#include "hex.h"
 #include "receive.h"
+#include "uuid.h"
+
 #include "airspy_adsb.h"
 
 #define SEND_MHZ 20

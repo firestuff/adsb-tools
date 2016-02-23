@@ -3,10 +3,12 @@
 #include <string.h>
 #include <jansson.h>
 
+#include "hex.h"
+#include "rand.h"
 #include "receive.h"
 #include "send.h"
-#include "rand.h"
 #include "uuid.h"
+
 #include "json.h"
 
 static void json_serialize_to_buf(json_t *obj, struct buf *buf) {
