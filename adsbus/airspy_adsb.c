@@ -2,9 +2,9 @@
 #include <stdio.h>
 #include <string.h>
 
-#include "common.h"
 #include "buf.h"
 #include "hex.h"
+#include "packet.h"
 #include "receive.h"
 #include "uuid.h"
 
@@ -40,7 +40,7 @@ struct __attribute__((packed)) airspy_adsb_mode_s_long_overlay {
 };
 
 struct airspy_adsb_parser_state {
-	struct mlat_state mlat_state;
+	struct packet_mlat_state mlat_state;
 };
 
 static bool airspy_adsb_parse_common(const struct airspy_adsb_common_overlay *overlay, struct packet *packet, struct airspy_adsb_parser_state *state) {
@@ -50,8 +50,8 @@ static bool airspy_adsb_parse_common(const struct airspy_adsb_common_overlay *ov
 		return false;
 	}
 	uint16_t mlat_mhz = 2 * hex_to_int(overlay->mlat_precision, sizeof(overlay->mlat_precision) / 2);
-	packet->mlat_timestamp = mlat_timestamp_scale_in(hex_to_int(overlay->mlat_timestamp, sizeof(overlay->mlat_timestamp) / 2), UINT32_MAX, mlat_mhz, &state->mlat_state);
-	packet->rssi = rssi_scale_in(hex_to_int(overlay->rssi, sizeof(overlay->rssi) / 2), UINT16_MAX);
+	packet->mlat_timestamp = packet_mlat_timestamp_scale_in(hex_to_int(overlay->mlat_timestamp, sizeof(overlay->mlat_timestamp) / 2), UINT32_MAX, mlat_mhz, &state->mlat_state);
+	packet->rssi = packet_rssi_scale_in(hex_to_int(overlay->rssi, sizeof(overlay->rssi) / 2), UINT16_MAX);
 	return true;
 }
 
@@ -95,10 +95,10 @@ static void airspy_adsb_fill_common(struct packet *packet, struct airspy_adsb_co
 	overlay->semicolon1 = overlay->semicolon2 = overlay->semicolon3 = ';';
 	hex_from_int_upper(
 			overlay->mlat_timestamp,
-			mlat_timestamp_scale_out(packet->mlat_timestamp, UINT32_MAX, SEND_MHZ),
+			packet_mlat_timestamp_scale_out(packet->mlat_timestamp, UINT32_MAX, SEND_MHZ),
 			sizeof(overlay->mlat_timestamp) / 2);
 	hex_from_int_upper(overlay->mlat_precision, SEND_MHZ / 2, sizeof(overlay->mlat_precision) / 2);
-	hex_from_int_upper(overlay->rssi, rssi_scale_out(packet->rssi, UINT16_MAX), sizeof(overlay->rssi) / 2);
+	hex_from_int_upper(overlay->rssi, packet_rssi_scale_out(packet->rssi, UINT16_MAX), sizeof(overlay->rssi) / 2);
 }
 
 static void airspy_adsb_serialize_mode_s_short(struct packet *packet, struct buf *buf) {

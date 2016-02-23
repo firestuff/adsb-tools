@@ -3,8 +3,8 @@
 #include <string.h>
 #include <stdint.h>
 
-#include "common.h"
 #include "buf.h"
+#include "packet.h"
 #include "receive.h"
 
 #include "beast.h"
@@ -29,7 +29,7 @@ struct __attribute__((packed)) beast_mode_s_long_overlay {
 };
 
 struct beast_parser_state {
-	struct mlat_state mlat_state;
+	struct packet_mlat_state mlat_state;
 };
 
 static uint64_t beast_parse_mlat(uint8_t *mlat_timestamp) {
@@ -87,8 +87,8 @@ static bool beast_parse_mode_s_short(struct buf *buf, struct packet *packet, str
 	struct beast_mode_s_short_overlay *overlay = (struct beast_mode_s_short_overlay *) buf_at(&buf2, 0);
 	packet->type = MODE_S_SHORT;
 	uint64_t source_mlat = beast_parse_mlat(overlay->mlat_timestamp);
-	packet->mlat_timestamp = mlat_timestamp_scale_in(source_mlat, UINT64_C(0xffffffffffff), 12, &state->mlat_state);
-	packet->rssi = rssi_scale_in(overlay->rssi, UINT8_MAX);
+	packet->mlat_timestamp = packet_mlat_timestamp_scale_in(source_mlat, UINT64_C(0xffffffffffff), 12, &state->mlat_state);
+	packet->rssi = packet_rssi_scale_in(overlay->rssi, UINT8_MAX);
 	memcpy(packet->payload, overlay->payload, sizeof(overlay->payload));
 	buf_consume(buf, in_bytes);
 	return true;
@@ -103,8 +103,8 @@ static bool beast_parse_mode_s_long(struct buf *buf, struct packet *packet, stru
 	struct beast_mode_s_long_overlay *overlay = (struct beast_mode_s_long_overlay *) buf_at(&buf2, 0);
 	packet->type = MODE_S_LONG;
 	uint64_t source_mlat = beast_parse_mlat(overlay->mlat_timestamp);
-	packet->mlat_timestamp = mlat_timestamp_scale_in(source_mlat, UINT64_C(0xffffffffffff), 12, &state->mlat_state);
-	packet->rssi = rssi_scale_in(overlay->rssi == UINT8_MAX ? 0 : overlay->rssi, UINT8_MAX);
+	packet->mlat_timestamp = packet_mlat_timestamp_scale_in(source_mlat, UINT64_C(0xffffffffffff), 12, &state->mlat_state);
+	packet->rssi = packet_rssi_scale_in(overlay->rssi == UINT8_MAX ? 0 : overlay->rssi, UINT8_MAX);
 	memcpy(packet->payload, overlay->payload, sizeof(overlay->payload));
 	buf_consume(buf, in_bytes);
 	return true;
@@ -146,11 +146,11 @@ void beast_serialize_mode_s_short(struct packet *packet, struct buf *buf) {
 	overlay->common.type = 0x32;
 	memcpy(overlay->payload, packet->payload, sizeof(overlay->payload));
 	beast_write_mlat(
-			mlat_timestamp_scale_out(packet->mlat_timestamp, UINT64_C(0xffffffffffff), 12),
+			packet_mlat_timestamp_scale_out(packet->mlat_timestamp, UINT64_C(0xffffffffffff), 12),
 			overlay->mlat_timestamp);
 
 	if (packet->rssi) {
-		overlay->rssi = rssi_scale_out(packet->rssi, UINT8_MAX);
+		overlay->rssi = packet_rssi_scale_out(packet->rssi, UINT8_MAX);
 	} else {
 		overlay->rssi = UINT8_MAX;
 	}
@@ -166,11 +166,11 @@ void beast_serialize_mode_s_long(struct packet *packet, struct buf *buf) {
 	overlay->common.type = 0x33;
 	memcpy(overlay->payload, packet->payload, sizeof(overlay->payload));
 	beast_write_mlat(
-			mlat_timestamp_scale_out(packet->mlat_timestamp, UINT64_C(0xffffffffffff), 12),
+			packet_mlat_timestamp_scale_out(packet->mlat_timestamp, UINT64_C(0xffffffffffff), 12),
 			overlay->mlat_timestamp);
 
 	if (packet->rssi) {
-		overlay->rssi = rssi_scale_out(packet->rssi, UINT8_MAX);
+		overlay->rssi = packet_rssi_scale_out(packet->rssi, UINT8_MAX);
 	} else {
 		overlay->rssi = UINT8_MAX;
 	}

@@ -6,7 +6,6 @@
 #include <unistd.h>
 
 #include "beast.h"
-#include "common.h"
 #include "hex.h"
 #include "incoming.h"
 #include "json.h"

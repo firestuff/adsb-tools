@@ -5,6 +5,7 @@
 
 #include "hex.h"
 #include "buf.h"
+#include "packet.h"
 #include "rand.h"
 #include "receive.h"
 #include "send.h"
@@ -20,9 +21,9 @@ static void json_serialize_to_buf(json_t *obj, struct buf *buf) {
 
 static void json_hello(struct buf *buf) {
 	json_t *hello = json_pack("{sIsIsI}",
-			"mlat_timestamp_mhz", (json_int_t) MLAT_MHZ,
-			"mlat_timestamp_max", (json_int_t) MLAT_MAX,
-			"rssi_max", (json_int_t) RSSI_MAX);
+			"mlat_timestamp_mhz", (json_int_t) PACKET_MLAT_MHZ,
+			"mlat_timestamp_max", (json_int_t) PACKET_MLAT_MAX,
+			"rssi_max", (json_int_t) PACKET_RSSI_MAX);
 	json_serialize_to_buf(hello, buf);
 }
 
@@ -37,7 +38,7 @@ static void json_add_common(struct packet *packet, json_t *obj) {
 }
 
 static void json_serialize_mode_s_short(struct packet *packet, struct buf *buf) {
-	assert(packet->mlat_timestamp < MLAT_MAX);
+	assert(packet->mlat_timestamp < PACKET_MLAT_MAX);
 	char hexbuf[14];
 	hex_from_bin_upper(hexbuf, packet->payload, 7);
 	json_t *out = json_pack("{ss#}", "payload", hexbuf, 14);
@@ -46,7 +47,7 @@ static void json_serialize_mode_s_short(struct packet *packet, struct buf *buf) 
 }
 
 static void json_serialize_mode_s_long(struct packet *packet, struct buf *buf) {
-	assert(packet->mlat_timestamp < MLAT_MAX);
+	assert(packet->mlat_timestamp < PACKET_MLAT_MAX);
 	char hexbuf[28];
 	hex_from_bin_upper(hexbuf, packet->payload, 14);
 	json_t *out = json_pack("{ss#}", "payload", hexbuf, 28);

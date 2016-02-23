@@ -1,6 +1,5 @@
 #include <stdint.h>
 
-#include "common.h"
 #include "hex.h"
 #include "rand.h"
 

@@ -8,7 +8,6 @@
 #include <string.h>
 #include <unistd.h>
 
-#include "common.h"
 #include "peer.h"
 #include "wakeup.h"
 #include "uuid.h"

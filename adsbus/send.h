@@ -1,6 +1,6 @@
 #pragma once
 
-#include "common.h"
+struct packet;
 
 void send_init();
 void send_cleanup();

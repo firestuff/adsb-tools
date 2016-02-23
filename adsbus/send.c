@@ -6,8 +6,6 @@
 #include <unistd.h>
 #include <signal.h>
 
-#include "common.h"
-
 #include "airspy_adsb.h"
 #include "beast.h"
 #include "buf.h"

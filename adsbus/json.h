@@ -1,6 +1,7 @@
 #pragma once
 
 struct buf;
+struct packet;
 
 void json_init();
 void json_serialize(struct packet *, struct buf *);

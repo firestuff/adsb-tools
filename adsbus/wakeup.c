@@ -10,7 +10,6 @@
 #include <string.h>
 #include <sys/epoll.h>
 
-#include "common.h"
 #include "peer.h"
 #include "rand.h"
 

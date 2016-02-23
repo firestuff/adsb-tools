@@ -3,9 +3,9 @@ CFLAGS ?= -Wall -Werror -O4 -g --std=gnu11 --pedantic-errors -fPIE -pie -fstack-
 LDFLAGS ?= $(CFLAGS) -Wl,-z,relro -Wl,-z,now
 LIBS ?= -ljansson
 
-OBJ_NETWORK = incoming.o outgoing.o receive.o send.o peer.o
+OBJ_NETWORK = incoming.o outgoing.o receive.o send.o
 OBJ_PROTOCOL = airspy_adsb.o beast.o json.o raw.o stats.o
-OBJ_UTIL = buf.o hex.o opts.o rand.o uuid.o wakeup.o common.o
+OBJ_UTIL = buf.o hex.o opts.o packet.o peer.o rand.o uuid.o wakeup.o
 
 all: adsbus
 

@@ -2,9 +2,9 @@
 #include <time.h>
 #include <jansson.h>
 
-#include "common.h"
 #include "buf.h"
 #include "json.h"
+#include "packet.h"
 
 #include "stats.h"
 

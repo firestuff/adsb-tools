@@ -2,9 +2,9 @@
 #include <stdio.h>
 #include <string.h>
 
-#include "common.h"
 #include "buf.h"
 #include "hex.h"
+#include "packet.h"
 #include "uuid.h"
 
 #include "raw.h"
