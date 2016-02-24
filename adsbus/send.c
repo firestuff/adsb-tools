@@ -11,6 +11,7 @@
 #include "buf.h"
 #include "json.h"
 #include "peer.h"
+#include "proto.h"
 #include "raw.h"
 #include "stats.h"
 #include "uuid.h"
@@ -42,6 +43,10 @@ struct serializer {
 	{
 		.name = "json",
 		.serialize = json_serialize,
+	},
+	{
+		.name = "proto",
+		.serialize = proto_serialize,
 	},
 	{
 		.name = "raw",
