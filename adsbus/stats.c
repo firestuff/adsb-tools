@@ -15,7 +15,7 @@ static struct stats_state {
 } stats_state = { 0 };
 
 void stats_init() {
-	assert(clock_gettime(CLOCK_MONOTONIC, &stats_state.start) == 0);
+	assert(!clock_gettime(CLOCK_MONOTONIC_COARSE, &stats_state.start));
 }
 
 void stats_serialize(struct packet *packet, struct buf *buf) {
@@ -28,10 +28,13 @@ void stats_serialize(struct packet *packet, struct buf *buf) {
 	}
 	json_t *counts = json_object();
 	for (int i = 0; i < NUM_TYPES; i++) {
+		if (i == PACKET_TYPE_NONE) {
+			continue;
+		}
 		json_object_set_new(counts, packet_type_names[i], json_integer(stats_state.type_count[i]));
 	}
 	struct timespec now;
-	assert(clock_gettime(CLOCK_MONOTONIC_COARSE, &now) == 0);
+	assert(!clock_gettime(CLOCK_MONOTONIC_COARSE, &now));
 	json_t *out = json_pack("{sIso}",
 			"uptime_seconds", (json_int_t) (now.tv_sec - stats_state.start.tv_sec),
 			"packet_counts", counts);

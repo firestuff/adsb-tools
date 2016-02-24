@@ -10,7 +10,7 @@ struct packet {
 		PACKET_TYPE_MODE_S_SHORT,
 		PACKET_TYPE_MODE_S_LONG,
 	} type;
-	#define NUM_TYPES 2
+	#define NUM_TYPES 3
 	uint8_t payload[PACKET_DATA_LEN_MAX];
 	uint64_t mlat_timestamp;
 	uint32_t rssi;
