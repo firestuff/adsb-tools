@@ -10,6 +10,7 @@
 #include "json.h"
 #include "packet.h"
 #include "peer.h"
+#include "proto.h"
 #include "raw.h"
 #include "send.h"
 #include "uuid.h"
@@ -46,6 +47,10 @@ struct parser {
 	{
 		.name = "json",
 		.parse = json_parse,
+	},
+	{
+		.name = "proto",
+		.parse = proto_parse,
 	},
 	{
 		.name = "raw",
@@ -99,7 +104,7 @@ static void receive_read(struct peer *peer) {
 	struct packet packet = {
 		.source_id = receive->id,
 	};
-	while (receive->parser_wrapper(receive, &packet)) {
+	while (receive->buf.length && receive->parser_wrapper(receive, &packet)) {
 		if (packet.type == PACKET_TYPE_NONE) {
 			continue;
 		}

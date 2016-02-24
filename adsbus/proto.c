@@ -1,4 +1,5 @@
 #include <assert.h>
+#include <stdio.h>
 #include <string.h>
 
 #include "buf.h"
@@ -48,7 +49,22 @@ static void proto_serialize_mode_s_long(struct packet *packet, struct buf *buf) 
 }
 
 bool proto_parse(struct buf *buf, struct packet *packet, void *state_in) {
-	return false;
+	Adsb *wrapper = adsb__unpack(NULL, buf->length, (uint8_t *) buf_at(buf, 0));
+	if (!wrapper) {
+		return false;
+	}
+	if (!wrapper->header &&
+			!wrapper->mode_s_short &&
+			!wrapper->mode_s_long) {
+		// "oneof" is actually "zero or oneof"
+		adsb__free_unpacked(wrapper, NULL);
+		return false;
+	}
+
+	buf_consume(buf, adsb__get_packed_size(wrapper));
+	adsb__free_unpacked(wrapper, NULL);
+	packet->type = PACKET_TYPE_NONE; // XXX
+	return true;
 }
 
 void proto_serialize(struct packet *packet, struct buf *buf) {
