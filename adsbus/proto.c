@@ -1,3 +1,4 @@
+#include <arpa/inet.h>
 #include <assert.h>
 #include <stdio.h>
 #include <string.h>
@@ -11,6 +12,10 @@
 
 #define PROTO_MAGIC "aDsB"
 
+struct proto_header {
+	uint32_t length;
+};
+
 struct proto_parser_state {
 	struct packet_mlat_state mlat_state;
 	uint16_t mlat_timestamp_mhz;
@@ -23,9 +28,13 @@ static Adsb *proto_prev = NULL;
 
 static void proto_obj_to_buf(Adsb *wrapper, struct buf *buf) {
 	assert(!buf->length);
-	assert(adsb__get_packed_size(wrapper) <= BUF_LEN_MAX);
-	buf->length = adsb__pack(wrapper, (uint8_t *) buf_at(buf, 0));
-	assert(buf->length);
+	struct proto_header *header = (struct proto_header *) buf_at(buf, 0);
+	assert(sizeof(*header) <= BUF_LEN_MAX);
+	uint32_t msg_len = adsb__get_packed_size(wrapper);
+	buf->length = sizeof(*header) + msg_len;
+	assert(buf->length <= BUF_LEN_MAX);
+	assert(adsb__pack(wrapper, (uint8_t *) buf_at(buf, sizeof(*header))) == msg_len);
+	header->length = htonl(msg_len);
 }
 
 static void proto_serialize_packet(struct packet *packet, AdsbPacket *out, size_t len) {
@@ -113,7 +122,16 @@ bool proto_parse(struct buf *buf, struct packet *packet, void *state_in) {
 		proto_prev = NULL;
 	}
 
-	Adsb *wrapper = adsb__unpack(NULL, buf->length, (uint8_t *) buf_at(buf, 0));
+	struct proto_header *header = (struct proto_header *) buf_at(buf, 0);
+	if (buf->length < sizeof(*header)) {
+		return false;
+	}
+	uint32_t msg_len = ntohl(header->length);
+	if (buf->length < sizeof(*header) + msg_len) {
+		return false;
+	}
+
+	Adsb *wrapper = adsb__unpack(NULL, msg_len, (uint8_t *) buf_at(buf, sizeof(*header)));
 	if (!wrapper) {
 		return false;
 	}
@@ -143,7 +161,7 @@ bool proto_parse(struct buf *buf, struct packet *packet, void *state_in) {
 	}
 
 	proto_prev = wrapper;
-	buf_consume(buf, adsb__get_packed_size(wrapper));
+	buf_consume(buf, sizeof(*header) + msg_len);
 	return true;
 }
 

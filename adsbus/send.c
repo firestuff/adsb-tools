@@ -120,6 +120,7 @@ struct serializer *send_get_serializer(char *name) {
 void send_add(int fd, struct serializer *serializer) {
 	if (!send_hello(fd, serializer)) {
 		fprintf(stderr, "S xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx: Failed to write hello\n");
+		assert(!close(fd));
 		return;
 	}
 
