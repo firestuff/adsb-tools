@@ -12,6 +12,7 @@
 #include "opts.h"
 #include "outgoing.h"
 #include "peer.h"
+#include "proto.h"
 #include "rand.h"
 #include "receive.h"
 #include "resolve.h"
@@ -121,6 +122,7 @@ int main(int argc, char *argv[]) {
 	peer_loop();
 
 	json_cleanup();
+	proto_cleanup();
 
 	receive_cleanup();
 	send_cleanup();
