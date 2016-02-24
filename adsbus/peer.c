@@ -32,7 +32,7 @@ static void peer_cancel_handler(struct peer *peer) {
 }
 
 void peer_init() {
-	peer_epoll_fd = epoll_create1(0);
+	peer_epoll_fd = epoll_create1(EPOLL_CLOEXEC);
 	assert(peer_epoll_fd >= 0);
 
 	int cancel_fds[2];
