@@ -126,6 +126,9 @@ void send_new(int fd, struct serializer *serializer, struct peer *on_close) {
 	send->serializer = serializer;
 	send->prev = NULL;
 	send->next = serializer->send_head;
+	if (send->next) {
+		send->next->prev = send;
+	}
 	serializer->send_head = send;
 
 	peer_epoll_add((struct peer *) send, EPOLLIN);

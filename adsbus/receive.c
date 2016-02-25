@@ -144,6 +144,9 @@ void receive_new(int fd, void *unused, struct peer *on_close) {
 	receive->parser_wrapper = receive_autodetect_parse;
 	receive->prev = NULL;
 	receive->next = receive_head;
+	if (receive->next) {
+		receive->next->prev = receive;
+	}
 	receive_head = receive;
 	peer_epoll_add((struct peer *) receive, EPOLLIN);
 
