@@ -1,11 +1,11 @@
 #include <assert.h>
 #include <errno.h>
-#include <signal.h>
 #include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <strings.h>
 #include <sys/socket.h>
+#include <sys/types.h>
 #include <unistd.h>
 
 #include "airspy_adsb.h"
@@ -88,14 +88,13 @@ static bool send_hello(int fd, struct serializer *serializer) {
 	if (buf.length == 0) {
 		return true;
 	}
-	if (write(fd, buf_at(&buf, 0), buf.length) != buf.length) {
+	if (send(fd, buf_at(&buf, 0), buf.length, MSG_NOSIGNAL) != buf.length) {
 		return false;
 	}
 	return true;
 }
 
 void send_init() {
-	signal(SIGPIPE, SIG_IGN);
 }
 
 void send_cleanup() {
