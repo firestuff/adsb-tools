@@ -45,15 +45,6 @@ static struct serializer *opts_get_serializer(char **arg) {
 	return serializer;
 }
 
-bool opts_add_dump(char *arg) {
-	struct serializer *serializer = send_get_serializer(arg);
-	if (!serializer) {
-		return false;
-	}
-	send_new(dup(1), serializer, NULL);
-	return true;
-}
-
 bool opts_add_connect_receive(char *arg) {
 	char *host = opts_split(&arg, '/');
 	if (!host) {
@@ -93,5 +84,19 @@ bool opts_add_listen_send(char *arg) {
 	}
 
 	opts_add_listen(arg, send_new_wrapper, serializer);
+	return true;
+}
+
+bool opts_add_stdin(char *arg) {
+	receive_new(dup(0), NULL, NULL);
+	return true;
+}
+
+bool opts_add_stdout(char *arg) {
+	struct serializer *serializer = send_get_serializer(arg);
+	if (!serializer) {
+		return false;
+	}
+	send_new(dup(1), serializer, NULL);
 	return true;
 }

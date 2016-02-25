@@ -28,11 +28,12 @@ static void print_usage(const char *name) {
 			"\n"
 			"Options:\n"
 			"\t--help\n"
-			"\t--dump=FORMAT\n"
 			"\t--connect-receive=HOST/PORT\n"
 			"\t--connect-send=FORMAT=HOST/PORT\n"
 			"\t--listen-receive=[HOST/]PORT\n"
 			"\t--listen-send=FORMAT=[HOST/]PORT\n"
+			"\t--stdin\n"
+			"\t--stdout=FORMAT\n"
 			, name);
 	receive_print_usage();
 	send_print_usage();
@@ -40,11 +41,12 @@ static void print_usage(const char *name) {
 
 static bool parse_opts(int argc, char *argv[]) {
 	static struct option long_options[] = {
-		{"dump",            required_argument, 0, 'd'},
 		{"connect-receive", required_argument, 0, 'c'},
 		{"connect-send",    required_argument, 0, 's'},
 		{"listen-receive",  required_argument, 0, 'l'},
 		{"listen-send",     required_argument, 0, 'm'},
+		{"stdin",           no_argument,       0, 'i'},
+		{"stdout",          required_argument, 0, 'o'},
 		{"help",            no_argument,       0, 'h'},
 		{0,                 0,                 0, 0  },
 	};
@@ -53,10 +55,6 @@ static bool parse_opts(int argc, char *argv[]) {
 	while ((opt = getopt_long_only(argc, argv, "", long_options, NULL)) != -1) {
 		bool (*handler)(char *) = NULL;
 		switch (opt) {
-		  case 'd':
-				handler = opts_add_dump;
-				break;
-
 			case 'c':
 				handler = opts_add_connect_receive;
 				break;
@@ -71,6 +69,14 @@ static bool parse_opts(int argc, char *argv[]) {
 
 			case 'm':
 				handler = opts_add_listen_send;
+				break;
+
+		  case 'i':
+				handler = opts_add_stdin;
+				break;
+
+		  case 'o':
+				handler = opts_add_stdout;
 				break;
 
 			case 'h':
@@ -98,8 +104,6 @@ static bool parse_opts(int argc, char *argv[]) {
 }
 
 int main(int argc, char *argv[]) {
-	assert(!close(0));
-
 	hex_init();
 	rand_init();
 	resolve_init();
@@ -117,6 +121,7 @@ int main(int argc, char *argv[]) {
 		peer_shutdown();
 	}
 
+	assert(!close(0));
 	assert(!close(1));
 
 	peer_loop();
