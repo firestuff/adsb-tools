@@ -22,6 +22,7 @@ typedef bool (*parser_wrapper)(struct receive *, struct packet *);
 typedef bool (*parser)(struct buf *, struct packet *, void *state);
 struct receive {
 	struct peer peer;
+	struct peer *on_close;
 	char id[UUID_LEN];
 	struct buf buf;
 	char parser_state[PARSER_STATE_LEN];
@@ -79,6 +80,7 @@ static bool receive_autodetect_parse(struct receive *receive, struct packet *pac
 }
 
 static void receive_del(struct receive *receive) {
+	fprintf(stderr, "R %s: Connection closed\n", receive->id);
 	peer_epoll_del((struct peer *) receive);
 	assert(!close(receive->peer.fd));
 	if (receive->prev) {
@@ -89,6 +91,7 @@ static void receive_del(struct receive *receive) {
 	if (receive->next) {
 		receive->next->prev = receive->prev;
 	}
+	peer_call(receive->on_close);
 	free(receive);
 }
 
@@ -96,7 +99,6 @@ static void receive_read(struct peer *peer) {
 	struct receive *receive = (struct receive *) peer;
 
 	if (buf_fill(&receive->buf, receive->peer.fd) <= 0) {
-		fprintf(stderr, "R %s: Connection closed by peer\n", receive->id);
 		receive_del(receive);
 		return;
 	}
@@ -124,18 +126,20 @@ void receive_cleanup() {
 	}
 }
 
-void receive_new(int fd, void *unused) {
+void receive_new(int fd, void *unused, struct peer *on_close) {
 	struct receive *receive = malloc(sizeof(*receive));
 	assert(receive);
-	uuid_gen(receive->id);
+
 	receive->peer.fd = fd;
+	receive->peer.event_handler = receive_read;
+	receive->on_close = on_close;
+	uuid_gen(receive->id);
 	buf_init(&receive->buf);
 	memset(receive->parser_state, 0, PARSER_STATE_LEN);
 	receive->parser_wrapper = receive_autodetect_parse;
 	receive->prev = NULL;
 	receive->next = receive_head;
 	receive_head = receive;
-	receive->peer.event_handler = receive_read;
 	peer_epoll_add((struct peer *) receive, EPOLLIN);
 
 	fprintf(stderr, "R %s: New receive connection\n", receive->id);

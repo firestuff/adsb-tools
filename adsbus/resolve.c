@@ -33,9 +33,8 @@ static void resolve_handler(struct peer *peer) {
 
 	assert(!close(resolve_peer->peer.fd));
 
-	struct peer *inner_peer = resolve_peer->inner_peer;
+	peer_call(resolve_peer->inner_peer);
 	free(resolve_peer);
-	inner_peer->event_handler(inner_peer);
 }
 
 static void *resolve_main(void *arg) {

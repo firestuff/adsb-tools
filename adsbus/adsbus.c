@@ -114,7 +114,7 @@ int main(int argc, char *argv[]) {
 	stats_init();
 
 	if (!parse_opts(argc, argv)) {
-		return EXIT_FAILURE;
+		peer_shutdown();
 	}
 
 	assert(!close(1));

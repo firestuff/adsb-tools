@@ -20,6 +20,7 @@
 
 struct send {
 	struct peer peer;
+	struct peer *on_close;
 	char id[UUID_LEN];
 	struct serializer *serializer;
 	struct send *prev;
@@ -59,8 +60,10 @@ struct serializer {
 };
 #define NUM_SERIALIZERS (sizeof(serializers) / sizeof(*serializers))
 
-static void send_hangup(struct send *send) {
-	fprintf(stderr, "S %s (%s): Peer disconnected\n", send->id, send->serializer->name);
+static void send_del(struct send *send) {
+	fprintf(stderr, "S %s (%s): Connection closed\n", send->id, send->serializer->name);
+	peer_epoll_del((struct peer *) send);
+	assert(!close(send->peer.fd));
 	if (send->prev) {
 		send->prev->next = send->next;
 	} else {
@@ -69,13 +72,12 @@ static void send_hangup(struct send *send) {
 	if (send->next) {
 		send->next->prev = send->prev;
 	}
-	peer_epoll_del((struct peer *) send);
-	assert(!close(send->peer.fd));
+	peer_call(send->on_close);
 	free(send);
 }
 
-static void send_hangup_wrapper(struct peer *peer) {
-	send_hangup((struct send *) peer);
+static void send_del_wrapper(struct peer *peer) {
+	send_del((struct send *) peer);
 }
 
 static bool send_hello(int fd, struct serializer *serializer) {
@@ -97,13 +99,8 @@ void send_init() {
 void send_cleanup() {
 	for (int i = 0; i < NUM_SERIALIZERS; i++) {
 		struct serializer *serializer = &serializers[i];
-		struct send *send = serializer->send_head;
-		while (send) {
-			struct send *next = send->next;
-			peer_epoll_del((struct peer *) send);
-			assert(!close(send->peer.fd));
-			free(send);
-			send = next;
+		while (serializer->send_head) {
+			send_del(serializer->send_head);
 		}
 	}
 }
@@ -117,32 +114,32 @@ struct serializer *send_get_serializer(char *name) {
 	return NULL;
 }
 
-void send_add(int fd, struct serializer *serializer) {
-	if (!send_hello(fd, serializer)) {
-		fprintf(stderr, "S xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx: Failed to write hello\n");
-		assert(!close(fd));
-		return;
-	}
-
+void send_new(int fd, struct serializer *serializer, struct peer *on_close) {
 	struct send *send = malloc(sizeof(*send));
 	assert(send);
 
 	send->peer.fd = fd;
-	send->peer.event_handler = send_hangup_wrapper;
-
+	send->peer.event_handler = send_del_wrapper;
+	send->on_close = on_close;
 	uuid_gen(send->id);
 	send->serializer = serializer;
 	send->prev = NULL;
 	send->next = serializer->send_head;
 	serializer->send_head = send;
 
-	peer_epoll_add((struct peer *) send, EPOLLRDHUP);
+	peer_epoll_add((struct peer *) send, 0);
 
 	fprintf(stderr, "S %s (%s): New send connection\n", send->id, serializer->name);
+
+	if (!send_hello(fd, serializer)) {
+		fprintf(stderr, "S %s: Failed to write hello\n", send->id);
+		send_del(send);
+		return;
+	}
 }
 
-void send_add_wrapper(int fd, void *passthrough) {
-	send_add(fd, (struct serializer *) passthrough);
+void send_new_wrapper(int fd, void *passthrough, struct peer *on_close) {
+	send_new(fd, (struct serializer *) passthrough, on_close);
 }
 
 void send_write(struct packet *packet) {
@@ -162,7 +159,7 @@ void send_write(struct packet *packet) {
 				send = send->next;
 			} else {
 				struct send *next = send->next;
-				send_hangup(send);
+				send_del(send);
 				send = next;
 			}
 		}

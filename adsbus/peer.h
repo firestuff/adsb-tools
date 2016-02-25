@@ -11,6 +11,8 @@ struct peer {
 };
 void peer_init();
 void peer_cleanup();
+void peer_shutdown();
 void peer_epoll_add(struct peer *, uint32_t);
 void peer_epoll_del(struct peer *);
+void peer_call(struct peer *);
 void peer_loop();

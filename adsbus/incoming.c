@@ -64,7 +64,7 @@ static void incoming_handler(struct peer *peer) {
 			local_hbuf, local_sbuf,
 			peer_hbuf, peer_sbuf);
 
-	incoming->handler(fd, incoming->passthrough);
+	incoming->handler(fd, incoming->passthrough, NULL);
 }
 
 static void incoming_del(struct incoming *incoming) {

@@ -50,7 +50,7 @@ bool opts_add_dump(char *arg) {
 	if (!serializer) {
 		return false;
 	}
-	send_add(dup(1), serializer);
+	send_new(dup(1), serializer, NULL);
 	return true;
 }
 
@@ -76,7 +76,7 @@ bool opts_add_connect_send(char *arg) {
 		return false;
 	}
 
-	incoming_new(host, arg, send_add_wrapper, serializer);
+	incoming_new(host, arg, send_new_wrapper, serializer);
 	free(host);
 	return true;
 }
@@ -92,6 +92,6 @@ bool opts_add_listen_send(char *arg) {
 		return false;
 	}
 
-	opts_add_listen(arg, send_add_wrapper, serializer);
+	opts_add_listen(arg, send_new_wrapper, serializer);
 	return true;
 }

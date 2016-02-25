@@ -74,7 +74,9 @@ static void outgoing_connect_handler(struct peer *peer) {
 
 static void outgoing_disconnect_handler(struct peer *peer) {
 	struct outgoing *outgoing = (struct outgoing *) peer;
-	assert(!close(outgoing->peer.fd));
+	if (outgoing->peer.fd != -1) {
+		assert(!close(outgoing->peer.fd));
+	}
 	fprintf(stderr, "O %s: Peer disconnected; reconnecting...\n", outgoing->id);
 
 	outgoing_resolve(outgoing);
@@ -88,12 +90,10 @@ static void outgoing_connect_result(struct outgoing *outgoing, int result) {
 			fprintf(stderr, "O %s: Connected to %s/%s\n", outgoing->id, hbuf, sbuf);
 			freeaddrinfo(outgoing->addrs);
 			outgoing->attempt = 0;
-
-			// We listen for just hangup on this fd. We pass a duplicate to the handler, so our epoll setings are independent.
+			int fd = outgoing->peer.fd;
+			outgoing->peer.fd = -1;
 			outgoing->peer.event_handler = outgoing_disconnect_handler;
-			peer_epoll_add((struct peer *) outgoing, EPOLLRDHUP);
-
-			outgoing->handler(dup(outgoing->peer.fd), outgoing->passthrough);
+			outgoing->handler(fd, outgoing->passthrough, (struct peer *) outgoing);
 			break;
 
 		case EINPROGRESS:

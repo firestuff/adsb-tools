@@ -54,11 +54,10 @@ int wakeup_get_delay() {
 void wakeup_dispatch() {
 	uint64_t now = wakeup_get_time_ms();
 	while (head && head->absolute_time_ms <= now) {
-		struct peer *peer = head->peer;
+		peer_call(head->peer);
 		struct wakeup_entry *next = head->next;
 		free(head);
 		head = next;
-		peer->event_handler(peer);
 	}
 }
 
