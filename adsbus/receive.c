@@ -1,7 +1,9 @@
-#include <stdlib.h>
-#include <stdio.h>
 #include <assert.h>
+#include <errno.h>
+#include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
+#include <sys/socket.h>
 #include <unistd.h>
 
 #include "airspy_adsb.h"
@@ -127,6 +129,9 @@ void receive_cleanup() {
 }
 
 void receive_new(int fd, void *unused, struct peer *on_close) {
+	int res = shutdown(fd, SHUT_WR);
+	assert(res == 0 || (res == -1 && errno == ENOTSOCK));
+
 	struct receive *receive = malloc(sizeof(*receive));
 	assert(receive);
 

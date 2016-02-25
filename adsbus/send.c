@@ -1,10 +1,12 @@
-#include <stdbool.h>
-#include <stdlib.h>
 #include <assert.h>
-#include <strings.h>
-#include <stdio.h>
-#include <unistd.h>
+#include <errno.h>
 #include <signal.h>
+#include <stdbool.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <strings.h>
+#include <sys/socket.h>
+#include <unistd.h>
 
 #include "airspy_adsb.h"
 #include "beast.h"
@@ -115,6 +117,9 @@ struct serializer *send_get_serializer(char *name) {
 }
 
 void send_new(int fd, struct serializer *serializer, struct peer *on_close) {
+	int res = shutdown(fd, SHUT_RD);
+	assert(res == 0 || (res == -1 && errno == ENOTSOCK));
+
 	struct send *send = malloc(sizeof(*send));
 	assert(send);
 

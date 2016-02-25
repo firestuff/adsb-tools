@@ -78,8 +78,7 @@ static void outgoing_disconnect_handler(struct peer *peer) {
 		assert(!close(outgoing->peer.fd));
 	}
 	fprintf(stderr, "O %s: Peer disconnected; reconnecting...\n", outgoing->id);
-
-	outgoing_resolve(outgoing);
+	outgoing_retry(outgoing);
 }
 
 static void outgoing_connect_result(struct outgoing *outgoing, int result) {

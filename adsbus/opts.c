@@ -76,7 +76,7 @@ bool opts_add_connect_send(char *arg) {
 		return false;
 	}
 
-	incoming_new(host, arg, send_new_wrapper, serializer);
+	outgoing_new(host, arg, send_new_wrapper, serializer);
 	free(host);
 	return true;
 }
