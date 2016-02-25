@@ -121,6 +121,8 @@ int main(int argc, char *argv[]) {
 
 	peer_loop();
 
+	resolve_cleanup();
+
 	json_cleanup();
 	proto_cleanup();
 
@@ -130,7 +132,6 @@ int main(int argc, char *argv[]) {
 	outgoing_cleanup();
 
 	rand_cleanup();
-	resolve_cleanup();
 	wakeup_cleanup();
 
 	peer_cleanup();
