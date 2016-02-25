@@ -116,9 +116,6 @@ struct serializer *send_get_serializer(char *name) {
 }
 
 void send_new(int fd, struct serializer *serializer, struct peer *on_close) {
-	int res = shutdown(fd, SHUT_RD);
-	assert(res == 0 || (res == -1 && errno == ENOTSOCK));
-
 	struct send *send = malloc(sizeof(*send));
 	assert(send);
 
@@ -131,7 +128,7 @@ void send_new(int fd, struct serializer *serializer, struct peer *on_close) {
 	send->next = serializer->send_head;
 	serializer->send_head = send;
 
-	peer_epoll_add((struct peer *) send, 0);
+	peer_epoll_add((struct peer *) send, EPOLLIN);
 
 	fprintf(stderr, "S %s (%s): New send connection\n", send->id, serializer->name);
 
