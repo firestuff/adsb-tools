@@ -154,13 +154,13 @@ void send_write(struct packet *packet) {
 		if (buf.length == 0) {
 			continue;
 		}
-		struct send *send = serializer->send_head;
-		while (send) {
-			if (write(send->peer.fd, buf_at(&buf, 0), buf.length) != buf.length) {
+		struct send *send_obj = serializer->send_head;
+		while (send_obj) {
+			if (send(send_obj->peer.fd, buf_at(&buf, 0), buf.length, MSG_NOSIGNAL) != buf.length) {
 				// peer_loop() will see this shutdown and call send_del
-				shutdown(send->peer.fd, SHUT_RD | SHUT_WR);
+				shutdown(send_obj->peer.fd, SHUT_RD | SHUT_WR);
 			}
-			send = send->next;
+			send_obj = send_obj->next;
 		}
 	}
 }
