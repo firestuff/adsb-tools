@@ -26,6 +26,7 @@ struct outgoing {
 	uint32_t attempt;
 	outgoing_connection_handler handler;
 	void *passthrough;
+	uint32_t *count;
 	struct outgoing *next;
 };
 
@@ -134,6 +135,7 @@ static void outgoing_resolve_wrapper(struct peer *peer) {
 }
 
 static void outgoing_del(struct outgoing *outgoing) {
+	(*outgoing->count)--;
 	if (outgoing->peer.fd >= 0) {
 		assert(!close(outgoing->peer.fd));
 	}
@@ -151,7 +153,9 @@ void outgoing_cleanup() {
 	}
 }
 
-void outgoing_new(char *node, char *service, outgoing_connection_handler handler, void *passthrough) {
+void outgoing_new(char *node, char *service, outgoing_connection_handler handler, void *passthrough, uint32_t *count) {
+	(*count)++;
+
 	struct outgoing *outgoing = malloc(sizeof(*outgoing));
 	uuid_gen(outgoing->id);
 	outgoing->node = strdup(node);
@@ -159,6 +163,7 @@ void outgoing_new(char *node, char *service, outgoing_connection_handler handler
 	outgoing->attempt = 0;
 	outgoing->handler = handler;
 	outgoing->passthrough = passthrough;
+	outgoing->count = count;
 
 	outgoing->next = outgoing_head;
 	outgoing_head = outgoing;

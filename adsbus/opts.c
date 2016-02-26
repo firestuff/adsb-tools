@@ -4,7 +4,7 @@
 
 #include "incoming.h"
 #include "outgoing.h"
-
+#include "peer.h"
 #include "receive.h"
 #include "send.h"
 
@@ -20,13 +20,13 @@ static char *opts_split(char **arg, char delim) {
 	return ret;
 }
 
-static void opts_add_listen(char *host_port, incoming_connection_handler handler, void *passthrough) {
+static void opts_add_listen(char *host_port, incoming_connection_handler handler, void *passthrough, uint32_t *count) {
 	char *host = opts_split(&host_port, '/');
 	if (host) {
-		incoming_new(host, host_port, handler, passthrough);
+		incoming_new(host, host_port, handler, passthrough, count);
 		free(host);
 	} else {
-		incoming_new(NULL, host_port, handler, passthrough);
+		incoming_new(NULL, host_port, handler, passthrough, count);
 	}
 }
 
@@ -51,7 +51,7 @@ bool opts_add_connect_receive(char *arg) {
 		return false;
 	}
 
-	outgoing_new(host, arg, receive_new, NULL);
+	outgoing_new(host, arg, receive_new, NULL, &peer_count_in);
 	free(host);
 	return true;
 }
@@ -67,13 +67,13 @@ bool opts_add_connect_send(char *arg) {
 		return false;
 	}
 
-	outgoing_new(host, arg, send_new_wrapper, serializer);
+	outgoing_new(host, arg, send_new_wrapper, serializer, &peer_count_out);
 	free(host);
 	return true;
 }
 
 bool opts_add_listen_receive(char *arg) {
-	opts_add_listen(arg, receive_new, NULL);
+	opts_add_listen(arg, receive_new, NULL, &peer_count_in);
 	return true;
 }
 
@@ -83,7 +83,7 @@ bool opts_add_listen_send(char *arg) {
 		return false;
 	}
 
-	opts_add_listen(arg, send_new_wrapper, serializer);
+	opts_add_listen(arg, send_new_wrapper, serializer, &peer_count_out);
 	return true;
 }
 

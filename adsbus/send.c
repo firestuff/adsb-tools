@@ -64,6 +64,7 @@ struct serializer {
 
 static void send_del(struct send *send) {
 	fprintf(stderr, "S %s (%s): Connection closed\n", send->id, send->serializer->name);
+	peer_count_out--;
 	peer_epoll_del((struct peer *) send);
 	assert(!close(send->peer.fd));
 	if (send->prev) {
@@ -116,6 +117,8 @@ struct serializer *send_get_serializer(char *name) {
 }
 
 void send_new(int fd, struct serializer *serializer, struct peer *on_close) {
+	peer_count_out++;
+
 	struct send *send = malloc(sizeof(*send));
 	assert(send);
 

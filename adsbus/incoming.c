@@ -27,6 +27,7 @@ struct incoming {
 	uint32_t attempt;
 	incoming_connection_handler handler;
 	void *passthrough;
+	uint32_t *count;
 	struct incoming *next;
 };
 
@@ -68,6 +69,7 @@ static void incoming_handler(struct peer *peer) {
 }
 
 static void incoming_del(struct incoming *incoming) {
+	(*incoming->count)--;
 	if (incoming->peer.fd >= 0) {
 		assert(!close(incoming->peer.fd));
 	}
@@ -142,7 +144,9 @@ void incoming_cleanup() {
 	}
 }
 
-void incoming_new(char *node, char *service, incoming_connection_handler handler, void *passthrough) {
+void incoming_new(char *node, char *service, incoming_connection_handler handler, void *passthrough, uint32_t *count) {
+	(*count)++;
+
 	struct incoming *incoming = malloc(sizeof(*incoming));
 	incoming->peer.event_handler = incoming_handler;
 	uuid_gen(incoming->id);
@@ -151,6 +155,7 @@ void incoming_new(char *node, char *service, incoming_connection_handler handler
 	incoming->attempt = 0;
 	incoming->handler = handler;
 	incoming->passthrough = passthrough;
+	incoming->count = count;
 
 	incoming->next = incoming_head;
 	incoming_head = incoming;

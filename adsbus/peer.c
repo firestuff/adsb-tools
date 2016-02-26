@@ -16,6 +16,8 @@
 
 #include "peer.h"
 
+uint32_t peer_count_in = 0, peer_count_out = 0;
+
 static int peer_epoll_fd;
 static int peer_shutdown_fd;
 static bool peer_shutdown_flag = false;

@@ -83,6 +83,7 @@ static bool receive_autodetect_parse(struct receive *receive, struct packet *pac
 
 static void receive_del(struct receive *receive) {
 	fprintf(stderr, "R %s: Connection closed\n", receive->id);
+	peer_count_out--;
 	peer_epoll_del((struct peer *) receive);
 	assert(!close(receive->peer.fd));
 	if (receive->prev) {
@@ -129,6 +130,8 @@ void receive_cleanup() {
 }
 
 void receive_new(int fd, void *unused, struct peer *on_close) {
+	peer_count_in++;
+
 	int res = shutdown(fd, SHUT_WR);
 	assert(res == 0 || (res == -1 && errno == ENOTSOCK));
 

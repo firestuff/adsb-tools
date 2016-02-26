@@ -9,6 +9,9 @@ struct peer {
 	int fd;
 	peer_event_handler event_handler;
 };
+
+extern uint32_t peer_count_in, peer_count_out;
+
 void peer_init();
 void peer_cleanup();
 void peer_shutdown();
