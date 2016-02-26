@@ -34,8 +34,10 @@ static bool raw_parse_mode_s_short(struct buf *buf, struct packet *packet) {
 			 (overlay->cr_lf != '\r' || overlay->lf != '\n'))) {
 		return false;
 	}
+	if (!hex_to_bin(packet->payload, overlay->payload, sizeof(overlay->payload) / 2)) {
+		return false;
+	}
 	packet->type = PACKET_TYPE_MODE_S_SHORT;
-	hex_to_bin(packet->payload, overlay->payload, sizeof(overlay->payload) / 2);
 	buf_consume(buf, overlay->cr_lf == '\r' ? sizeof(*overlay) : sizeof(*overlay) - 1);
 	return true;
 }
@@ -49,8 +51,10 @@ static bool raw_parse_mode_s_long(struct buf *buf, struct packet *packet) {
 			 (overlay->cr_lf != '\r' || overlay->lf != '\n'))) {
 		return false;
 	}
+	if (!hex_to_bin(packet->payload, overlay->payload, sizeof(overlay->payload) / 2)) {
+		return false;
+	}
 	packet->type = PACKET_TYPE_MODE_S_LONG;
-	hex_to_bin(packet->payload, overlay->payload, sizeof(overlay->payload) / 2);
 	buf_consume(buf, overlay->cr_lf == '\r' ? sizeof(*overlay) : sizeof(*overlay) - 1);
 	return true;
 }

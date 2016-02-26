@@ -53,7 +53,11 @@ static bool airspy_adsb_parse_common(const struct airspy_adsb_common_overlay *ov
 	if (!mlat_mhz) {
 		return false;
 	}
-	packet->mlat_timestamp = packet_mlat_timestamp_scale_in(hex_to_int(overlay->mlat_timestamp, sizeof(overlay->mlat_timestamp) / 2), UINT32_MAX, mlat_mhz, &state->mlat_state);
+	int64_t mlat_timestamp_in = hex_to_int(overlay->mlat_timestamp, sizeof(overlay->mlat_timestamp) / 2);
+	if (mlat_timestamp_in < 0) {
+		return false;
+	}
+	packet->mlat_timestamp = packet_mlat_timestamp_scale_in((uint64_t) mlat_timestamp_in, UINT32_MAX, mlat_mhz, &state->mlat_state);
 	packet->rssi = packet_rssi_scale_in((uint32_t) hex_to_int(overlay->rssi, sizeof(overlay->rssi) / 2), UINT16_MAX);
 	return true;
 }
@@ -71,7 +75,9 @@ static bool airspy_adsb_parse_mode_s_short(struct buf *buf, struct packet *packe
 		return false;
 	}
 	packet->type = PACKET_TYPE_MODE_S_SHORT;
-	hex_to_bin(packet->payload, short_overlay->payload, sizeof(short_overlay->payload) / 2);
+	if (!hex_to_bin(packet->payload, short_overlay->payload, sizeof(short_overlay->payload) / 2)) {
+		return false;
+	}
 	buf_consume(buf, sizeof(*short_overlay));
 	return true;
 }
@@ -89,7 +95,9 @@ static bool airspy_adsb_parse_mode_s_long(struct buf *buf, struct packet *packet
 		return false;
 	}
 	packet->type = PACKET_TYPE_MODE_S_LONG;
-	hex_to_bin(packet->payload, long_overlay->payload, sizeof(long_overlay->payload) / 2);
+	if (!hex_to_bin(packet->payload, long_overlay->payload, sizeof(long_overlay->payload) / 2)) {
+		return false;
+	}
 	buf_consume(buf, sizeof(*long_overlay));
 	return true;
 }

@@ -157,7 +157,9 @@ static bool json_parse_mode_s_short(json_t *in, struct packet *packet, struct js
 		return false;
 	}
 
-	hex_to_bin(packet->payload, (const uint8_t *) json_string_value(payload), 7);
+	if (!hex_to_bin(packet->payload, (const uint8_t *) json_string_value(payload), 7)) {
+		return false;
+	}
 	packet->type = PACKET_TYPE_MODE_S_SHORT;
 	return true;
 }
@@ -172,7 +174,9 @@ static bool json_parse_mode_s_long(json_t *in, struct packet *packet, struct jso
 		return false;
 	}
 
-	hex_to_bin(packet->payload, (const uint8_t *) json_string_value(payload), 14);
+	if (!hex_to_bin(packet->payload, (const uint8_t *) json_string_value(payload), 14)) {
+		return false;
+	}
 	packet->type = PACKET_TYPE_MODE_S_LONG;
 	return true;
 }

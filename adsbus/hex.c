@@ -4,11 +4,16 @@
 
 #include "hex.h"
 
-static uint8_t hex_table[256] = {0};
+static uint8_t hex_table[256];
 static uint8_t hex_upper_table[16] = { '0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'A', 'B', 'C', 'D', 'E', 'F', };
 static uint8_t hex_lower_table[16] = { '0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'a', 'b', 'c', 'd', 'e', 'f', };
 
+#define HEX_INVALID 0xff
+
 void hex_init() {
+	for (size_t i = 0; i < sizeof(hex_table) / sizeof(*hex_table); i++) {
+		hex_table[i] = HEX_INVALID;
+	}
 	for (uint8_t i = '0'; i <= '9'; i++) {
 		hex_table[i] = i - '0';
 	}
@@ -20,21 +25,33 @@ void hex_init() {
 	}
 }
 
-void hex_to_bin(uint8_t *out, const uint8_t *in, size_t bytes) {
+bool hex_to_bin(uint8_t *out, const uint8_t *in, size_t bytes) {
 	for (size_t i = 0, j = 0; i < bytes; i++, j += 2) {
-		out[i] = (uint8_t) (hex_table[in[j]] << 4) | hex_table[in[j + 1]];
+		uint8_t val1 = hex_table[in[j]], val2 = hex_table[in[j + 1]];
+		if (val1 == HEX_INVALID || val2 == HEX_INVALID) {
+			return false;
+		}
+		out[i] = (uint8_t) (val1 << 4) | val2;
 	}
+	return true;
 }
 
-uint64_t hex_to_int(const uint8_t *in, size_t bytes) {
+int64_t hex_to_int(const uint8_t *in, size_t bytes) {
 	const uint8_t *in2 = (const uint8_t *) in;
 	uint64_t ret = 0;
 	bytes *= 2;
 	for (size_t i = 0; i < bytes; i++) {
 		ret <<= 4;
-		ret |= hex_table[in2[i]];
+		uint8_t val = hex_table[in2[i]];
+		if (val == 0xff) {
+			return -1;
+		}
+		ret |= val;
 	}
-	return ret;
+	if (ret > INT64_MAX) {
+		return -1;
+	}
+	return (int64_t) ret;
 }
 
 static void hex_from_bin(uint8_t *out, const uint8_t *in, size_t bytes, uint8_t table[]) {

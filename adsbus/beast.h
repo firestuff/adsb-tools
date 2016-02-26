@@ -6,5 +6,5 @@ struct buf;
 struct packet;
 
 void beast_init(void);
-bool beast_parse(struct buf *, struct packet *, void *);
+bool __attribute__ ((warn_unused_result)) beast_parse(struct buf *, struct packet *, void *);
 void beast_serialize(struct packet *, struct buf *);

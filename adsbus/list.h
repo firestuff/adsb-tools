@@ -34,6 +34,6 @@ struct list_head {
 				pos = n, n = list_entry(n->member.next, typeof(*n), member))
 
 void list_head_init(struct list_head *);
-bool list_is_empty(const struct list_head *);
+bool __attribute__ ((warn_unused_result)) list_is_empty(const struct list_head *);
 void list_add(struct list_head *, struct list_head *);
 void list_del(struct list_head *);
