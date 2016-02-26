@@ -8,6 +8,7 @@
 #include <errno.h>
 #include <unistd.h>
 
+#include "list.h"
 #include "peer.h"
 #include "resolve.h"
 #include "socket.h"
@@ -27,10 +28,10 @@ struct incoming {
 	incoming_connection_handler handler;
 	void *passthrough;
 	uint32_t *count;
-	struct incoming *next;
+	struct list_head incoming_list;
 };
 
-static struct incoming *incoming_head = NULL;
+static struct list_head incoming_head = LIST_HEAD_INIT(incoming_head);
 
 static void incoming_resolve_wrapper(struct peer *);
 
@@ -137,11 +138,9 @@ static void incoming_resolve_wrapper(struct peer *peer) {
 }
 
 void incoming_cleanup() {
-	struct incoming *iter = incoming_head;
-	while (iter) {
-		struct incoming *next = iter->next;
+	struct incoming *iter, *next;
+	list_for_each_entry_safe(iter, next, &incoming_head, incoming_list) {
 		incoming_del(iter);
-		iter = next;
 	}
 }
 
@@ -158,8 +157,7 @@ void incoming_new(char *node, char *service, incoming_connection_handler handler
 	incoming->passthrough = passthrough;
 	incoming->count = count;
 
-	incoming->next = incoming_head;
-	incoming_head = incoming;
+	list_add(&incoming->incoming_list, &incoming_head);
 
 	incoming_resolve(incoming);
 }

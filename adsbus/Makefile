@@ -6,7 +6,7 @@ LIBS ?= -ljansson -lprotobuf-c
 
 OBJ_NETWORK = incoming.o outgoing.o receive.o send.o
 OBJ_PROTOCOL = airspy_adsb.o beast.o json.o proto.o raw.o stats.o
-OBJ_UTIL = buf.o hex.o opts.o packet.o peer.o rand.o resolve.o server.o socket.o uuid.o wakeup.o
+OBJ_UTIL = buf.o hex.o list.o opts.o packet.o peer.o rand.o resolve.o server.o socket.o uuid.o wakeup.o
 OBJ_PROTO = adsb.pb-c.o
 
 all: adsbus

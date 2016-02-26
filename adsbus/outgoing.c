@@ -8,6 +8,7 @@
 #include <string.h>
 #include <unistd.h>
 
+#include "list.h"
 #include "peer.h"
 #include "resolve.h"
 #include "socket.h"
@@ -28,10 +29,10 @@ struct outgoing {
 	outgoing_connection_handler handler;
 	void *passthrough;
 	uint32_t *count;
-	struct outgoing *next;
+	struct list_head outgoing_list;
 };
 
-static struct outgoing *outgoing_head = NULL;
+static struct list_head outgoing_head = LIST_HEAD_INIT(outgoing_head);
 
 static void outgoing_connect_result(struct outgoing *, int);
 static void outgoing_resolve(struct outgoing *);
@@ -147,11 +148,9 @@ static void outgoing_del(struct outgoing *outgoing) {
 }
 
 void outgoing_cleanup() {
-	struct outgoing *iter = outgoing_head;
-	while (iter) {
-		struct outgoing *next = iter->next;
+	struct outgoing *iter, *next;
+	list_for_each_entry_safe(iter, next, &outgoing_head, outgoing_list) {
 		outgoing_del(iter);
-		iter = next;
 	}
 }
 
@@ -167,8 +166,7 @@ void outgoing_new(char *node, char *service, outgoing_connection_handler handler
 	outgoing->passthrough = passthrough;
 	outgoing->count = count;
 
-	outgoing->next = outgoing_head;
-	outgoing_head = outgoing;
+	list_add(&outgoing->outgoing_list, &outgoing_head);
 
 	outgoing_resolve(outgoing);
 }

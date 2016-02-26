@@ -13,6 +13,7 @@
 #include "beast.h"
 #include "buf.h"
 #include "json.h"
+#include "list.h"
 #include "peer.h"
 #include "proto.h"
 #include "raw.h"
@@ -26,15 +27,14 @@ struct send {
 	struct peer *on_close;
 	uint8_t id[UUID_LEN];
 	struct serializer *serializer;
-	struct send *prev;
-	struct send *next;
+	struct list_head send_list;
 };
 
 typedef void (*serialize)(struct packet *, struct buf *);
 static struct serializer {
 	char *name;
 	serialize serialize;
-	struct send *send_head;
+	struct list_head send_head;
 } serializers[] = {
 	{
 		.name = "airspy_adsb",
@@ -68,14 +68,7 @@ static void send_del(struct send *send) {
 	peer_count_out--;
 	peer_epoll_del((struct peer *) send);
 	assert(!close(send->peer.fd));
-	if (send->prev) {
-		send->prev->next = send->next;
-	} else {
-		send->serializer->send_head = send->next;
-	}
-	if (send->next) {
-		send->next->prev = send->prev;
-	}
+	list_del(&send->send_list);
 	peer_call(send->on_close);
 	free(send);
 }
@@ -98,13 +91,17 @@ static bool send_hello(int fd, struct serializer *serializer) {
 
 void send_init() {
 	assert(signal(SIGPIPE, SIG_IGN) != SIG_ERR);
+	for (size_t i = 0; i < NUM_SERIALIZERS; i++) {
+		list_head_init(&serializers[i].send_head);
+	}
 }
 
 void send_cleanup() {
 	for (size_t i = 0; i < NUM_SERIALIZERS; i++) {
 		struct serializer *serializer = &serializers[i];
-		while (serializer->send_head) {
-			send_del(serializer->send_head);
+		struct send *iter, *next;
+		list_for_each_entry_safe(iter, next, &serializer->send_head, send_list) {
+			send_del(iter);
 		}
 	}
 }
@@ -132,12 +129,7 @@ void send_new(int fd, struct serializer *serializer, struct peer *on_close) {
 	send->on_close = on_close;
 	uuid_gen(send->id);
 	send->serializer = serializer;
-	send->prev = NULL;
-	send->next = serializer->send_head;
-	if (send->next) {
-		send->next->prev = send;
-	}
-	serializer->send_head = send;
+	list_add(&send->send_list, &serializer->send_head);
 
 	peer_epoll_add((struct peer *) send, 0);
 
@@ -157,7 +149,7 @@ void send_new_wrapper(int fd, void *passthrough, struct peer *on_close) {
 void send_write(struct packet *packet) {
 	for (size_t i = 0; i < NUM_SERIALIZERS; i++) {
 		struct serializer *serializer = &serializers[i];
-		if (serializer->send_head == NULL) {
+		if (list_is_empty(&serializer->send_head)) {
 			continue;
 		}
 		struct buf buf = BUF_INIT;
@@ -165,14 +157,13 @@ void send_write(struct packet *packet) {
 		if (buf.length == 0) {
 			continue;
 		}
-		struct send *send = serializer->send_head;
-		while (send) {
-			if (write(send->peer.fd, buf_at(&buf, 0), buf.length) != (ssize_t) buf.length) {
+		struct send *iter, *next;
+		list_for_each_entry_safe(iter, next, &serializer->send_head, send_list) {
+			if (write(iter->peer.fd, buf_at(&buf, 0), buf.length) != (ssize_t) buf.length) {
 				// peer_loop() will see this shutdown and call send_del
-				int res = shutdown(send->peer.fd, SHUT_WR);
+				int res = shutdown(iter->peer.fd, SHUT_WR);
 				assert(res == 0 || (res == -1 && errno == ENOTSOCK));
 			}
-			send = send->next;
 		}
 	}
 }
