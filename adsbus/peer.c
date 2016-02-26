@@ -19,6 +19,7 @@ uint32_t peer_count_in = 0, peer_count_out = 0;
 static int peer_epoll_fd;
 static int peer_shutdown_fd;
 static bool peer_shutdown_flag = false;
+static struct list_head peer_always_trigger_head = LIST_HEAD_INIT(peer_always_trigger_head);
 
 static void peer_shutdown_handler(struct peer *peer) {
 	fprintf(stderr, "X %s: Shutting down\n", server_id);
@@ -59,11 +60,28 @@ void peer_epoll_add(struct peer *peer, uint32_t events) {
 			.ptr = peer,
 		},
 	};
-	assert(!epoll_ctl(peer_epoll_fd, EPOLL_CTL_ADD, peer->fd, &ev));
+	peer->always_trigger = false;
+	int res = epoll_ctl(peer_epoll_fd, EPOLL_CTL_ADD, peer->fd, &ev);
+	if (res == -1 && errno == EPERM) {
+		// Not a socket
+		if (events) {
+			list_add(&peer->peer_always_trigger_list, &peer_always_trigger_head);
+			peer->always_trigger = true;
+		}
+	} else {
+		assert(!res);
+	}
 }
 
 void peer_epoll_del(struct peer *peer) {
-	assert(!epoll_ctl(peer_epoll_fd, EPOLL_CTL_DEL, peer->fd, NULL));
+	int res = epoll_ctl(peer_epoll_fd, EPOLL_CTL_DEL, peer->fd, NULL);
+	if (res == -1 && errno == EPERM) {
+		if (peer->always_trigger) {
+			list_del(&peer->peer_always_trigger_list);
+		}
+	} else {
+		assert(!res);
+	}
 }
 
 void peer_call(struct peer *peer) {
@@ -85,7 +103,8 @@ void peer_loop() {
 		}
 #define MAX_EVENTS 10
 		struct epoll_event events[MAX_EVENTS];
-		int nfds = epoll_wait(peer_epoll_fd, events, MAX_EVENTS, wakeup_get_delay());
+		int delay = list_is_empty(&peer_always_trigger_head) ? wakeup_get_delay() : 0;
+		int nfds = epoll_wait(peer_epoll_fd, events, MAX_EVENTS, delay);
 		if (nfds == -1 && errno == EINTR) {
 			continue;
 		}
@@ -93,7 +112,14 @@ void peer_loop() {
 
     for (int n = 0; n < nfds; n++) {
 			struct peer *peer = events[n].data.ptr;
-			peer->event_handler(peer);
+			peer_call(peer);
+		}
+
+		{
+			struct peer *iter, *next;
+			list_for_each_entry_safe(iter, next, &peer_always_trigger_head, peer_always_trigger_list) {
+				peer_call(iter);
+			}
 		}
 
 		wakeup_dispatch();

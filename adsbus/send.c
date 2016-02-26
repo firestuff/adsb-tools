@@ -98,9 +98,8 @@ void send_init() {
 
 void send_cleanup() {
 	for (size_t i = 0; i < NUM_SERIALIZERS; i++) {
-		struct serializer *serializer = &serializers[i];
 		struct send *iter, *next;
-		list_for_each_entry_safe(iter, next, &serializer->send_head, send_list) {
+		list_for_each_entry_safe(iter, next, &serializers[i].send_head, send_list) {
 			send_del(iter);
 		}
 	}

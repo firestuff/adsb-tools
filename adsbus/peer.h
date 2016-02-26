@@ -2,12 +2,16 @@
 
 #include <sys/epoll.h>
 
+#include "list.h"
+
 // All specific peer structs must be castable to this.
 struct peer;
 typedef void (*peer_event_handler)(struct peer *);
 struct peer {
 	int fd;
 	peer_event_handler event_handler;
+	struct list_head peer_always_trigger_list;
+	bool always_trigger;
 };
 
 extern uint32_t peer_count_in, peer_count_out;
