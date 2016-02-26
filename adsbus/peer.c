@@ -78,6 +78,13 @@ void peer_call(struct peer *peer) {
 void peer_loop() {
 	fprintf(stderr, "X %s: Starting event loop\n", server_id);
 	while (!peer_shutdown_flag) {
+		if (!peer_count_in) {
+			fprintf(stderr, "X %s: No remaining inputs\n", server_id);
+			peer_shutdown(0);
+		} else if (!peer_count_out) {
+			fprintf(stderr, "X %s: No remaining outputs\n", server_id);
+			peer_shutdown(0);
+		}
 #define MAX_EVENTS 10
 		struct epoll_event events[MAX_EVENTS];
 		int nfds = epoll_wait(peer_epoll_fd, events, MAX_EVENTS, wakeup_get_delay());
