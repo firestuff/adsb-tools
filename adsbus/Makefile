@@ -1,4 +1,4 @@
-CC = clang
+COMP ?= clang
 DISABLED_WARNINGS ?= -Wno-padded -Wno-disabled-macro-expansion
 CFLAGS ?= -Weverything -Werror -O3 -g --std=gnu11 --pedantic-errors -fPIE -fstack-protector-strong -pthread -D_GNU_SOURCE $(DISABLED_WARNINGS)
 LDFLAGS ?= $(CFLAGS) -Wl,-z,relro -Wl,-z,now -pie
@@ -15,10 +15,10 @@ clean:
 	rm -f *.o adsbus
 
 %.o: %.c *.h
-	$(CC) -c $(CFLAGS) $< -o $@
+	$(COMP) -c $(CFLAGS) $< -o $@
 
 adsb.pb-c.c: ../proto/adsb.proto
 	protoc-c --c_out=./ --proto_path=$(dir $<) $<
 
 adsbus: adsbus.o $(OBJ_NETWORK) $(OBJ_PROTOCOL) $(OBJ_UTIL) $(OBJ_PROTO)
-	$(CC) $(LDFLAGS) -o adsbus adsbus.o $(OBJ_NETWORK) $(OBJ_PROTOCOL) $(OBJ_UTIL) $(OBJ_PROTO) $(LIBS)
+	$(COMP) $(LDFLAGS) -o adsbus adsbus.o $(OBJ_NETWORK) $(OBJ_PROTOCOL) $(OBJ_UTIL) $(OBJ_PROTO) $(LIBS)
