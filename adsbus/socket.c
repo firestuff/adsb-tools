@@ -9,12 +9,7 @@
 
 void socket_init(int fd) {
 	int optval = 1;
-	int err = setsockopt(fd, SOL_SOCKET, SO_KEEPALIVE, &optval, sizeof(optval));
-	if (err == -1 && errno == ENOTSOCK) {
-		return;
-	}
-	assert(!err);
-
+	assert(!setsockopt(fd, SOL_SOCKET, SO_KEEPALIVE, &optval, sizeof(optval)));
 	optval = 30;
 	assert(!setsockopt(fd, IPPROTO_TCP, TCP_KEEPIDLE, &optval, sizeof(optval)));
 	optval = 10;
