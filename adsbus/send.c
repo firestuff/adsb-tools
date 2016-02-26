@@ -30,10 +30,10 @@ struct send {
 	struct send *next;
 };
 
-typedef void (*serializer)(struct packet *, struct buf *);
+typedef void (*serialize)(struct packet *, struct buf *);
 struct serializer {
 	char *name;
-	serializer serialize;
+	serialize serialize;
 	struct send *send_head;
 } serializers[] = {
 	{
