@@ -1,5 +1,3 @@
-#define _GNU_SOURCE
-
 #include <assert.h>
 #include <errno.h>
 #include <fcntl.h>
@@ -50,7 +48,7 @@ void peer_cleanup() {
 	assert(!close(peer_epoll_fd));
 }
 
-void peer_shutdown(int signal) {
+void peer_shutdown(int __attribute__((unused)) signal) {
 	assert(!close(peer_shutdown_fd));
 }
 

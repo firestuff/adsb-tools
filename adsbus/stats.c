@@ -12,7 +12,9 @@ static struct stats_state {
 	uint64_t total_count;
 	uint64_t type_count[NUM_TYPES];
 	struct timespec start;
-} stats_state = { 0 };
+} stats_state = {
+	.type_count = { 0 },
+};
 
 void stats_init() {
 	assert(!clock_gettime(CLOCK_MONOTONIC_COARSE, &stats_state.start));
@@ -31,7 +33,7 @@ void stats_serialize(struct packet *packet, struct buf *buf) {
 		if (i == PACKET_TYPE_NONE) {
 			continue;
 		}
-		json_object_set_new(counts, packet_type_names[i], json_integer(stats_state.type_count[i]));
+		json_object_set_new(counts, packet_type_names[i], json_integer((json_int_t) stats_state.type_count[i]));
 	}
 	struct timespec now;
 	assert(!clock_gettime(CLOCK_MONOTONIC_COARSE, &now));

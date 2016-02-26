@@ -11,7 +11,7 @@
 
 struct __attribute__((packed)) raw_mode_s_short_overlay {
 	char asterisk;
-	char payload[14];
+	uint8_t payload[14];
 	char semicolon;
 	char cr_lf;
 	char lf;
@@ -19,7 +19,7 @@ struct __attribute__((packed)) raw_mode_s_short_overlay {
 
 struct __attribute__((packed)) raw_mode_s_long_overlay {
 	char asterisk;
-	char payload[28];
+	uint8_t payload[28];
 	char semicolon;
 	char cr_lf;
 	char lf;
@@ -78,7 +78,7 @@ void raw_init() {
 	assert(sizeof(struct raw_mode_s_long_overlay) < BUF_LEN_MAX);
 }
 
-bool raw_parse(struct buf *buf, struct packet *packet, void *state_in) {
+bool raw_parse(struct buf *buf, struct packet *packet, void __attribute__((unused)) *state_in) {
 	return (
 			raw_parse_mode_s_short(buf, packet) ||
 			raw_parse_mode_s_long(buf, packet));

@@ -1,14 +1,14 @@
-#define _GNU_SOURCE
-
-#include <stdlib.h>
-#include <stdio.h>
 #include <assert.h>
 #include <fcntl.h>
-#include <unistd.h>
 #include <errno.h>
-#include <time.h>
+#include <limits.h>
+#include <stdlib.h>
+#include <stdio.h>
+#include <stdint.h>
 #include <string.h>
 #include <sys/epoll.h>
+#include <time.h>
+#include <unistd.h>
 
 #include "peer.h"
 #include "rand.h"
@@ -22,14 +22,16 @@ struct wakeup_entry {
 	struct wakeup_entry *next;
 };
 
-struct wakeup_entry *head = NULL;
+static struct wakeup_entry *head = NULL;
 
 static uint64_t wakeup_get_time_ms() {
 	struct timespec tp;
 	assert(!clock_gettime(CLOCK_MONOTONIC_COARSE, &tp));
-#define MS_PER_S 1000
-#define NS_PER_MS 1000000
-	return (tp.tv_sec * MS_PER_S) + (tp.tv_nsec / NS_PER_MS);
+#define MS_PER_S UINT64_C(1000)
+#define NS_PER_MS UINT64_C(1000000)
+	assert(tp.tv_sec >= 0);
+	assert(tp.tv_nsec >= 0);
+	return ((uint64_t) tp.tv_sec * MS_PER_S) + ((uint64_t) tp.tv_nsec / NS_PER_MS);
 }
 
 void wakeup_init() {
@@ -47,8 +49,14 @@ int wakeup_get_delay() {
 	if (!head) {
 		return -1;
 	}
-	int delay = head->absolute_time_ms - wakeup_get_time_ms();
-	return delay < 0 ? 0 : delay;
+	uint64_t now = wakeup_get_time_ms();
+	if (head->absolute_time_ms > now) {
+		uint64_t delta = head->absolute_time_ms - now;
+		assert(delta < INT_MAX);
+		return (int) delta;
+	} else {
+		return 0;
+	}
 }
 
 void wakeup_dispatch() {

@@ -5,8 +5,8 @@
 struct buf;
 struct packet;
 
-void json_init();
-void json_cleanup();
+void json_init(void);
+void json_cleanup(void);
 bool json_parse(struct buf *, struct packet *, void *);
 void json_serialize(struct packet *, struct buf *);
 

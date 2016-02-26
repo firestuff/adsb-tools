@@ -1,11 +1,12 @@
 #pragma once
 
 #include <stddef.h>
+#include <stdint.h>
 #include <unistd.h>
 
 #define BUF_LEN_MAX 256
 struct buf {
-	char buf[BUF_LEN_MAX];
+	uint8_t buf[BUF_LEN_MAX];
 	size_t start;
 	size_t length;
 };

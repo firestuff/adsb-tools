@@ -5,7 +5,7 @@
 
 #include "uuid.h"
 
-void uuid_gen(char *out) {
+void uuid_gen(uint8_t *out) {
 	uint8_t uuid[16];
 	rand_fill(uuid, 16);
 	uuid[6] = (uuid[6] & 0x0F) | 0x40;

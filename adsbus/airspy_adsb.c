@@ -13,17 +13,17 @@
 #define SEND_MHZ 20
 
 struct __attribute__((packed)) airspy_adsb_common_overlay {
-	char mlat_timestamp[8];
+	uint8_t mlat_timestamp[8];
 	char semicolon1;
-	char mlat_precision[2];
+	uint8_t mlat_precision[2];
 	char semicolon2;
-	char rssi[4];
+	uint8_t rssi[4];
 	char semicolon3;
 };
 
 struct __attribute__((packed)) airspy_adsb_mode_s_short_overlay {
 	char asterisk;
-	char payload[14];
+	uint8_t payload[14];
 	char semicolon;
 	struct airspy_adsb_common_overlay common;
 	char cr;
@@ -32,7 +32,7 @@ struct __attribute__((packed)) airspy_adsb_mode_s_short_overlay {
 
 struct __attribute__((packed)) airspy_adsb_mode_s_long_overlay {
 	char asterisk;
-	char payload[28];
+	uint8_t payload[28];
 	char semicolon;
 	struct airspy_adsb_common_overlay common;
 	char cr;
@@ -49,9 +49,9 @@ static bool airspy_adsb_parse_common(const struct airspy_adsb_common_overlay *ov
 			overlay->semicolon3 != ';') {
 		return false;
 	}
-	uint16_t mlat_mhz = 2 * hex_to_int(overlay->mlat_precision, sizeof(overlay->mlat_precision) / 2);
+	uint16_t mlat_mhz = 2 * (uint16_t) hex_to_int(overlay->mlat_precision, sizeof(overlay->mlat_precision) / 2);
 	packet->mlat_timestamp = packet_mlat_timestamp_scale_in(hex_to_int(overlay->mlat_timestamp, sizeof(overlay->mlat_timestamp) / 2), UINT32_MAX, mlat_mhz, &state->mlat_state);
-	packet->rssi = packet_rssi_scale_in(hex_to_int(overlay->rssi, sizeof(overlay->rssi) / 2), UINT16_MAX);
+	packet->rssi = packet_rssi_scale_in((uint32_t) hex_to_int(overlay->rssi, sizeof(overlay->rssi) / 2), UINT16_MAX);
 	return true;
 }
 

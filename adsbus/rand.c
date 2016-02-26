@@ -1,17 +1,18 @@
+#include <assert.h>
+#include <fcntl.h>
+#include <limits.h>
 #include <stdio.h>
+#include <string.h>
 #include <sys/types.h>
 #include <sys/stat.h>
-#include <fcntl.h>
-#include <assert.h>
 #include <sys/uio.h>
 #include <unistd.h>
-#include <string.h>
 
 #include "buf.h"
 
 #include "rand.h"
 
-struct buf rand_buf = BUF_INIT;
+static struct buf rand_buf = BUF_INIT;
 static int rand_fd;
 
 void rand_init() {
@@ -43,7 +44,9 @@ void rand_fill(void *value, size_t size) {
 		},
 	};
 
-	assert(readv(rand_fd, iov, 2) == rand_buf.start + size);
+	size_t bytes = rand_buf.start + size;
+	assert(bytes < SSIZE_MAX);
+	assert(readv(rand_fd, iov, 2) == (ssize_t) bytes);
 	rand_buf.start = 0;
 	rand_buf.length = BUF_LEN_MAX;
 }

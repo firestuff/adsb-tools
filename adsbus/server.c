@@ -4,7 +4,7 @@
 
 #include "server.h"
 
-char server_id[UUID_LEN];
+uint8_t server_id[UUID_LEN];
 char server_version[] = "https://github.com/flamingcowtv/adsb-tools#1";
 
 void server_init() {

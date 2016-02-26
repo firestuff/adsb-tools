@@ -25,7 +25,7 @@ typedef bool (*parser)(struct buf *, struct packet *, void *state);
 struct receive {
 	struct peer peer;
 	struct peer *on_close;
-	char id[UUID_LEN];
+	uint8_t id[UUID_LEN];
 	struct buf buf;
 	char parser_state[PARSER_STATE_LEN];
 	parser_wrapper parser_wrapper;
@@ -33,9 +33,9 @@ struct receive {
 	struct receive *prev;
 	struct receive *next;
 };
-struct receive *receive_head = NULL;
+static struct receive *receive_head = NULL;
 
-struct parser {
+static struct parser {
 	char *name;
 	parser parse;
 } parsers[] = {
@@ -70,7 +70,7 @@ static bool receive_autodetect_parse(struct receive *receive, struct packet *pac
 	struct buf *buf = &receive->buf;
 	void *state = receive->parser_state;
 
-	for (int i = 0; i < NUM_PARSERS; i++) {
+	for (size_t i = 0; i < NUM_PARSERS; i++) {
 		if (parsers[i].parse(buf, packet, state)) {
 			fprintf(stderr, "R %s: Detected input format %s\n", receive->id, parsers[i].name);
 			receive->parser_wrapper = receive_parse_wrapper;
@@ -129,7 +129,7 @@ void receive_cleanup() {
 	}
 }
 
-void receive_new(int fd, void *unused, struct peer *on_close) {
+void receive_new(int fd, void __attribute__((unused)) *passthrough, struct peer *on_close) {
 	peer_count_in++;
 
 	int res = shutdown(fd, SHUT_WR);
@@ -158,7 +158,7 @@ void receive_new(int fd, void *unused, struct peer *on_close) {
 
 void receive_print_usage() {
 	fprintf(stderr, "\nSupported receive formats (auto-detected):\n");
-	for (int i = 0; i < NUM_PARSERS; i++) {
+	for (size_t i = 0; i < NUM_PARSERS; i++) {
 		fprintf(stderr, "\t%s\n", parsers[i].name);
 	}
 }

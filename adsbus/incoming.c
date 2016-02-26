@@ -1,5 +1,3 @@
-#define _GNU_SOURCE
-
 #include <assert.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -20,7 +18,7 @@
 
 struct incoming {
 	struct peer peer;
-	char id[UUID_LEN];
+	uint8_t id[UUID_LEN];
 	char *node;
 	char *service;
 	struct addrinfo *addrs;

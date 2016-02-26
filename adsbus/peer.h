@@ -12,10 +12,10 @@ struct peer {
 
 extern uint32_t peer_count_in, peer_count_out;
 
-void peer_init();
-void peer_cleanup();
-void peer_shutdown();
+void peer_init(void);
+void peer_cleanup(void);
+void peer_shutdown(int signal);
 void peer_epoll_add(struct peer *, uint32_t);
 void peer_epoll_del(struct peer *);
 void peer_call(struct peer *);
-void peer_loop();
+void peer_loop(void);

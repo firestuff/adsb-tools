@@ -21,7 +21,7 @@ ssize_t buf_fill(struct buf *buf, int fd) {
 	if (in <= 0) {
 		return in;
 	}
-	buf->length += in;
+	buf->length += (size_t) in;
 	return in;
 }
 

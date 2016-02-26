@@ -1,5 +1,3 @@
-#define _GNU_SOURCE
-
 #include <assert.h>
 #include <fcntl.h>
 #include <netdb.h>
@@ -38,7 +36,7 @@ static void resolve_handler(struct peer *peer) {
 }
 
 static void *resolve_main(void *arg) {
-	int fd = (intptr_t) arg;
+	int fd = (int) (intptr_t) arg;
 	struct resolve_request *request;
 	ssize_t ret;
 	while ((ret = read(fd, &request, sizeof(request))) == sizeof(request)) {

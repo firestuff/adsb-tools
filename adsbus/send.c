@@ -24,14 +24,14 @@
 struct send {
 	struct peer peer;
 	struct peer *on_close;
-	char id[UUID_LEN];
+	uint8_t id[UUID_LEN];
 	struct serializer *serializer;
 	struct send *prev;
 	struct send *next;
 };
 
 typedef void (*serialize)(struct packet *, struct buf *);
-struct serializer {
+static struct serializer {
 	char *name;
 	serialize serialize;
 	struct send *send_head;
@@ -90,7 +90,7 @@ static bool send_hello(int fd, struct serializer *serializer) {
 	if (buf.length == 0) {
 		return true;
 	}
-	if (write(fd, buf_at(&buf, 0), buf.length) != buf.length) {
+	if (write(fd, buf_at(&buf, 0), buf.length) != (ssize_t) buf.length) {
 		return false;
 	}
 	return true;
@@ -101,7 +101,7 @@ void send_init() {
 }
 
 void send_cleanup() {
-	for (int i = 0; i < NUM_SERIALIZERS; i++) {
+	for (size_t i = 0; i < NUM_SERIALIZERS; i++) {
 		struct serializer *serializer = &serializers[i];
 		while (serializer->send_head) {
 			send_del(serializer->send_head);
@@ -110,7 +110,7 @@ void send_cleanup() {
 }
 
 struct serializer *send_get_serializer(char *name) {
-	for (int i = 0; i < NUM_SERIALIZERS; i++) {
+	for (size_t i = 0; i < NUM_SERIALIZERS; i++) {
 		if (strcasecmp(serializers[i].name, name) == 0) {
 			return &serializers[i];
 		}
@@ -155,7 +155,7 @@ void send_new_wrapper(int fd, void *passthrough, struct peer *on_close) {
 }
 
 void send_write(struct packet *packet) {
-	for (int i = 0; i < NUM_SERIALIZERS; i++) {
+	for (size_t i = 0; i < NUM_SERIALIZERS; i++) {
 		struct serializer *serializer = &serializers[i];
 		if (serializer->send_head == NULL) {
 			continue;
@@ -167,7 +167,7 @@ void send_write(struct packet *packet) {
 		}
 		struct send *send = serializer->send_head;
 		while (send) {
-			if (write(send->peer.fd, buf_at(&buf, 0), buf.length) != buf.length) {
+			if (write(send->peer.fd, buf_at(&buf, 0), buf.length) != (ssize_t) buf.length) {
 				// peer_loop() will see this shutdown and call send_del
 				int res = shutdown(send->peer.fd, SHUT_WR);
 				assert(res == 0 || (res == -1 && errno == ENOTSOCK));
@@ -179,7 +179,7 @@ void send_write(struct packet *packet) {
 
 void send_print_usage() {
 	fprintf(stderr, "\nSupported send formats:\n");
-	for (int i = 0; i < NUM_SERIALIZERS; i++) {
+	for (size_t i = 0; i < NUM_SERIALIZERS; i++) {
 		fprintf(stderr, "\t%s\n", serializers[i].name);
 	}
 }

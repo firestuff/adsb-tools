@@ -4,7 +4,7 @@
 
 #define PACKET_DATA_LEN_MAX 14
 struct packet {
-	const char *source_id;
+	const uint8_t *source_id;
 	enum {
 		PACKET_TYPE_NONE,
 		PACKET_TYPE_MODE_S_SHORT,

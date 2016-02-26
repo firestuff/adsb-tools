@@ -118,7 +118,7 @@ int main(int argc, char *argv[]) {
 	stats_init();
 
 	if (!parse_opts(argc, argv)) {
-		peer_shutdown();
+		peer_shutdown(0);
 	}
 
 	assert(!close(0));

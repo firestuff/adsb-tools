@@ -87,7 +87,7 @@ bool opts_add_listen_send(char *arg) {
 	return true;
 }
 
-bool opts_add_stdin(char *arg) {
+bool opts_add_stdin(char __attribute__((unused)) *arg) {
 	receive_new(dup(0), NULL, NULL);
 	return true;
 }

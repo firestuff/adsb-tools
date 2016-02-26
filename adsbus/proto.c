@@ -1,3 +1,6 @@
+#pragma GCC diagnostic ignored "-Wcast-qual"
+#pragma GCC diagnostic ignored "-Wpacked"
+
 #include <arpa/inet.h>
 #include <assert.h>
 #include <stdio.h>
@@ -12,7 +15,7 @@
 
 #define PROTO_MAGIC "aDsB"
 
-struct proto_header {
+struct __attribute__((packed)) proto_header {
 	uint32_t length;
 };
 
@@ -30,7 +33,7 @@ static void proto_obj_to_buf(Adsb *wrapper, struct buf *buf) {
 	assert(!buf->length);
 	struct proto_header *header = (struct proto_header *) buf_at(buf, 0);
 	assert(sizeof(*header) <= BUF_LEN_MAX);
-	uint32_t msg_len = adsb__get_packed_size(wrapper);
+	size_t msg_len = adsb__get_packed_size(wrapper);
 	buf->length = sizeof(*header) + msg_len;
 	assert(buf->length <= BUF_LEN_MAX);
 	assert(adsb__pack(wrapper, (uint8_t *) buf_at(buf, sizeof(*header))) == msg_len);
@@ -72,11 +75,14 @@ static bool proto_parse_header(AdsbHeader *header, struct packet *packet, struct
 		return false;
 	}
 
-	state->mlat_timestamp_mhz = header->mlat_timestamp_mhz;
+	if (header->mlat_timestamp_mhz > UINT16_MAX) {
+		return false;
+	}
+	state->mlat_timestamp_mhz = (uint16_t) header->mlat_timestamp_mhz;
 	state->mlat_timestamp_max = header->mlat_timestamp_max;
 	state->rssi_max = header->rssi_max;
 
-	if (!strcmp(header->server_id, server_id)) {
+	if (!strcmp(header->server_id, (const char *) server_id)) {
 		fprintf(stderr, "R %s: Attempt to receive proto data from our own server ID (%s); loop!\n", packet->source_id, server_id);
 		return false;
 	}
@@ -90,7 +96,7 @@ static bool proto_parse_packet(AdsbPacket *in, struct packet *packet, struct pro
 		return false;
 	}
 
-	packet->source_id = in->source_id;
+	packet->source_id = (uint8_t *) in->source_id;
 	memcpy(packet->payload, in->payload.data, len);
 
 	if (in->has_mlat_timestamp) {
@@ -170,7 +176,7 @@ void proto_serialize(struct packet *packet, struct buf *buf) {
 		AdsbHeader header = ADSB_HEADER__INIT;
 		header.magic = PROTO_MAGIC;
 		header.server_version = server_version;
-		header.server_id = server_id;
+		header.server_id = (char *) server_id;
 		header.mlat_timestamp_mhz = PACKET_MLAT_MHZ;
 		header.mlat_timestamp_max = PACKET_MLAT_MAX;
 		header.rssi_max = PACKET_RSSI_MAX;
