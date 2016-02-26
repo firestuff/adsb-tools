@@ -1,0 +1,4 @@
+{"rssi_max": 4294967295, "mlat_timestamp_mhz": 120, "type": "header", "magic": "aDsB", "server_version": "https://github.com/flamingcowtv/adsb-tools#1", "server_id": "2ffe120c-be1e-4578-8829-c1ae1e7a5146", "mlat_timestamp_max": 9223372036854775807}
+{"payload": "5DA794E131FC6C", "type": "Mode-S short", "rssi": 421075225, "source_id": "99ada2d2-af23-48e4-a5ae-451603ea69e2", "mlat_timestamp": 218753236765860}
+{"payload": "02A185B16EB2B8", "type": "Mode-S short", "rssi": 286331153, "source_id": "99ada2d2-af23-48e4-a5ae-451603ea69e2", "mlat_timestamp": 218753240759400}
+
