@@ -1,5 +1,6 @@
 #include <assert.h>
 #include <errno.h>
+#include <signal.h>
 #include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -89,13 +90,14 @@ static bool send_hello(int fd, struct serializer *serializer) {
 	if (buf.length == 0) {
 		return true;
 	}
-	if (send(fd, buf_at(&buf, 0), buf.length, MSG_NOSIGNAL) != buf.length) {
+	if (write(fd, buf_at(&buf, 0), buf.length) != buf.length) {
 		return false;
 	}
 	return true;
 }
 
 void send_init() {
+	assert(signal(SIGPIPE, SIG_IGN) != SIG_ERR);
 }
 
 void send_cleanup() {
@@ -160,13 +162,13 @@ void send_write(struct packet *packet) {
 		if (buf.length == 0) {
 			continue;
 		}
-		struct send *send_obj = serializer->send_head;
-		while (send_obj) {
-			if (send(send_obj->peer.fd, buf_at(&buf, 0), buf.length, MSG_NOSIGNAL) != buf.length) {
+		struct send *send = serializer->send_head;
+		while (send) {
+			if (write(send->peer.fd, buf_at(&buf, 0), buf.length) != buf.length) {
 				// peer_loop() will see this shutdown and call send_del
-				shutdown(send_obj->peer.fd, SHUT_RD | SHUT_WR);
+				shutdown(send->peer.fd, SHUT_RD | SHUT_WR);
 			}
-			send_obj = send_obj->next;
+			send = send->next;
 		}
 	}
 }
