@@ -50,7 +50,10 @@ void peer_cleanup() {
 }
 
 void peer_shutdown(int __attribute__((unused)) signal) {
-	assert(!close(peer_shutdown_fd));
+	if (peer_shutdown_fd != -1) {
+		assert(!close(peer_shutdown_fd));
+		peer_shutdown_fd = -1;
+	}
 }
 
 void peer_epoll_add(struct peer *peer, uint32_t events) {
