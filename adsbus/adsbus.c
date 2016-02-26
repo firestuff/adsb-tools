@@ -128,13 +128,13 @@ int main(int argc, char *argv[]) {
 
 	resolve_cleanup();
 
-	json_cleanup();
-	proto_cleanup();
-
 	receive_cleanup();
 	send_cleanup();
 	incoming_cleanup();
 	outgoing_cleanup();
+
+	json_cleanup();
+	proto_cleanup();
 
 	rand_cleanup();
 	wakeup_cleanup();
