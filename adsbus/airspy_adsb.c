@@ -26,7 +26,7 @@ struct __attribute__((packed)) airspy_adsb_mode_s_short_overlay {
 	uint8_t payload[14];
 	char semicolon;
 	struct airspy_adsb_common_overlay common;
-	char cr;
+	char cr_lf;
 	char lf;
 };
 
@@ -35,7 +35,7 @@ struct __attribute__((packed)) airspy_adsb_mode_s_long_overlay {
 	uint8_t payload[28];
 	char semicolon;
 	struct airspy_adsb_common_overlay common;
-	char cr;
+	char cr_lf;
 	char lf;
 };
 
@@ -63,42 +63,40 @@ static bool airspy_adsb_parse_common(const struct airspy_adsb_common_overlay *ov
 }
 
 static bool airspy_adsb_parse_mode_s_short(struct buf *buf, struct packet *packet, struct airspy_adsb_parser_state *state) {
-	struct airspy_adsb_mode_s_short_overlay *short_overlay = (struct airspy_adsb_mode_s_short_overlay *) buf_at(buf, 0);
-	if (buf->length < sizeof(*short_overlay) ||
-			short_overlay->asterisk != '*' ||
-			short_overlay->semicolon != ';' ||
-			short_overlay->cr != '\r' ||
-			short_overlay->lf != '\n') {
+	struct airspy_adsb_mode_s_short_overlay *overlay = (struct airspy_adsb_mode_s_short_overlay *) buf_at(buf, 0);
+	if (((buf->length < sizeof(*overlay) - 1 || overlay->cr_lf != '\n') &&
+			 (buf->length < sizeof(*overlay) || overlay->cr_lf != '\r' || overlay->lf != '\n')) ||
+			overlay->asterisk != '*' ||
+			overlay->semicolon != ';') {
 		return false;
 	}
-	if (!airspy_adsb_parse_common(&short_overlay->common, packet, state)) {
+	if (!airspy_adsb_parse_common(&overlay->common, packet, state)) {
 		return false;
 	}
 	packet->type = PACKET_TYPE_MODE_S_SHORT;
-	if (!hex_to_bin(packet->payload, short_overlay->payload, sizeof(short_overlay->payload) / 2)) {
+	if (!hex_to_bin(packet->payload, overlay->payload, sizeof(overlay->payload) / 2)) {
 		return false;
 	}
-	buf_consume(buf, sizeof(*short_overlay));
+	buf_consume(buf, overlay->cr_lf == '\r' ? sizeof(*overlay) : sizeof(*overlay) - 1);
 	return true;
 }
 
 static bool airspy_adsb_parse_mode_s_long(struct buf *buf, struct packet *packet, struct airspy_adsb_parser_state *state) {
-	struct airspy_adsb_mode_s_long_overlay *long_overlay = (struct airspy_adsb_mode_s_long_overlay *) buf_at(buf, 0);
-	if (buf->length < sizeof(*long_overlay) ||
-			long_overlay->asterisk != '*' ||
-			long_overlay->semicolon != ';' ||
-			long_overlay->cr != '\r' ||
-			long_overlay->lf != '\n') {
+	struct airspy_adsb_mode_s_long_overlay *overlay = (struct airspy_adsb_mode_s_long_overlay *) buf_at(buf, 0);
+	if (((buf->length < sizeof(*overlay) - 1 || overlay->cr_lf != '\n') &&
+			 (buf->length < sizeof(*overlay) || overlay->cr_lf != '\r' || overlay->lf != '\n')) ||
+			overlay->asterisk != '*' ||
+			overlay->semicolon != ';') {
 		return false;
 	}
-	if (!airspy_adsb_parse_common(&long_overlay->common, packet, state)) {
+	if (!airspy_adsb_parse_common(&overlay->common, packet, state)) {
 		return false;
 	}
 	packet->type = PACKET_TYPE_MODE_S_LONG;
-	if (!hex_to_bin(packet->payload, long_overlay->payload, sizeof(long_overlay->payload) / 2)) {
+	if (!hex_to_bin(packet->payload, overlay->payload, sizeof(overlay->payload) / 2)) {
 		return false;
 	}
-	buf_consume(buf, sizeof(*long_overlay));
+	buf_consume(buf, overlay->cr_lf == '\r' ? sizeof(*overlay) : sizeof(*overlay) - 1);
 	return true;
 }
 
@@ -116,7 +114,7 @@ static void airspy_adsb_serialize_mode_s_short(struct packet *packet, struct buf
 	struct airspy_adsb_mode_s_short_overlay *overlay = (struct airspy_adsb_mode_s_short_overlay *) buf_at(buf, 0);
 	overlay->asterisk = '*';
 	overlay->semicolon = ';';
-	overlay->cr = '\r';
+	overlay->cr_lf = '\r';
 	overlay->lf = '\n';
 	hex_from_bin_upper(overlay->payload, packet->payload, sizeof(overlay->payload) / 2);
 
@@ -129,7 +127,7 @@ static void airspy_adsb_serialize_mode_s_long(struct packet *packet, struct buf 
 	struct airspy_adsb_mode_s_long_overlay *overlay = (struct airspy_adsb_mode_s_long_overlay *) buf_at(buf, 0);
 	overlay->asterisk = '*';
 	overlay->semicolon = ';';
-	overlay->cr = '\r';
+	overlay->cr_lf = '\r';
 	overlay->lf = '\n';
 	hex_from_bin_upper(overlay->payload, packet->payload, sizeof(overlay->payload) / 2);
 

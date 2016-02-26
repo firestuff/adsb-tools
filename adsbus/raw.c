@@ -27,11 +27,10 @@ struct __attribute__((packed)) raw_mode_s_long_overlay {
 
 static bool raw_parse_mode_s_short(struct buf *buf, struct packet *packet) {
 	struct raw_mode_s_short_overlay *overlay = (struct raw_mode_s_short_overlay *) buf_at(buf, 0);
-	if (buf->length < sizeof(*overlay) ||
+	if (((buf->length < sizeof(*overlay) - 1 || overlay->cr_lf != '\n') &&
+			 (buf->length < sizeof(*overlay) || overlay->cr_lf != '\r' || overlay->lf != '\n')) ||
 			overlay->asterisk != '*' ||
-			overlay->semicolon != ';' ||
-			((overlay->cr_lf != '\n') &&
-			 (overlay->cr_lf != '\r' || overlay->lf != '\n'))) {
+			overlay->semicolon != ';') {
 		return false;
 	}
 	if (!hex_to_bin(packet->payload, overlay->payload, sizeof(overlay->payload) / 2)) {
@@ -44,11 +43,10 @@ static bool raw_parse_mode_s_short(struct buf *buf, struct packet *packet) {
 
 static bool raw_parse_mode_s_long(struct buf *buf, struct packet *packet) {
 	struct raw_mode_s_long_overlay *overlay = (struct raw_mode_s_long_overlay *) buf_at(buf, 0);
-	if (buf->length < sizeof(*overlay) ||
+	if (((buf->length < sizeof(*overlay) - 1 || overlay->cr_lf != '\n') &&
+			 (buf->length < sizeof(*overlay) || overlay->cr_lf != '\r' || overlay->lf != '\n')) ||
 			overlay->asterisk != '*' ||
-			overlay->semicolon != ';' ||
-			((overlay->cr_lf != '\n') &&
-			 (overlay->cr_lf != '\r' || overlay->lf != '\n'))) {
+			overlay->semicolon != ';') {
 		return false;
 	}
 	if (!hex_to_bin(packet->payload, overlay->payload, sizeof(overlay->payload) / 2)) {
