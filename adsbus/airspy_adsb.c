@@ -50,6 +50,9 @@ static bool airspy_adsb_parse_common(const struct airspy_adsb_common_overlay *ov
 		return false;
 	}
 	uint16_t mlat_mhz = 2 * (uint16_t) hex_to_int(overlay->mlat_precision, sizeof(overlay->mlat_precision) / 2);
+	if (!mlat_mhz) {
+		return false;
+	}
 	packet->mlat_timestamp = packet_mlat_timestamp_scale_in(hex_to_int(overlay->mlat_timestamp, sizeof(overlay->mlat_timestamp) / 2), UINT32_MAX, mlat_mhz, &state->mlat_state);
 	packet->rssi = packet_rssi_scale_in((uint32_t) hex_to_int(overlay->rssi, sizeof(overlay->rssi) / 2), UINT16_MAX);
 	return true;

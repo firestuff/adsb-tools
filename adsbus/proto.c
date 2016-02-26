@@ -75,7 +75,10 @@ static bool proto_parse_header(AdsbHeader *header, struct packet *packet, struct
 		return false;
 	}
 
-	if (header->mlat_timestamp_mhz > UINT16_MAX) {
+	if (!header->mlat_timestamp_mhz ||
+			header->mlat_timestamp_mhz > UINT16_MAX ||
+			!header->mlat_timestamp_max ||
+			!header->rssi_max) {
 		return false;
 	}
 	state->mlat_timestamp_mhz = (uint16_t) header->mlat_timestamp_mhz;
