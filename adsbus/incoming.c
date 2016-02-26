@@ -12,6 +12,7 @@
 
 #include "peer.h"
 #include "resolve.h"
+#include "socket.h"
 #include "wakeup.h"
 #include "uuid.h"
 
@@ -64,6 +65,8 @@ static void incoming_handler(struct peer *peer) {
 			incoming->node, incoming->service,
 			local_hbuf, local_sbuf,
 			peer_hbuf, peer_sbuf);
+
+	socket_init(fd);
 
 	incoming->handler(fd, incoming->passthrough, NULL);
 }

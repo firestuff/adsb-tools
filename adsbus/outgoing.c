@@ -10,6 +10,7 @@
 
 #include "peer.h"
 #include "resolve.h"
+#include "socket.h"
 #include "wakeup.h"
 #include "uuid.h"
 
@@ -89,6 +90,7 @@ static void outgoing_connect_result(struct outgoing *outgoing, int result) {
 		case 0:
 			fprintf(stderr, "O %s: Connected to %s/%s\n", outgoing->id, hbuf, sbuf);
 			freeaddrinfo(outgoing->addrs);
+			socket_init(outgoing->peer.fd);
 			outgoing->attempt = 0;
 			int fd = outgoing->peer.fd;
 			outgoing->peer.fd = -1;
