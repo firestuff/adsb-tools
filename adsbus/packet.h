@@ -27,9 +27,10 @@ struct packet_mlat_state {
 	uint64_t timestamp_generation;
 };
 
-uint64_t packet_mlat_timestamp_scale_in(uint64_t, uint64_t, uint16_t, struct packet_mlat_state *);
-uint64_t packet_mlat_timestamp_scale_out(uint64_t, uint64_t, uint16_t);
+uint64_t __attribute__ ((warn_unused_result)) packet_mlat_timestamp_scale_in(uint64_t, uint64_t, uint16_t, struct packet_mlat_state *);
+uint64_t __attribute__ ((warn_unused_result)) packet_mlat_timestamp_scale_out(uint64_t, uint64_t, uint16_t);
 
-uint32_t packet_rssi_scale_in(uint32_t, uint32_t);
-uint32_t packet_rssi_scale_out(uint32_t, uint32_t);
+uint32_t __attribute__ ((warn_unused_result)) packet_rssi_scale_in(uint32_t, uint32_t);
+uint32_t __attribute__ ((warn_unused_result)) packet_rssi_scale_out(uint32_t, uint32_t);
 
+void packet_sanity_check(const struct packet *);

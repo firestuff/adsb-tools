@@ -57,7 +57,6 @@ static void json_add_common(struct packet *packet, json_t *obj) {
 }
 
 static void json_serialize_mode_s_short(struct packet *packet, struct buf *buf) {
-	assert(packet->mlat_timestamp < PACKET_MLAT_MAX);
 	uint8_t hexbuf[14];
 	hex_from_bin_upper(hexbuf, packet->payload, 7);
 	json_t *out = json_pack("{ss#}", "payload", hexbuf, 14);
@@ -66,7 +65,6 @@ static void json_serialize_mode_s_short(struct packet *packet, struct buf *buf) 
 }
 
 static void json_serialize_mode_s_long(struct packet *packet, struct buf *buf) {
-	assert(packet->mlat_timestamp < PACKET_MLAT_MAX);
 	uint8_t hexbuf[28];
 	hex_from_bin_upper(hexbuf, packet->payload, 14);
 	json_t *out = json_pack("{ss#}", "payload", hexbuf, 28);

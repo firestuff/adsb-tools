@@ -1,3 +1,5 @@
+#include <assert.h>
+
 #include "packet.h"
 
 char *packet_type_names[] = {
@@ -29,7 +31,7 @@ static uint64_t packet_mlat_timestamp_scale_width_out(uint64_t timestamp, uint64
 }
 
 uint64_t packet_mlat_timestamp_scale_in(uint64_t timestamp, uint64_t max, uint16_t mhz, struct packet_mlat_state *state) {
-	return packet_mlat_timestamp_scale_mhz_in(packet_mlat_timestamp_scale_width_in(timestamp, max, state), mhz);
+	return packet_mlat_timestamp_scale_mhz_in(packet_mlat_timestamp_scale_width_in(timestamp, max, state), mhz) % PACKET_MLAT_MAX;
 }
 
 uint64_t packet_mlat_timestamp_scale_out(uint64_t timestamp, uint64_t max, uint16_t mhz) {
@@ -42,4 +44,11 @@ uint32_t packet_rssi_scale_in(uint32_t value, uint32_t max) {
 
 uint32_t packet_rssi_scale_out(uint32_t value, uint32_t max) {
 	return value / (PACKET_RSSI_MAX / max);
+}
+
+void packet_sanity_check(const struct packet *packet) {
+	assert(packet->source_id);
+	assert(packet->type > PACKET_TYPE_NONE && packet->type < NUM_TYPES);
+	assert(packet->mlat_timestamp <= PACKET_MLAT_MAX);
+	assert(packet->rssi <= PACKET_RSSI_MAX);
 }

@@ -14,6 +14,7 @@
 #include "buf.h"
 #include "json.h"
 #include "list.h"
+#include "packet.h"
 #include "peer.h"
 #include "proto.h"
 #include "raw.h"
@@ -146,6 +147,7 @@ void send_new_wrapper(int fd, void *passthrough, struct peer *on_close) {
 }
 
 void send_write(struct packet *packet) {
+	packet_sanity_check(packet);
 	for (size_t i = 0; i < NUM_SERIALIZERS; i++) {
 		struct serializer *serializer = &serializers[i];
 		if (list_is_empty(&serializer->send_head)) {
