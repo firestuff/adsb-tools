@@ -8,6 +8,7 @@
 #include <string.h>
 #include <unistd.h>
 
+#include "buf.h"
 #include "list.h"
 #include "peer.h"
 #include "resolve.h"
@@ -27,6 +28,7 @@ struct outgoing {
 	const char *error;
 	uint32_t attempt;
 	outgoing_connection_handler handler;
+	outgoing_get_hello hello;
 	void *passthrough;
 	uint32_t *count;
 	struct list_head outgoing_list;
@@ -60,9 +62,14 @@ static void outgoing_connect_next(struct outgoing *outgoing) {
 	outgoing->peer.fd = socket(outgoing->addr->ai_family, outgoing->addr->ai_socktype | SOCK_NONBLOCK | SOCK_CLOEXEC, outgoing->addr->ai_protocol);
 	assert(outgoing->peer.fd >= 0);
 
-	char buf[1];
-	int result = (int) sendto(outgoing->peer.fd, buf, 0, MSG_FASTOPEN, outgoing->addr->ai_addr, outgoing->addr->ai_addrlen);
-	outgoing_connect_result(outgoing, result == 0 ? result : errno);
+	{
+		struct buf buf = BUF_INIT, *buf_ptr = &buf;
+		if (outgoing->hello) {
+			outgoing->hello(&buf_ptr, outgoing->passthrough);
+		}
+		int result = (int) sendto(outgoing->peer.fd, buf_at(buf_ptr, 0), buf_ptr->length, MSG_FASTOPEN, outgoing->addr->ai_addr, outgoing->addr->ai_addrlen);
+		outgoing_connect_result(outgoing, result == 0 ? result : errno);
+	}
 }
 
 static void outgoing_connect_handler(struct peer *peer) {
@@ -155,7 +162,7 @@ void outgoing_cleanup() {
 	}
 }
 
-void outgoing_new(char *node, char *service, outgoing_connection_handler handler, void *passthrough, uint32_t *count) {
+void outgoing_new(char *node, char *service, outgoing_connection_handler handler, outgoing_get_hello hello, void *passthrough, uint32_t *count) {
 	(*count)++;
 
 	struct outgoing *outgoing = malloc(sizeof(*outgoing));
@@ -164,6 +171,7 @@ void outgoing_new(char *node, char *service, outgoing_connection_handler handler
 	outgoing->service = strdup(service);
 	outgoing->attempt = 0;
 	outgoing->handler = handler;
+	outgoing->hello = hello;
 	outgoing->passthrough = passthrough;
 	outgoing->count = count;
 

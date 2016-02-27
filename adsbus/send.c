@@ -78,18 +78,6 @@ static void send_del_wrapper(struct peer *peer) {
 	send_del((struct send *) peer);
 }
 
-static bool send_hello(int fd, struct serializer *serializer) {
-	struct buf buf = BUF_INIT;
-	serializer->serialize(NULL, &buf);
-	if (buf.length == 0) {
-		return true;
-	}
-	if (write(fd, buf_at(&buf, 0), buf.length) != (ssize_t) buf.length) {
-		return false;
-	}
-	return true;
-}
-
 void send_init() {
 	assert(signal(SIGPIPE, SIG_IGN) != SIG_ERR);
 	for (size_t i = 0; i < NUM_SERIALIZERS; i++) {
@@ -134,16 +122,16 @@ void send_new(int fd, struct serializer *serializer, struct peer *on_close) {
 	peer_epoll_add((struct peer *) send, 0);
 
 	fprintf(stderr, "S %s (%s): New send connection\n", send->id, serializer->name);
-
-	if (!send_hello(fd, serializer)) {
-		fprintf(stderr, "S %s: Failed to write hello\n", send->id);
-		send_del(send);
-		return;
-	}
 }
 
 void send_new_wrapper(int fd, void *passthrough, struct peer *on_close) {
 	send_new(fd, (struct serializer *) passthrough, on_close);
+}
+
+void send_hello(struct buf **buf_pp, void *passthrough) {
+	struct serializer *serializer = (struct serializer *) passthrough;
+	// TODO: change API to avoid special-case NULL packet*, and to allow static greetings.
+	serializer->serialize(NULL, *buf_pp);
 }
 
 void send_write(struct packet *packet) {

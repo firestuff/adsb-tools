@@ -8,6 +8,7 @@
 #include <errno.h>
 #include <unistd.h>
 
+#include "buf.h"
 #include "list.h"
 #include "peer.h"
 #include "resolve.h"
@@ -26,6 +27,7 @@ struct incoming {
 	const char *error;
 	uint32_t attempt;
 	incoming_connection_handler handler;
+	incoming_get_hello hello;
 	void *passthrough;
 	uint32_t *count;
 	struct list_head incoming_list;
@@ -66,6 +68,20 @@ static void incoming_handler(struct peer *peer) {
 			peer_hbuf, peer_sbuf);
 
 	socket_connected_init(fd);
+
+	{
+		struct buf buf = BUF_INIT, *buf_ptr = &buf;
+		if (incoming->hello) {
+			incoming->hello(&buf_ptr, incoming->passthrough);
+		}
+		if (buf_ptr->length) {
+			if (write(fd, buf_at(buf_ptr, 0), buf_ptr->length) != (ssize_t) buf_ptr->length) {
+				fprintf(stderr, "I %s: Error writing greeting\n", incoming->id);
+				assert(!close(fd));
+				return;
+			}
+		}
+	}
 
 	incoming->handler(fd, incoming->passthrough, NULL);
 }
@@ -146,7 +162,7 @@ void incoming_cleanup() {
 	}
 }
 
-void incoming_new(char *node, char *service, incoming_connection_handler handler, void *passthrough, uint32_t *count) {
+void incoming_new(char *node, char *service, incoming_connection_handler handler, incoming_get_hello hello, void *passthrough, uint32_t *count) {
 	(*count)++;
 
 	struct incoming *incoming = malloc(sizeof(*incoming));
@@ -156,6 +172,7 @@ void incoming_new(char *node, char *service, incoming_connection_handler handler
 	incoming->service = strdup(service);
 	incoming->attempt = 0;
 	incoming->handler = handler;
+	incoming->hello = hello;
 	incoming->passthrough = passthrough;
 	incoming->count = count;
 
