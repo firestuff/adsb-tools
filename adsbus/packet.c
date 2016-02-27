@@ -13,6 +13,7 @@ char *packet_type_names[] = {
 };
 
 static uint64_t packet_mlat_timestamp_scale_mhz_in(uint64_t timestamp, uint32_t mhz) {
+	assert(mhz > 0);
 	return timestamp * (PACKET_MLAT_MHZ / mhz);
 }
 
@@ -27,10 +28,12 @@ static uint64_t packet_mlat_timestamp_scale_width_in(uint64_t timestamp, uint64_
 }
 
 static uint64_t packet_mlat_timestamp_scale_mhz_out(uint64_t timestamp, uint64_t mhz) {
+	assert(mhz > 0);
 	return timestamp / (PACKET_MLAT_MHZ / mhz);
 }
 
 static uint64_t packet_mlat_timestamp_scale_width_out(uint64_t timestamp, uint64_t max) {
+	assert(max > 0);
 	return timestamp % max;
 }
 
@@ -43,10 +46,12 @@ uint64_t packet_mlat_timestamp_scale_out(uint64_t timestamp, uint64_t max, uint1
 }
 
 uint32_t packet_rssi_scale_in(uint32_t value, uint32_t max) {
+	assert(max > 0);
 	return value * (PACKET_RSSI_MAX / max);
 }
 
 uint32_t packet_rssi_scale_out(uint32_t value, uint32_t max) {
+	assert(max > 0);
 	return value / (PACKET_RSSI_MAX / max);
 }
 

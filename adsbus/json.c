@@ -90,8 +90,10 @@ static bool json_parse_header(json_t *in, struct packet *packet, struct json_par
 	}
 
 	if (mlat_timestamp_mhz > UINT16_MAX ||
-			mlat_timestamp_max < 0 ||
-			rssi_max > UINT32_MAX) {
+			mlat_timestamp_mhz <= 0 ||
+			mlat_timestamp_max <= 0 ||
+			rssi_max > UINT32_MAX ||
+			rssi_max <= 0) {
 		return false;
 	}
 

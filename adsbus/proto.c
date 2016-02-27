@@ -91,11 +91,16 @@ static bool proto_parse_header(AdsbHeader *header, struct packet *packet, struct
 		return false;
 	}
 
+	state->have_header = true;
 	fprintf(stderr, "R %s: Connected to server ID: %s\n", packet->source_id, header->server_id);
 	return true;
 }
 
 static bool proto_parse_packet(AdsbPacket *in, struct packet *packet, struct proto_parser_state *state, size_t len) {
+	if (!state->have_header) {
+		return false;
+	}
+
 	if (in->payload.len != len) {
 		return false;
 	}
