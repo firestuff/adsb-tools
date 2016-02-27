@@ -99,10 +99,6 @@ static bool json_parse_header(json_t *in, struct packet *packet, struct json_par
 	state->mlat_timestamp_max = (uint64_t) mlat_timestamp_max;
 	state->rssi_max = (uint32_t) rssi_max;
 
-	if (!packet_validate_id((const uint8_t *) json_server_id)) {
-		return false;
-	}
-
 	if (!strcmp(json_server_id, (const char *) server_id)) {
 		fprintf(stderr, "R %s: Attempt to receive json data from our own server ID (%s); loop!\n", packet->source_id, server_id);
 		return false;
@@ -121,6 +117,10 @@ static bool json_parse_common(json_t *in, struct packet *packet, struct json_par
 	}
 
 	if (json_unpack(in, "{s:s}", "source_id", &packet->source_id)) {
+		return false;
+	}
+
+	if (!packet_validate_id(packet->source_id)) {
 		return false;
 	}
 
