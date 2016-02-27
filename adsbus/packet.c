@@ -1,4 +1,8 @@
 #include <assert.h>
+#include <stdio.h>
+#include <string.h>
+
+#include "uuid.h"
 
 #include "packet.h"
 
@@ -47,8 +51,24 @@ uint32_t packet_rssi_scale_out(uint32_t value, uint32_t max) {
 }
 
 void packet_sanity_check(const struct packet *packet) {
-	assert(packet->source_id);
+	assert(packet_validate_id(packet->source_id));
 	assert(packet->type > PACKET_TYPE_NONE && packet->type < NUM_TYPES);
 	assert(packet->mlat_timestamp <= PACKET_MLAT_MAX);
 	assert(packet->rssi <= PACKET_RSSI_MAX);
+}
+
+bool packet_validate_id(const uint8_t *id) {
+	if (!id) {
+		return false;
+	}
+	for (size_t i = 0; i < UUID_LEN; i++) {
+		uint8_t c = id[i];
+		if (c == 0) {
+			return true;
+		}
+		if (c < 32 || c > 126) {
+			return false;
+		}
+	}
+	return false;
 }

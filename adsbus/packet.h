@@ -1,5 +1,6 @@
 #pragma once
 
+#include <stdbool.h>
 #include <stdint.h>
 
 #define PACKET_DATA_LEN_MAX 14
@@ -34,3 +35,4 @@ uint32_t __attribute__ ((warn_unused_result)) packet_rssi_scale_in(uint32_t, uin
 uint32_t __attribute__ ((warn_unused_result)) packet_rssi_scale_out(uint32_t, uint32_t);
 
 void packet_sanity_check(const struct packet *);
+bool __attribute__ ((warn_unused_result)) packet_validate_id(const uint8_t *);

@@ -9,6 +9,7 @@
 #include "buf.h"
 #include "packet.h"
 #include "server.h"
+#include "uuid.h"
 
 #include "adsb.pb-c.h"
 #include "proto.h"
@@ -99,6 +100,9 @@ static bool proto_parse_packet(AdsbPacket *in, struct packet *packet, struct pro
 		return false;
 	}
 
+	if (!packet_validate_id((const uint8_t *) in->source_id)) {
+		return false;
+	}
 	packet->source_id = (uint8_t *) in->source_id;
 	memcpy(packet->payload, in->payload.data, len);
 
