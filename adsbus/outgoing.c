@@ -60,7 +60,8 @@ static void outgoing_connect_next(struct outgoing *outgoing) {
 	outgoing->peer.fd = socket(outgoing->addr->ai_family, outgoing->addr->ai_socktype | SOCK_NONBLOCK | SOCK_CLOEXEC, outgoing->addr->ai_protocol);
 	assert(outgoing->peer.fd >= 0);
 
-	int result = connect(outgoing->peer.fd, outgoing->addr->ai_addr, outgoing->addr->ai_addrlen);
+	char buf[1];
+	int result = (int) sendto(outgoing->peer.fd, buf, 0, MSG_FASTOPEN, outgoing->addr->ai_addr, outgoing->addr->ai_addrlen);
 	outgoing_connect_result(outgoing, result == 0 ? result : errno);
 }
 
@@ -91,7 +92,7 @@ static void outgoing_connect_result(struct outgoing *outgoing, int result) {
 		case 0:
 			fprintf(stderr, "O %s: Connected to %s/%s\n", outgoing->id, hbuf, sbuf);
 			freeaddrinfo(outgoing->addrs);
-			socket_init(outgoing->peer.fd);
+			socket_connected_init(outgoing->peer.fd);
 			outgoing->attempt = 0;
 			int fd = outgoing->peer.fd;
 			outgoing->peer.fd = -1;

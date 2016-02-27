@@ -65,7 +65,7 @@ static void incoming_handler(struct peer *peer) {
 			local_hbuf, local_sbuf,
 			peer_hbuf, peer_sbuf);
 
-	socket_init(fd);
+	socket_connected_init(fd);
 
 	incoming->handler(fd, incoming->passthrough, NULL);
 }
@@ -98,6 +98,8 @@ static void incoming_listen(struct incoming *incoming) {
 			assert(!close(incoming->peer.fd));
 			continue;
 		}
+
+		socket_bound_init(incoming->peer.fd);
 
 		assert(listen(incoming->peer.fd, 255) == 0);
 		break;
