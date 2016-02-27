@@ -44,6 +44,18 @@ static void incoming_retry(struct incoming *incoming) {
 	wakeup_add((struct peer *) incoming, delay);
 }
 
+static bool incoming_hello(int fd, struct incoming *incoming) {
+	if (!incoming->hello) {
+		return true;
+	}
+	struct buf buf = BUF_INIT, *buf_ptr = &buf;
+	incoming->hello(&buf_ptr, incoming->passthrough);
+	if (!buf_ptr->length) {
+		return true;
+	}
+	return (write(fd, buf_at(buf_ptr, 0), buf_ptr->length) == (ssize_t) buf_ptr->length);
+}
+
 static void incoming_handler(struct peer *peer) {
 	struct incoming *incoming = (struct incoming *) peer;
 
@@ -69,18 +81,10 @@ static void incoming_handler(struct peer *peer) {
 
 	socket_connected_init(fd);
 
-	{
-		struct buf buf = BUF_INIT, *buf_ptr = &buf;
-		if (incoming->hello) {
-			incoming->hello(&buf_ptr, incoming->passthrough);
-		}
-		if (buf_ptr->length) {
-			if (write(fd, buf_at(buf_ptr, 0), buf_ptr->length) != (ssize_t) buf_ptr->length) {
-				fprintf(stderr, "I %s: Error writing greeting\n", incoming->id);
-				assert(!close(fd));
-				return;
-			}
-		}
+	if (!incoming_hello(fd, incoming)) {
+		fprintf(stderr, "I %s: Error writing greeting\n", incoming->id);
+		assert(!close(fd));
+		return;
 	}
 
 	incoming->handler(fd, incoming->passthrough, NULL);

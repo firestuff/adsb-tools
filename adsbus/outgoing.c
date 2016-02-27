@@ -62,14 +62,12 @@ static void outgoing_connect_next(struct outgoing *outgoing) {
 	outgoing->peer.fd = socket(outgoing->addr->ai_family, outgoing->addr->ai_socktype | SOCK_NONBLOCK | SOCK_CLOEXEC, outgoing->addr->ai_protocol);
 	assert(outgoing->peer.fd >= 0);
 
-	{
-		struct buf buf = BUF_INIT, *buf_ptr = &buf;
-		if (outgoing->hello) {
-			outgoing->hello(&buf_ptr, outgoing->passthrough);
-		}
-		int result = (int) sendto(outgoing->peer.fd, buf_at(buf_ptr, 0), buf_ptr->length, MSG_FASTOPEN, outgoing->addr->ai_addr, outgoing->addr->ai_addrlen);
-		outgoing_connect_result(outgoing, result == 0 ? result : errno);
+	struct buf buf = BUF_INIT, *buf_ptr = &buf;
+	if (outgoing->hello) {
+		outgoing->hello(&buf_ptr, outgoing->passthrough);
 	}
+	int result = (int) sendto(outgoing->peer.fd, buf_at(buf_ptr, 0), buf_ptr->length, MSG_FASTOPEN, outgoing->addr->ai_addr, outgoing->addr->ai_addrlen);
+	outgoing_connect_result(outgoing, result == 0 ? result : errno);
 }
 
 static void outgoing_connect_handler(struct peer *peer) {
