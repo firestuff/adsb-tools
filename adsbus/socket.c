@@ -7,6 +7,11 @@
 
 #include "socket.h"
 
+void socket_pre_bind_init(int fd) {
+	int optval = 1;
+	assert(!setsockopt(fd, SOL_SOCKET, SO_REUSEPORT, &optval, sizeof(optval)));
+}
+
 void socket_bound_init(int fd) {
 	int qlen = 5;
 	assert(!setsockopt(fd, SOL_TCP, TCP_FASTOPEN, &qlen, sizeof(qlen)));
