@@ -85,12 +85,12 @@ static bool beast_parse_packet(struct buf *buf, struct packet *packet, struct be
 	return true;
 }
 
-static void beast_serialize_packet(struct packet *packet, struct buf *buf, uint8_t type) {
+static void beast_serialize_packet(struct packet *packet, struct buf *buf, uint8_t beast_type) {
 	struct buf buf2 = BUF_INIT;
-	size_t payload_bytes = packet_payload_len[type];
+	size_t payload_bytes = packet_payload_len[packet->type];
 	struct beast_overlay *overlay = (struct beast_overlay *) buf_at(&buf2, 0);
 	overlay->one_a = 0x1a;
-	overlay->type = type;
+	overlay->type = beast_type;
 	memcpy(buf_at(&buf2, sizeof(*overlay)), packet->payload, payload_bytes);
 	beast_write_mlat(
 			packet_mlat_timestamp_scale_out(packet->mlat_timestamp, UINT64_C(0xffffffffffff), BEAST_MLAT_MHZ),
