@@ -7,7 +7,7 @@ LIBS ?= -ljansson -lprotobuf-c
 TESTCASE_DIR ?= testcase
 TESTOUT_DIR ?= testout
 VALGRIND ?= valgrind
-VALGRIND_FLAGS ?= --error-exitcode=1 --track-fds=yes --show-leak-kinds=all --leak-check=full
+VALGRIND_FLAGS ?= --error-exitcode=1 --trace-children=yes --track-fds=yes --show-leak-kinds=all --leak-check=full
 ADSBUS_TEST_FLAGS ?= --stdin --stdout=airspy_adsb --stdout=beast --stdout=json --stdout=proto --stdout=raw --stdout=stats
 
 OBJ_TRANSPORT = exec.o incoming.o outgoing.o receive.o send.o
