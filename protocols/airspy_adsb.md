@@ -7,19 +7,20 @@
 ## Format
 
 Textual format, similar to [raw](raw.md), but extended with MLAT and signal
-level data. Unlike raw format, lines are terminated with `\r\n` (`0x0d 0x0a`).
+level data.
 
 
 ## Frame structure
 * `*` (`0x2a`)
-* 7 or 14 byte frame (see [raw](raw.md))
+* Uppercase hex-encoded 2, 7, or 14 byte frame (4, 14, or 28 bytes after encoding)
 * `;` (`0x3b`)
 * 4 byte MLAT timestamp (see below)
 * `;` (`0x3b`)
 * 1 byte MLAT precision (see below)
 * `;` (`0x3b`)
 * 2 byte big-endian [RSSI](https://en.wikipedia.org/wiki/Received_signal_strength_indication)
-* `;\r\n` (`0x3b 0x0d 0x0a`)
+* `;` (`0x3b`)
+* `\r\n` (`0x0d 0x0a`) **OR** `\n` (`0x0a`)
   
 
 ## MLAT timestamp
