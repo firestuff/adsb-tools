@@ -98,17 +98,5 @@ bool opts_add_stdout(char *arg) {
 	if (!serializer) {
 		return false;
 	}
-	int fd = dup(1);
-	{
-		// TODO: move into standard location for non-socket fd handling
-		struct buf buf = BUF_INIT, *buf_ptr = &buf;
-		send_hello(&buf_ptr, serializer);
-		if (buf_ptr->length) {
-			if (write(fd, buf_at(buf_ptr, 0), buf_ptr->length) != (ssize_t) buf_ptr->length) {
-				return false;
-			}
-		}
-	}
-	send_new(fd, serializer, NULL);
-	return true;
+	return send_new_hello(dup(1), serializer, NULL);
 }

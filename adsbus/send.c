@@ -136,6 +136,18 @@ void send_new_wrapper(int fd, void *passthrough, struct peer *on_close) {
 	send_new(fd, (struct serializer *) passthrough, on_close);
 }
 
+bool send_new_hello(int fd, struct serializer *serializer, struct peer *on_close) {
+	struct buf buf = BUF_INIT, *buf_ptr = &buf;
+	send_hello(&buf_ptr, serializer);
+	if (buf_ptr->length) {
+		if (write(fd, buf_at(buf_ptr, 0), buf_ptr->length) != (ssize_t) buf_ptr->length) {
+			return false;
+		}
+	}
+	send_new(fd, serializer, on_close);
+	return true;
+}
+
 void send_hello(struct buf **buf_pp, void *passthrough) {
 	struct serializer *serializer = (struct serializer *) passthrough;
 	if (serializer->hello) {
