@@ -21,8 +21,8 @@ static bool raw_parse_packet(struct buf *buf, struct packet *packet, enum packet
 	struct raw_overlay *overlay = (struct raw_overlay *) buf_at(buf, overlay_start);
 	size_t total_len = overlay_start + sizeof(*overlay);
 
-	if (((buf->length < sizeof(*overlay) - 1 || overlay->cr_lf != '\n') &&
-			 (buf->length < sizeof(*overlay) || overlay->cr_lf != '\r' || overlay->lf != '\n')) ||
+	if (((buf->length < total_len - 1 || overlay->cr_lf != '\n') &&
+			 (buf->length < total_len || overlay->cr_lf != '\r' || overlay->lf != '\n')) ||
 			buf_chr(buf, 0) != '*' ||
 			overlay->semicolon != ';') {
 		return false;
