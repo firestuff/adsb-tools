@@ -9,94 +9,49 @@
 
 #include "raw.h"
 
-struct __attribute__((packed)) raw_mode_s_short_overlay {
-	char asterisk;
-	uint8_t payload[14];
+struct __attribute__((packed)) raw_overlay {
 	char semicolon;
 	char cr_lf;
 	char lf;
 };
 
-struct __attribute__((packed)) raw_mode_s_long_overlay {
-	char asterisk;
-	uint8_t payload[28];
-	char semicolon;
-	char cr_lf;
-	char lf;
-};
+static bool raw_parse_packet(struct buf *buf, struct packet *packet, enum packet_type type) {
+	size_t payload_bytes = packet_payload_len[type];
+	size_t overlay_start = 1 + payload_bytes;
+	struct raw_overlay *overlay = (struct raw_overlay *) buf_at(buf, overlay_start);
+	size_t total_len = overlay_start + sizeof(*overlay);
 
-static bool raw_parse_mode_s_short(struct buf *buf, struct packet *packet) {
-	struct raw_mode_s_short_overlay *overlay = (struct raw_mode_s_short_overlay *) buf_at(buf, 0);
 	if (((buf->length < sizeof(*overlay) - 1 || overlay->cr_lf != '\n') &&
 			 (buf->length < sizeof(*overlay) || overlay->cr_lf != '\r' || overlay->lf != '\n')) ||
-			overlay->asterisk != '*' ||
+			buf_chr(buf, 0) != '*' ||
 			overlay->semicolon != ';') {
 		return false;
 	}
-	if (!hex_to_bin(packet->payload, overlay->payload, sizeof(overlay->payload) / 2)) {
+	if (!hex_to_bin(packet->payload, buf_at(buf, 1), payload_bytes)) {
 		return false;
 	}
-	packet->type = PACKET_TYPE_MODE_S_SHORT;
-	buf_consume(buf, overlay->cr_lf == '\r' ? sizeof(*overlay) : sizeof(*overlay) - 1);
+	packet->type = type;
+	buf_consume(buf, overlay->cr_lf == '\r' ? total_len : total_len - 1);
 	return true;
-}
-
-static bool raw_parse_mode_s_long(struct buf *buf, struct packet *packet) {
-	struct raw_mode_s_long_overlay *overlay = (struct raw_mode_s_long_overlay *) buf_at(buf, 0);
-	if (((buf->length < sizeof(*overlay) - 1 || overlay->cr_lf != '\n') &&
-			 (buf->length < sizeof(*overlay) || overlay->cr_lf != '\r' || overlay->lf != '\n')) ||
-			overlay->asterisk != '*' ||
-			overlay->semicolon != ';') {
-		return false;
-	}
-	if (!hex_to_bin(packet->payload, overlay->payload, sizeof(overlay->payload) / 2)) {
-		return false;
-	}
-	packet->type = PACKET_TYPE_MODE_S_LONG;
-	buf_consume(buf, overlay->cr_lf == '\r' ? sizeof(*overlay) : sizeof(*overlay) - 1);
-	return true;
-}
-
-static void raw_serialize_mode_s_short(struct packet *packet, struct buf *buf) {
-	struct raw_mode_s_short_overlay *overlay = (struct raw_mode_s_short_overlay *) buf_at(buf, 0);
-	overlay->asterisk = '*';
-	overlay->semicolon = ';';
-	overlay->lf = '\n';
-	hex_from_bin_upper(overlay->payload, packet->payload, sizeof(overlay->payload) / 2);
-	buf->length = sizeof(*overlay);
-}
-
-static void raw_serialize_mode_s_long(struct packet *packet, struct buf *buf) {
-	struct raw_mode_s_long_overlay *overlay = (struct raw_mode_s_long_overlay *) buf_at(buf, 0);
-	overlay->asterisk = '*';
-	overlay->semicolon = ';';
-	overlay->lf = '\n';
-	hex_from_bin_upper(overlay->payload, packet->payload, sizeof(overlay->payload) / 2);
-	buf->length = sizeof(*overlay);
 }
 
 void raw_init() {
-	assert(sizeof(struct raw_mode_s_short_overlay) < BUF_LEN_MAX);
-	assert(sizeof(struct raw_mode_s_long_overlay) < BUF_LEN_MAX);
+	assert(1 + PACKET_PAYLOAD_LEN_MAX + sizeof(struct raw_overlay) < BUF_LEN_MAX);
 }
 
 bool raw_parse(struct buf *buf, struct packet *packet, void __attribute__((unused)) *state_in) {
 	return (
-			raw_parse_mode_s_short(buf, packet) ||
-			raw_parse_mode_s_long(buf, packet));
+			raw_parse_packet(buf, packet, PACKET_TYPE_MODE_AC) ||
+			raw_parse_packet(buf, packet, PACKET_TYPE_MODE_S_SHORT) ||
+			raw_parse_packet(buf, packet, PACKET_TYPE_MODE_S_LONG));
 }
 
 void raw_serialize(struct packet *packet, struct buf *buf) {
-	switch (packet->type) {
-		case PACKET_TYPE_NONE:
-			break;
-
-		case PACKET_TYPE_MODE_S_SHORT:
-			raw_serialize_mode_s_short(packet, buf);
-			break;
-
-		case PACKET_TYPE_MODE_S_LONG:
-			raw_serialize_mode_s_long(packet, buf);
-			break;
-	}
+	size_t payload_bytes = packet_payload_len[packet->type];
+	struct raw_overlay *overlay = (struct raw_overlay *) buf_at(buf, 1 + payload_bytes);
+	buf_chr(buf, 0) = '*';
+	overlay->semicolon = ';';
+	overlay->lf = '\n';
+	hex_from_bin_upper(buf_at(buf, 1), packet->payload, payload_bytes);
+	buf->length = 1 + payload_bytes + sizeof(*overlay);
 }

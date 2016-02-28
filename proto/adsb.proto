@@ -17,8 +17,9 @@ message AdsbPacket {
 message Adsb {
 	oneof record {
 		AdsbHeader header = 1;
-		AdsbPacket mode_s_short = 2;
-		AdsbPacket mode_s_long = 3;
+		AdsbPacket mode_ac = 2;
+		AdsbPacket mode_s_short = 3;
+		AdsbPacket mode_s_long = 4;
 	}
 }
 

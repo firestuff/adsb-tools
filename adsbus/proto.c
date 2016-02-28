@@ -55,6 +55,14 @@ static void proto_serialize_packet(struct packet *packet, AdsbPacket *out, size_
 	out->payload.len = len;
 }
 
+static void proto_serialize_mode_ac(struct packet *packet, struct buf *buf) {
+	AdsbPacket packet_out = ADSB_PACKET__INIT;
+	proto_serialize_packet(packet, &packet_out, 2);
+	Adsb msg = ADSB__INIT;
+	msg.mode_ac = &packet_out;
+	proto_wrap_to_buf(&msg, buf);
+}
+
 static void proto_serialize_mode_s_short(struct packet *packet, struct buf *buf) {
 	AdsbPacket packet_out = ADSB_PACKET__INIT;
 	proto_serialize_packet(packet, &packet_out, 7);
@@ -216,6 +224,12 @@ bool proto_parse(struct buf *buf, struct packet *packet, void *state_in) {
 			return false;
 		}
 		packet->type = PACKET_TYPE_NONE;
+	} else if (msg->mode_ac) {
+		if (!proto_parse_packet(msg->mode_ac, packet, state, 2)) {
+			adsb__free_unpacked(msg, NULL);
+			return false;
+		}
+		packet->type = PACKET_TYPE_MODE_AC;
 	} else if (msg->mode_s_short) {
 		if (!proto_parse_packet(msg->mode_s_short, packet, state, 7)) {
 			adsb__free_unpacked(msg, NULL);
@@ -243,6 +257,11 @@ void proto_serialize(struct packet *packet, struct buf *buf) {
 	switch (packet->type) {
 		case PACKET_TYPE_NONE:
 			break;
+
+		case PACKET_TYPE_MODE_AC:
+			proto_serialize_mode_ac(packet, buf);
+			break;
+
 
 		case PACKET_TYPE_MODE_S_SHORT:
 			proto_serialize_mode_s_short(packet, buf);

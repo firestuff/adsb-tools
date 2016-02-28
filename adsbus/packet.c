@@ -1,3 +1,5 @@
+#pragma GCC diagnostic ignored "-Wtautological-constant-out-of-range-compare"
+
 #include <assert.h>
 #include <stdio.h>
 #include <string.h>
@@ -8,8 +10,16 @@
 
 char *packet_type_names[] = {
 	"INVALID",
+	"Mode-AC",
 	"Mode-S short",
 	"Mode-S long",
+};
+
+size_t packet_payload_len[] = {
+	0,
+	2,
+	7,
+	14,
 };
 
 static uint64_t packet_mlat_timestamp_scale_mhz_in(uint64_t timestamp, uint32_t mhz) {

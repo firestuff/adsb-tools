@@ -60,12 +60,13 @@ struct  _Adsb
 {
   ProtobufCMessage base;
   AdsbHeader *header;
+  AdsbPacket *mode_ac;
   AdsbPacket *mode_s_short;
   AdsbPacket *mode_s_long;
 };
 #define ADSB__INIT \
  { PROTOBUF_C_MESSAGE_INIT (&adsb__descriptor) \
-    , NULL, NULL, NULL }
+    , NULL, NULL, NULL, NULL }
 
 
 struct  _AdsbStream

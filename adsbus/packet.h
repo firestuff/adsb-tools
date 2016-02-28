@@ -6,17 +6,21 @@
 #define PACKET_DATA_LEN_MAX 14
 struct packet {
 	const uint8_t *source_id;
-	enum {
+	enum packet_type {
 		PACKET_TYPE_NONE,
+		PACKET_TYPE_MODE_AC,
 		PACKET_TYPE_MODE_S_SHORT,
 		PACKET_TYPE_MODE_S_LONG,
 	} type;
-	#define NUM_TYPES 3
+#define NUM_TYPES 4
 	uint8_t payload[PACKET_DATA_LEN_MAX];
 	uint64_t mlat_timestamp;
 	uint32_t rssi;
 };
 extern char *packet_type_names[];
+extern size_t packet_payload_len[];
+
+#define PACKET_PAYLOAD_LEN_MAX 14
 
 #define PACKET_MLAT_MHZ 120
 // Use the signed max to avoid problems with some consumers; it's large enough to not matter.

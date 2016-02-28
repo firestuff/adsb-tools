@@ -44,18 +44,11 @@ static void json_add_common(struct packet *packet, json_t *obj) {
 	}
 }
 
-static void json_serialize_mode_s_short(struct packet *packet, struct buf *buf) {
-	uint8_t hexbuf[14];
-	hex_from_bin_upper(hexbuf, packet->payload, 7);
-	json_t *out = json_pack("{ss#}", "payload", hexbuf, 14);
-	json_add_common(packet, out);
-	json_serialize_to_buf(out, buf);
-}
-
-static void json_serialize_mode_s_long(struct packet *packet, struct buf *buf) {
-	uint8_t hexbuf[28];
-	hex_from_bin_upper(hexbuf, packet->payload, 14);
-	json_t *out = json_pack("{ss#}", "payload", hexbuf, 28);
+static void json_serialize_payload(struct packet *packet, struct buf *buf) {
+	size_t bytes = packet_payload_len[packet->type];
+	uint8_t hexbuf[PACKET_PAYLOAD_LEN_MAX * 2];
+	hex_from_bin_upper(hexbuf, packet->payload, bytes);
+	json_t *out = json_pack("{ss#}", "payload", hexbuf, bytes * 2);
 	json_add_common(packet, out);
 	json_serialize_to_buf(out, buf);
 }
@@ -139,38 +132,34 @@ static bool json_parse_common(json_t *in, struct packet *packet, struct json_par
 	return true;
 }
 
-static bool json_parse_mode_s_short(json_t *in, struct packet *packet, struct json_parser_state *state) {
+static bool json_parse_payload(json_t *in, struct packet *packet, struct json_parser_state *state, enum packet_type type) {
+	size_t bytes = packet_payload_len[type];
 	if (!json_parse_common(in, packet, state)) {
 		return false;
 	}
 
 	json_t *payload = json_object_get(in, "payload");
-	if (!payload || !json_is_string(payload) || json_string_length(payload) != 14) {
+	if (!payload || !json_is_string(payload) || json_string_length(payload) != bytes * 2) {
 		return false;
 	}
 
-	if (!hex_to_bin(packet->payload, (const uint8_t *) json_string_value(payload), 7)) {
+	if (!hex_to_bin(packet->payload, (const uint8_t *) json_string_value(payload), bytes)) {
 		return false;
 	}
-	packet->type = PACKET_TYPE_MODE_S_SHORT;
+	packet->type = type;
 	return true;
 }
 
+static bool json_parse_mode_ac(json_t *in, struct packet *packet, struct json_parser_state *state) {
+	return json_parse_payload(in, packet, state, PACKET_TYPE_MODE_AC);
+}
+
+static bool json_parse_mode_s_short(json_t *in, struct packet *packet, struct json_parser_state *state) {
+	return json_parse_payload(in, packet, state, PACKET_TYPE_MODE_S_SHORT);
+}
+
 static bool json_parse_mode_s_long(json_t *in, struct packet *packet, struct json_parser_state *state) {
-	if (!json_parse_common(in, packet, state)) {
-		return false;
-	}
-
-	json_t *payload = json_object_get(in, "payload");
-	if (!payload || !json_is_string(payload) || json_string_length(payload) != 28) {
-		return false;
-	}
-
-	if (!hex_to_bin(packet->payload, (const uint8_t *) json_string_value(payload), 14)) {
-		return false;
-	}
-	packet->type = PACKET_TYPE_MODE_S_LONG;
-	return true;
+	return json_parse_payload(in, packet, state, PACKET_TYPE_MODE_S_LONG);
 }
 
 void json_init() {
@@ -226,6 +215,8 @@ bool json_parse(struct buf *buf, struct packet *packet, void *state_in) {
 	bool (*parser)(json_t *, struct packet *, struct json_parser_state *) = NULL;
 	if (!strcmp(type_str, "header")) {
 		parser = json_parse_header;
+	} else if (!strcmp(type_str, "Mode-AC")) {
+		parser = json_parse_mode_ac;
 	} else if (!strcmp(type_str, "Mode-S short")) {
 		parser = json_parse_mode_s_short;
 	} else if (!strcmp(type_str, "Mode-S long")) {
@@ -251,12 +242,10 @@ void json_serialize(struct packet *packet, struct buf *buf) {
 		case PACKET_TYPE_NONE:
 			break;
 
+		case PACKET_TYPE_MODE_AC:
 		case PACKET_TYPE_MODE_S_SHORT:
-			json_serialize_mode_s_short(packet, buf);
-			break;
-
 		case PACKET_TYPE_MODE_S_LONG:
-			json_serialize_mode_s_long(packet, buf);
+			json_serialize_payload(packet, buf);
 			break;
 	}
 }

@@ -359,7 +359,7 @@ const ProtobufCMessageDescriptor adsb_packet__descriptor =
   (ProtobufCMessageInit) adsb_packet__init,
   NULL,NULL,NULL    /* reserved[123] */
 };
-static const ProtobufCFieldDescriptor adsb__field_descriptors[3] =
+static const ProtobufCFieldDescriptor adsb__field_descriptors[4] =
 {
   {
     "header",
@@ -374,8 +374,20 @@ static const ProtobufCFieldDescriptor adsb__field_descriptors[3] =
     0,NULL,NULL    /* reserved1,reserved2, etc */
   },
   {
-    "mode_s_short",
+    "mode_ac",
     2,
+    PROTOBUF_C_LABEL_OPTIONAL,
+    PROTOBUF_C_TYPE_MESSAGE,
+    0,   /* quantifier_offset */
+    offsetof(Adsb, mode_ac),
+    &adsb_packet__descriptor,
+    NULL,
+    0,             /* flags */
+    0,NULL,NULL    /* reserved1,reserved2, etc */
+  },
+  {
+    "mode_s_short",
+    3,
     PROTOBUF_C_LABEL_OPTIONAL,
     PROTOBUF_C_TYPE_MESSAGE,
     0,   /* quantifier_offset */
@@ -387,7 +399,7 @@ static const ProtobufCFieldDescriptor adsb__field_descriptors[3] =
   },
   {
     "mode_s_long",
-    3,
+    4,
     PROTOBUF_C_LABEL_OPTIONAL,
     PROTOBUF_C_TYPE_MESSAGE,
     0,   /* quantifier_offset */
@@ -400,13 +412,14 @@ static const ProtobufCFieldDescriptor adsb__field_descriptors[3] =
 };
 static const unsigned adsb__field_indices_by_name[] = {
   0,   /* field[0] = header */
-  2,   /* field[2] = mode_s_long */
-  1,   /* field[1] = mode_s_short */
+  1,   /* field[1] = mode_ac */
+  3,   /* field[3] = mode_s_long */
+  2,   /* field[2] = mode_s_short */
 };
 static const ProtobufCIntRange adsb__number_ranges[1 + 1] =
 {
   { 1, 0 },
-  { 0, 3 }
+  { 0, 4 }
 };
 const ProtobufCMessageDescriptor adsb__descriptor =
 {
@@ -416,7 +429,7 @@ const ProtobufCMessageDescriptor adsb__descriptor =
   "Adsb",
   "",
   sizeof(Adsb),
-  3,
+  4,
   adsb__field_descriptors,
   adsb__field_indices_by_name,
   1,  adsb__number_ranges,
