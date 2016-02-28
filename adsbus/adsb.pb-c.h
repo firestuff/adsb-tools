@@ -18,6 +18,7 @@ PROTOBUF_C__BEGIN_DECLS
 typedef struct _AdsbHeader AdsbHeader;
 typedef struct _AdsbPacket AdsbPacket;
 typedef struct _Adsb Adsb;
+typedef struct _AdsbStream AdsbStream;
 
 
 /* --- enums --- */
@@ -65,6 +66,17 @@ struct  _Adsb
 #define ADSB__INIT \
  { PROTOBUF_C_MESSAGE_INIT (&adsb__descriptor) \
     , NULL, NULL, NULL }
+
+
+struct  _AdsbStream
+{
+  ProtobufCMessage base;
+  size_t n_msg;
+  Adsb **msg;
+};
+#define ADSB_STREAM__INIT \
+ { PROTOBUF_C_MESSAGE_INIT (&adsb_stream__descriptor) \
+    , 0,NULL }
 
 
 /* AdsbHeader methods */
@@ -124,6 +136,25 @@ Adsb *
 void   adsb__free_unpacked
                      (Adsb *message,
                       ProtobufCAllocator *allocator);
+/* AdsbStream methods */
+void   adsb_stream__init
+                     (AdsbStream         *message);
+size_t adsb_stream__get_packed_size
+                     (const AdsbStream   *message);
+size_t adsb_stream__pack
+                     (const AdsbStream   *message,
+                      uint8_t             *out);
+size_t adsb_stream__pack_to_buffer
+                     (const AdsbStream   *message,
+                      ProtobufCBuffer     *buffer);
+AdsbStream *
+       adsb_stream__unpack
+                     (ProtobufCAllocator  *allocator,
+                      size_t               len,
+                      const uint8_t       *data);
+void   adsb_stream__free_unpacked
+                     (AdsbStream *message,
+                      ProtobufCAllocator *allocator);
 /* --- per-message closures --- */
 
 typedef void (*AdsbHeader_Closure)
@@ -135,6 +166,9 @@ typedef void (*AdsbPacket_Closure)
 typedef void (*Adsb_Closure)
                  (const Adsb *message,
                   void *closure_data);
+typedef void (*AdsbStream_Closure)
+                 (const AdsbStream *message,
+                  void *closure_data);
 
 /* --- services --- */
 
@@ -144,6 +178,7 @@ typedef void (*Adsb_Closure)
 extern const ProtobufCMessageDescriptor adsb_header__descriptor;
 extern const ProtobufCMessageDescriptor adsb_packet__descriptor;
 extern const ProtobufCMessageDescriptor adsb__descriptor;
+extern const ProtobufCMessageDescriptor adsb_stream__descriptor;
 
 PROTOBUF_C__END_DECLS
 

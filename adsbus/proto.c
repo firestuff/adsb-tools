@@ -16,10 +16,6 @@
 
 #define PROTO_MAGIC "aDsB"
 
-struct __attribute__((packed)) proto_header {
-	uint32_t length;
-};
-
 struct proto_parser_state {
 	struct packet_mlat_state mlat_state;
 	uint16_t mlat_timestamp_mhz;
@@ -31,15 +27,18 @@ struct proto_parser_state {
 static Adsb *proto_prev = NULL;
 static struct buf proto_hello_buf = BUF_INIT;
 
-static void proto_obj_to_buf(Adsb *wrapper, struct buf *buf) {
+static void proto_obj_to_buf(ProtobufCMessage *obj, struct buf *buf) {
 	assert(!buf->length);
-	struct proto_header *header = (struct proto_header *) buf_at(buf, 0);
-	assert(sizeof(*header) <= BUF_LEN_MAX);
-	size_t msg_len = adsb__get_packed_size(wrapper);
-	buf->length = sizeof(*header) + msg_len;
-	assert(buf->length <= BUF_LEN_MAX);
-	assert(adsb__pack(wrapper, (uint8_t *) buf_at(buf, sizeof(*header))) == msg_len);
-	header->length = htonl(msg_len);
+	assert(protobuf_c_message_get_packed_size(obj) <= BUF_LEN_MAX);
+	buf->length = protobuf_c_message_pack(obj, buf_at(buf, 0));
+	assert(buf->length);
+}
+
+static void proto_wrap_to_buf(Adsb *msg, struct buf *buf) {
+	AdsbStream wrapper = ADSB_STREAM__INIT;
+	wrapper.n_msg = 1;
+	wrapper.msg = &msg;
+	proto_obj_to_buf((struct ProtobufCMessage *) &wrapper, buf);
 }
 
 static void proto_serialize_packet(struct packet *packet, AdsbPacket *out, size_t len) {
@@ -59,17 +58,66 @@ static void proto_serialize_packet(struct packet *packet, AdsbPacket *out, size_
 static void proto_serialize_mode_s_short(struct packet *packet, struct buf *buf) {
 	AdsbPacket packet_out = ADSB_PACKET__INIT;
 	proto_serialize_packet(packet, &packet_out, 7);
-	Adsb wrapper = ADSB__INIT;
-	wrapper.mode_s_short = &packet_out;
-	proto_obj_to_buf(&wrapper, buf);
+	Adsb msg = ADSB__INIT;
+	msg.mode_s_short = &packet_out;
+	proto_wrap_to_buf(&msg, buf);
 }
 
 static void proto_serialize_mode_s_long(struct packet *packet, struct buf *buf) {
 	AdsbPacket packet_out = ADSB_PACKET__INIT;
 	proto_serialize_packet(packet, &packet_out, 14);
-	Adsb wrapper = ADSB__INIT;
-	wrapper.mode_s_long = &packet_out;
-	proto_obj_to_buf(&wrapper, buf);
+	Adsb msg = ADSB__INIT;
+	msg.mode_s_long = &packet_out;
+	proto_wrap_to_buf(&msg, buf);
+}
+
+static ssize_t proto_parse_varint(const struct buf *buf, size_t *start) {
+	uint64_t value = 0;
+	uint16_t shift = 0;
+	for (; *start < buf->length; (*start)++) {
+		uint8_t c = buf_chr(buf, *start);
+		value |= ((uint64_t) c & 0x7f) << shift;
+		if (value > SSIZE_MAX) {
+			return -1;
+		}
+		if (!(c & 0x80)) {
+			(*start)++;
+			return (ssize_t) value;
+		}
+		shift += 7;
+		if (shift > 21) {
+			return -1;
+		}
+	}
+	return -1;
+}
+
+static ssize_t proto_unwrap(const struct buf *wrapper, Adsb **msg) {
+	if (wrapper->length < 1) {
+		return -1;
+	}
+
+	// Field ID 1, encoding type 2 (length-prefixed blob)
+	if (buf_chr(wrapper, 0) != ((1 << 3) | 2)) {
+		return -1;
+	}
+
+	size_t start = 1;
+	ssize_t len = proto_parse_varint(wrapper, &start);
+	if (len == -1) {
+		return -1;
+	}
+	size_t msg_len = (size_t) len;
+	if (start + msg_len > wrapper->length) {
+		return -1;
+	}
+
+	*msg = adsb__unpack(NULL, msg_len, buf_at(wrapper, start));
+	if (!*msg) {
+		return -1;
+	}
+
+	return (ssize_t) (start + msg_len);
 }
 
 static bool proto_parse_header(AdsbHeader *header, struct packet *packet, struct proto_parser_state *state) {
@@ -136,10 +184,10 @@ void proto_init() {
 	header.mlat_timestamp_max = PACKET_MLAT_MAX;
 	header.rssi_max = PACKET_RSSI_MAX;
 
-	Adsb wrapper = ADSB__INIT;
-	wrapper.header = &header;
+	Adsb msg = ADSB__INIT;
+	msg.header = &header;
 
-	proto_obj_to_buf(&wrapper, &proto_hello_buf);
+	proto_wrap_to_buf(&msg, &proto_hello_buf);
 }
 
 void proto_cleanup() {
@@ -156,46 +204,38 @@ bool proto_parse(struct buf *buf, struct packet *packet, void *state_in) {
 		proto_prev = NULL;
 	}
 
-	struct proto_header *header = (struct proto_header *) buf_at(buf, 0);
-	if (buf->length < sizeof(*header)) {
-		return false;
-	}
-	uint32_t msg_len = ntohl(header->length);
-	if (buf->length < sizeof(*header) + msg_len) {
+	Adsb *msg;
+	ssize_t len = proto_unwrap(buf, &msg);
+	if (len == -1) {
 		return false;
 	}
 
-	Adsb *wrapper = adsb__unpack(NULL, msg_len, (uint8_t *) buf_at(buf, sizeof(*header)));
-	if (!wrapper) {
-		return false;
-	}
-
-	if (wrapper->header) {
-		if (!proto_parse_header(wrapper->header, packet, state)) {
-			adsb__free_unpacked(wrapper, NULL);
+	if (msg->header) {
+		if (!proto_parse_header(msg->header, packet, state)) {
+			adsb__free_unpacked(msg, NULL);
 			return false;
 		}
 		packet->type = PACKET_TYPE_NONE;
-	} else if (wrapper->mode_s_short) {
-		if (!proto_parse_packet(wrapper->mode_s_short, packet, state, 7)) {
-			adsb__free_unpacked(wrapper, NULL);
+	} else if (msg->mode_s_short) {
+		if (!proto_parse_packet(msg->mode_s_short, packet, state, 7)) {
+			adsb__free_unpacked(msg, NULL);
 			return false;
 		}
 		packet->type = PACKET_TYPE_MODE_S_SHORT;
-	} else if (wrapper->mode_s_long) {
-		if (!proto_parse_packet(wrapper->mode_s_long, packet, state, 14)) {
-			adsb__free_unpacked(wrapper, NULL);
+	} else if (msg->mode_s_long) {
+		if (!proto_parse_packet(msg->mode_s_long, packet, state, 14)) {
+			adsb__free_unpacked(msg, NULL);
 			return false;
 		}
 		packet->type = PACKET_TYPE_MODE_S_LONG;
 	} else {
 		// "oneof" is actually "zero or oneof"
-		adsb__free_unpacked(wrapper, NULL);
+		adsb__free_unpacked(msg, NULL);
 		return false;
 	}
 
-	proto_prev = wrapper;
-	buf_consume(buf, sizeof(*header) + msg_len);
+	proto_prev = msg;
+	buf_consume(buf, (size_t) len);
 	return true;
 }
 

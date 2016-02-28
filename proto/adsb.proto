@@ -21,3 +21,7 @@ message Adsb {
 		AdsbPacket mode_s_long = 3;
 	}
 }
+
+message AdsbStream {
+	repeated Adsb msg = 1;
+}

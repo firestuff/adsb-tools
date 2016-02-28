@@ -136,6 +136,49 @@ void   adsb__free_unpacked
   assert(message->base.descriptor == &adsb__descriptor);
   protobuf_c_message_free_unpacked ((ProtobufCMessage*)message, allocator);
 }
+void   adsb_stream__init
+                     (AdsbStream         *message)
+{
+  static AdsbStream init_value = ADSB_STREAM__INIT;
+  *message = init_value;
+}
+size_t adsb_stream__get_packed_size
+                     (const AdsbStream *message)
+{
+  assert(message->base.descriptor == &adsb_stream__descriptor);
+  return protobuf_c_message_get_packed_size ((const ProtobufCMessage*)(message));
+}
+size_t adsb_stream__pack
+                     (const AdsbStream *message,
+                      uint8_t       *out)
+{
+  assert(message->base.descriptor == &adsb_stream__descriptor);
+  return protobuf_c_message_pack ((const ProtobufCMessage*)message, out);
+}
+size_t adsb_stream__pack_to_buffer
+                     (const AdsbStream *message,
+                      ProtobufCBuffer *buffer)
+{
+  assert(message->base.descriptor == &adsb_stream__descriptor);
+  return protobuf_c_message_pack_to_buffer ((const ProtobufCMessage*)message, buffer);
+}
+AdsbStream *
+       adsb_stream__unpack
+                     (ProtobufCAllocator  *allocator,
+                      size_t               len,
+                      const uint8_t       *data)
+{
+  return (AdsbStream *)
+     protobuf_c_message_unpack (&adsb_stream__descriptor,
+                                allocator, len, data);
+}
+void   adsb_stream__free_unpacked
+                     (AdsbStream *message,
+                      ProtobufCAllocator *allocator)
+{
+  assert(message->base.descriptor == &adsb_stream__descriptor);
+  protobuf_c_message_free_unpacked ((ProtobufCMessage*)message, allocator);
+}
 static const ProtobufCFieldDescriptor adsb_header__field_descriptors[6] =
 {
   {
@@ -378,5 +421,43 @@ const ProtobufCMessageDescriptor adsb__descriptor =
   adsb__field_indices_by_name,
   1,  adsb__number_ranges,
   (ProtobufCMessageInit) adsb__init,
+  NULL,NULL,NULL    /* reserved[123] */
+};
+static const ProtobufCFieldDescriptor adsb_stream__field_descriptors[1] =
+{
+  {
+    "msg",
+    1,
+    PROTOBUF_C_LABEL_REPEATED,
+    PROTOBUF_C_TYPE_MESSAGE,
+    offsetof(AdsbStream, n_msg),
+    offsetof(AdsbStream, msg),
+    &adsb__descriptor,
+    NULL,
+    0,             /* flags */
+    0,NULL,NULL    /* reserved1,reserved2, etc */
+  },
+};
+static const unsigned adsb_stream__field_indices_by_name[] = {
+  0,   /* field[0] = msg */
+};
+static const ProtobufCIntRange adsb_stream__number_ranges[1 + 1] =
+{
+  { 1, 0 },
+  { 0, 1 }
+};
+const ProtobufCMessageDescriptor adsb_stream__descriptor =
+{
+  PROTOBUF_C__MESSAGE_DESCRIPTOR_MAGIC,
+  "AdsbStream",
+  "AdsbStream",
+  "AdsbStream",
+  "",
+  sizeof(AdsbStream),
+  1,
+  adsb_stream__field_descriptors,
+  adsb_stream__field_indices_by_name,
+  1,  adsb_stream__number_ranges,
+  (ProtobufCMessageInit) adsb_stream__init,
   NULL,NULL,NULL    /* reserved[123] */
 };
