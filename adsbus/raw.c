@@ -17,7 +17,7 @@ struct __attribute__((packed)) raw_overlay {
 
 static bool raw_parse_packet(struct buf *buf, struct packet *packet, enum packet_type type) {
 	size_t payload_bytes = packet_payload_len[type];
-	size_t overlay_start = 1 + payload_bytes;
+	size_t overlay_start = 1 + (payload_bytes * 2);
 	struct raw_overlay *overlay = (struct raw_overlay *) buf_at(buf, overlay_start);
 	size_t total_len = overlay_start + sizeof(*overlay);
 

@@ -30,7 +30,7 @@ struct airspy_adsb_parser_state {
 
 static bool airspy_adsb_parse_packet(struct buf *buf, struct packet *packet, struct airspy_adsb_parser_state *state, enum packet_type type) {
 	size_t payload_bytes = packet_payload_len[type];
-	size_t overlay_start = 1 + payload_bytes;
+	size_t overlay_start = 1 + (payload_bytes * 2);
 	struct airspy_adsb_overlay *overlay = (struct airspy_adsb_overlay *) buf_at(buf, overlay_start);
 	size_t total_len = overlay_start + sizeof(*overlay);
 
