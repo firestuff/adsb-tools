@@ -7,6 +7,7 @@
 #include <unistd.h>
 
 #include "buf.h"
+#include "exec.h"
 #include "incoming.h"
 #include "outgoing.h"
 #include "peer.h"
@@ -125,6 +126,21 @@ bool opts_add_file_append(char *arg) {
 		return false;
 	}
 	return send_new_hello(fd, serializer, NULL);
+}
+
+bool opts_add_exec_receive(char *arg) {
+	exec_new(arg, receive_new, NULL, NULL, &peer_count_in);
+	return true;
+}
+
+bool opts_add_exec_send(char *arg) {
+	struct serializer *serializer = opts_get_serializer(&arg);
+	if (!serializer) {
+		return NULL;
+	}
+
+	exec_new(arg, send_new_wrapper, send_hello, serializer, &peer_count_out);
+	return true;
 }
 
 bool opts_add_stdin(char __attribute__((unused)) *arg) {
