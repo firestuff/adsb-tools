@@ -1,3 +1,4 @@
+#include <assert.h>
 #include <fcntl.h>
 #include <stdlib.h>
 #include <string.h>
@@ -127,7 +128,9 @@ bool opts_add_file_append(char *arg) {
 }
 
 bool opts_add_stdin(char __attribute__((unused)) *arg) {
-	receive_new(dup(0), NULL, NULL);
+	int fd = dup(0);
+	assert(!fcntl(fd, F_SETFD, FD_CLOEXEC));
+	receive_new(fd, NULL, NULL);
 	return true;
 }
 
@@ -136,5 +139,7 @@ bool opts_add_stdout(char *arg) {
 	if (!serializer) {
 		return false;
 	}
-	return send_new_hello(dup(1), serializer, NULL);
+	int fd = dup(1);
+	assert(!fcntl(fd, F_SETFD, FD_CLOEXEC));
+	return send_new_hello(fd, serializer, NULL);
 }
