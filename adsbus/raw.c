@@ -48,10 +48,12 @@ bool raw_parse(struct buf *buf, struct packet *packet, void __attribute__((unuse
 
 void raw_serialize(struct packet *packet, struct buf *buf) {
 	size_t payload_bytes = packet_payload_len[packet->type];
-	struct raw_overlay *overlay = (struct raw_overlay *) buf_at(buf, 1 + payload_bytes);
+	size_t overlay_start = 1 + (payload_bytes * 2);
+	struct raw_overlay *overlay = (struct raw_overlay *) buf_at(buf, overlay_start);
+	size_t total_len = overlay_start + sizeof(*overlay);
 	buf_chr(buf, 0) = '*';
 	overlay->semicolon = ';';
-	overlay->lf = '\n';
+	overlay->cr_lf = '\n';
 	hex_from_bin_upper(buf_at(buf, 1), packet->payload, payload_bytes);
-	buf->length = 1 + payload_bytes + sizeof(*overlay);
+	buf->length = total_len - 1;
 }

@@ -77,7 +77,9 @@ bool airspy_adsb_parse(struct buf *buf, struct packet *packet, void *state_in) {
 
 void airspy_adsb_serialize(struct packet *packet, struct buf *buf) {
 	size_t payload_bytes = packet_payload_len[packet->type];
-	struct airspy_adsb_overlay *overlay = (struct airspy_adsb_overlay *) buf_at(buf, 1 + payload_bytes);
+	size_t overlay_start = 1 + (payload_bytes * 2);
+	struct airspy_adsb_overlay *overlay = (struct airspy_adsb_overlay *) buf_at(buf, overlay_start);
+	size_t total_len = overlay_start + sizeof(*overlay);
 	buf_chr(buf, 0) = '*';
 	overlay->semicolon1 = overlay->semicolon2 = overlay->semicolon3 = overlay->semicolon4 =';';
 	overlay->cr_lf = '\r';
@@ -89,5 +91,5 @@ void airspy_adsb_serialize(struct packet *packet, struct buf *buf) {
 			sizeof(overlay->mlat_timestamp) / 2);
 	hex_from_int_upper(overlay->mlat_precision, SEND_MHZ / 2, sizeof(overlay->mlat_precision) / 2);
 	hex_from_int_upper(overlay->rssi, packet_rssi_scale_out(packet->rssi, UINT16_MAX), sizeof(overlay->rssi) / 2);
-	buf->length = 1 + payload_bytes + sizeof(*overlay);
+	buf->length = total_len;
 }
