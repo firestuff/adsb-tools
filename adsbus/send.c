@@ -138,7 +138,9 @@ void send_new_wrapper(int fd, void *passthrough, struct peer *on_close) {
 
 void send_hello(struct buf **buf_pp, void *passthrough) {
 	struct serializer *serializer = (struct serializer *) passthrough;
-	serializer->hello(buf_pp);
+	if (serializer->hello) {
+		serializer->hello(buf_pp);
+	}
 }
 
 void send_write(struct packet *packet) {
