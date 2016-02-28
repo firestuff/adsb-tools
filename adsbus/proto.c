@@ -29,6 +29,7 @@ struct proto_parser_state {
 };
 
 static Adsb *proto_prev = NULL;
+static struct buf proto_hello_buf = BUF_INIT;
 
 static void proto_obj_to_buf(Adsb *wrapper, struct buf *buf) {
 	assert(!buf->length);
@@ -126,6 +127,21 @@ static bool proto_parse_packet(AdsbPacket *in, struct packet *packet, struct pro
 	return true;
 }
 
+void proto_init() {
+	AdsbHeader header = ADSB_HEADER__INIT;
+	header.magic = PROTO_MAGIC;
+	header.server_version = server_version;
+	header.server_id = (char *) server_id;
+	header.mlat_timestamp_mhz = PACKET_MLAT_MHZ;
+	header.mlat_timestamp_max = PACKET_MLAT_MAX;
+	header.rssi_max = PACKET_RSSI_MAX;
+
+	Adsb wrapper = ADSB__INIT;
+	wrapper.header = &header;
+
+	proto_obj_to_buf(&wrapper, &proto_hello_buf);
+}
+
 void proto_cleanup() {
 	if (proto_prev) {
 		adsb__free_unpacked(proto_prev, NULL);
@@ -184,22 +200,6 @@ bool proto_parse(struct buf *buf, struct packet *packet, void *state_in) {
 }
 
 void proto_serialize(struct packet *packet, struct buf *buf) {
-	if (!packet) {
-		AdsbHeader header = ADSB_HEADER__INIT;
-		header.magic = PROTO_MAGIC;
-		header.server_version = server_version;
-		header.server_id = (char *) server_id;
-		header.mlat_timestamp_mhz = PACKET_MLAT_MHZ;
-		header.mlat_timestamp_max = PACKET_MLAT_MAX;
-		header.rssi_max = PACKET_RSSI_MAX;
-
-		Adsb wrapper = ADSB__INIT;
-		wrapper.header = &header;
-
-		proto_obj_to_buf(&wrapper, buf);
-		return;
-	}
-
 	switch (packet->type) {
 		case PACKET_TYPE_NONE:
 			break;
@@ -212,4 +212,8 @@ void proto_serialize(struct packet *packet, struct buf *buf) {
 			proto_serialize_mode_s_long(packet, buf);
 			break;
 	}
+}
+
+void proto_hello(struct buf **buf) {
+	*buf = &proto_hello_buf;
 }

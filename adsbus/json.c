@@ -25,24 +25,12 @@ struct json_parser_state {
 };
 
 static json_t *json_prev = NULL;
+static struct buf json_hello_buf = BUF_INIT;
 
 static void json_serialize_to_buf(json_t *obj, struct buf *buf) {
 	assert(json_dump_callback(obj, json_buf_append_callback, buf, 0) == 0);
 	json_decref(obj);
 	buf_chr(buf, buf->length++) = '\n';
-}
-
-static void json_hello(struct buf *buf) {
-	json_t *hello = json_pack(
-			"{s:s, s:s, s:s, s:s, s:I, s:I, s:I}",
-			"type", "header",
-			"magic", JSON_MAGIC,
-			"server_version", server_version,
-			"server_id", server_id,
-			"mlat_timestamp_mhz", (json_int_t) PACKET_MLAT_MHZ,
-			"mlat_timestamp_max", (json_int_t) PACKET_MLAT_MAX,
-			"rssi_max", (json_int_t) PACKET_RSSI_MAX);
-	json_serialize_to_buf(hello, buf);
 }
 
 static void json_add_common(struct packet *packet, json_t *obj) {
@@ -192,6 +180,17 @@ void json_init() {
 	size_t seed;
 	rand_fill(&seed, sizeof(seed));
 	json_object_seed(seed);
+
+	json_t *hello = json_pack(
+			"{s:s, s:s, s:s, s:s, s:I, s:I, s:I}",
+			"type", "header",
+			"magic", JSON_MAGIC,
+			"server_version", server_version,
+			"server_id", server_id,
+			"mlat_timestamp_mhz", (json_int_t) PACKET_MLAT_MHZ,
+			"mlat_timestamp_max", (json_int_t) PACKET_MLAT_MAX,
+			"rssi_max", (json_int_t) PACKET_RSSI_MAX);
+	json_serialize_to_buf(hello, &json_hello_buf);
 }
 
 void json_cleanup() {
@@ -248,11 +247,6 @@ bool json_parse(struct buf *buf, struct packet *packet, void *state_in) {
 }
 
 void json_serialize(struct packet *packet, struct buf *buf) {
-	if (!packet) {
-		json_hello(buf);
-		return;
-	}
-
 	switch (packet->type) {
 		case PACKET_TYPE_NONE:
 			break;
@@ -265,6 +259,10 @@ void json_serialize(struct packet *packet, struct buf *buf) {
 			json_serialize_mode_s_long(packet, buf);
 			break;
 	}
+}
+
+void json_hello(struct buf **buf) {
+	*buf = &json_hello_buf;
 }
 
 int json_buf_append_callback(const char *buffer, size_t size, void *data) {

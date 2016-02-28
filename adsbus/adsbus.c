@@ -115,6 +115,7 @@ int main(int argc, char *argv[]) {
 
 	beast_init();
 	json_init();
+	proto_init();
 	stats_init();
 
 	if (!parse_opts(argc, argv)) {

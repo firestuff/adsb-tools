@@ -180,10 +180,6 @@ bool beast_parse(struct buf *buf, struct packet *packet, void *state_in) {
 }
 
 void beast_serialize(struct packet *packet, struct buf *buf) {
-	if (!packet) {
-		return;
-	}
-
 	switch (packet->type) {
 		case PACKET_TYPE_NONE:
 			break;

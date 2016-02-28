@@ -32,34 +32,42 @@ struct send {
 };
 
 typedef void (*serialize)(struct packet *, struct buf *);
+typedef void (*hello)(struct buf **);
 static struct serializer {
 	char *name;
 	serialize serialize;
+	hello hello;
 	struct list_head send_head;
 } serializers[] = {
 	{
 		.name = "airspy_adsb",
 		.serialize = airspy_adsb_serialize,
+		.hello = NULL,
 	},
 	{
 		.name = "beast",
 		.serialize = beast_serialize,
+		.hello = NULL,
 	},
 	{
 		.name = "json",
 		.serialize = json_serialize,
+		.hello = json_hello,
 	},
 	{
 		.name = "proto",
 		.serialize = proto_serialize,
+		.hello = proto_hello,
 	},
 	{
 		.name = "raw",
 		.serialize = raw_serialize,
+		.hello = NULL,
 	},
 	{
 		.name = "stats",
 		.serialize = stats_serialize,
+		.hello = NULL,
 	},
 };
 #define NUM_SERIALIZERS (sizeof(serializers) / sizeof(*serializers))
@@ -130,8 +138,7 @@ void send_new_wrapper(int fd, void *passthrough, struct peer *on_close) {
 
 void send_hello(struct buf **buf_pp, void *passthrough) {
 	struct serializer *serializer = (struct serializer *) passthrough;
-	// TODO: change API to avoid special-case NULL packet*, and to allow static greetings.
-	serializer->serialize(NULL, *buf_pp);
+	serializer->hello(buf_pp);
 }
 
 void send_write(struct packet *packet) {

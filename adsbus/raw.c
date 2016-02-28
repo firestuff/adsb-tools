@@ -87,10 +87,6 @@ bool raw_parse(struct buf *buf, struct packet *packet, void __attribute__((unuse
 }
 
 void raw_serialize(struct packet *packet, struct buf *buf) {
-	if (!packet) {
-		return;
-	}
-
 	switch (packet->type) {
 		case PACKET_TYPE_NONE:
 			break;
