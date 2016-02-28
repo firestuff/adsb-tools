@@ -18,7 +18,7 @@ OBJ_PROTO = adsb.pb-c.o
 all: adsbus
 
 clean:
-	rm -f *.o adsbus testout/*
+	rm -rf *.o adsbus testout
 
 %.o: %.c *.h
 	$(COMP) -c $(CFLAGS) $< -o $@
@@ -38,4 +38,8 @@ fuzz:
 $(TESTOUT_DIR)/%: $(TESTCASE_DIR)/% adsbus
 	$(VALGRIND) $(VALGRIND_FLAGS) ./adsbus $(ADSBUS_TEST_FLAGS) >/dev/null 2>$@ < $<
 
-test: $(patsubst $(TESTCASE_DIR)/%,$(TESTOUT_DIR)/%,$(wildcard $(TESTCASE_DIR)/*))
+test:
+	test -d $(TESTOUT_DIR) || mkdir $(TESTOUT_DIR)
+	$(MAKE) realtest
+
+realtest: $(patsubst $(TESTCASE_DIR)/%,$(TESTOUT_DIR)/%,$(wildcard $(TESTCASE_DIR)/*))
