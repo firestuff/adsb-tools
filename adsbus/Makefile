@@ -22,3 +22,9 @@ adsb.pb-c.c: ../proto/adsb.proto
 
 adsbus: adsbus.o $(OBJ_NETWORK) $(OBJ_PROTOCOL) $(OBJ_UTIL) $(OBJ_PROTO)
 	$(COMP) $(LDFLAGS) -o adsbus adsbus.o $(OBJ_NETWORK) $(OBJ_PROTOCOL) $(OBJ_UTIL) $(OBJ_PROTO) $(LIBS)
+
+fuzz:
+	test -d findings || mkdir findings
+	$(MAKE) clean
+	COMP=afl-clang $(MAKE) adsbus
+	afl-fuzz -i testcase/ -o findings/ ./adsbus --stdin --stdout=airspy_adsb --stdout=beast --stdout=json --stdout=proto --stdout=raw --stdout=stats
