@@ -1,5 +1,8 @@
+#include <fcntl.h>
 #include <stdlib.h>
 #include <string.h>
+#include <sys/stat.h>
+#include <sys/types.h>
 #include <unistd.h>
 
 #include "buf.h"
@@ -86,6 +89,41 @@ bool opts_add_listen_send(char *arg) {
 
 	opts_add_listen(arg, send_new_wrapper, send_hello, serializer, &peer_count_out);
 	return true;
+}
+
+bool opts_add_file_read(char *arg) {
+	int fd = open(arg, O_RDONLY | O_CLOEXEC);
+	if (fd == -1) {
+		return false;
+	}
+	receive_new(fd, NULL, NULL);
+	return true;
+}
+
+bool opts_add_file_write(char *arg) {
+	struct serializer *serializer = opts_get_serializer(&arg);
+	if (!serializer) {
+		return NULL;
+	}
+
+	int fd = open(arg, O_WRONLY | O_CREAT | O_NOFOLLOW | O_TRUNC | O_CLOEXEC, S_IRWXU);
+	if (fd == -1) {
+		return false;
+	}
+	return send_new_hello(fd, serializer, NULL);
+}
+
+bool opts_add_file_append(char *arg) {
+	struct serializer *serializer = opts_get_serializer(&arg);
+	if (!serializer) {
+		return NULL;
+	}
+
+	int fd = open(arg, O_WRONLY | O_CREAT | O_NOFOLLOW | O_CLOEXEC, S_IRWXU);
+	if (fd == -1) {
+		return false;
+	}
+	return send_new_hello(fd, serializer, NULL);
 }
 
 bool opts_add_stdin(char __attribute__((unused)) *arg) {

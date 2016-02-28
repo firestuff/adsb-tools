@@ -141,6 +141,7 @@ bool send_new_hello(int fd, struct serializer *serializer, struct peer *on_close
 	send_hello(&buf_ptr, serializer);
 	if (buf_ptr->length) {
 		if (write(fd, buf_at(buf_ptr, 0), buf_ptr->length) != (ssize_t) buf_ptr->length) {
+			assert(!close(fd));
 			return false;
 		}
 	}

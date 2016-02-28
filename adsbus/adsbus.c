@@ -32,6 +32,9 @@ static void print_usage(const char *name) {
 			"\t--connect-send=FORMAT=HOST/PORT\n"
 			"\t--listen-receive=[HOST/]PORT\n"
 			"\t--listen-send=FORMAT=[HOST/]PORT\n"
+			"\t--file-read=PATH\n"
+			"\t--file-write=FORMAT=PATH\n"
+			"\t--file-append=FORMAT=PATH\n"
 			"\t--stdin\n"
 			"\t--stdout=FORMAT\n"
 			, name);
@@ -45,6 +48,9 @@ static bool parse_opts(int argc, char *argv[]) {
 		{"connect-send",    required_argument, 0, 's'},
 		{"listen-receive",  required_argument, 0, 'l'},
 		{"listen-send",     required_argument, 0, 'm'},
+		{"file-read",       required_argument, 0, 'r'},
+		{"file-write",      required_argument, 0, 'w'},
+		{"file-append",     required_argument, 0, 'a'},
 		{"stdin",           no_argument,       0, 'i'},
 		{"stdout",          required_argument, 0, 'o'},
 		{"help",            no_argument,       0, 'h'},
@@ -69,6 +75,18 @@ static bool parse_opts(int argc, char *argv[]) {
 
 			case 'm':
 				handler = opts_add_listen_send;
+				break;
+
+			case 'r':
+				handler = opts_add_file_read;
+				break;
+
+			case 'w':
+				handler = opts_add_file_write;
+				break;
+
+			case 'a':
+				handler = opts_add_file_append;
 				break;
 
 		  case 'i':
