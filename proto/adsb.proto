@@ -1,20 +1,54 @@
 message AdsbHeader {
+	// Always "aDsB"
 	required string magic = 1;
+
+	// Unique identifier for this server implementation
+	// Recommended: "https://url/of/source#version"
 	required string server_version = 2;
+
+	// Unique identifier for this server instance
+	// UUID recommended
+	// 36 character limit
 	required string server_id = 3;
+
+	// MHz of the clock used in subsequent mlat_timestamp fields
 	required fixed32 mlat_timestamp_mhz = 4;
+
+	// Maximum value of subsequent mlat_timestamp fields, at which point values are expected to wrap
 	required fixed64 mlat_timestamp_max = 5;
+
+	// Maximum value of subsequent rssi fields
 	required fixed32 rssi_max = 6;
 }
 
 message AdsbPacket {
+	// Unique value for the source that recorded this packet
+	// UUID recommended
+	// 36 character limit
 	required string source_id = 1;
+
+	// Value of the MLAT counter when this packet arrived at the recorder
+	// Range [0, mlat_timestamp_max]
+	// Units of 1 / (mlat_timestamp_mhz * 10^6) Hz
 	optional fixed64 mlat_timestamp = 2;
+
+	// RSSI of the received packet at the recorder
+	// Range [0, rssi_max]
+	// Units unspecified
 	optional fixed32 rssi = 3;
+
+	// Binary packet payload.
+	// Length:
+	//   mode_ac: 2 bytes
+	//   mode_s_short: 7 bytes
+	//   mode_s_long: 14 bytes
 	required bytes payload = 4;
 }
 
 message Adsb {
+	// Each message must contain exactly one; zero is invalid.
+	// The first record of a stream must be a header.
+	// Subsequent records may be in any order, including additional headers.
 	oneof record {
 		AdsbHeader header = 1;
 		AdsbPacket mode_ac = 2;
@@ -23,6 +57,9 @@ message Adsb {
 	}
 }
 
+// adsbus proto serialization takes advantage of the fact that an AdsbStream
+// with many messages and many AdsbStreams each with a single message encode
+// identically.
 message AdsbStream {
 	repeated Adsb msg = 1;
 }

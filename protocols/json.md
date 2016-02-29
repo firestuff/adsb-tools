@@ -21,7 +21,7 @@ additional headers.
 ## Header
 * `type`: `header`
 * `magic`: `aDsB`
-* `server_version`: (string) unqiue identifier for this server implementation. `https://url/of/source#version` recommended
+* `server_version`: (string) unique identifier for this server implementation. `https://url/of/source#version` recommended
 * `server_id`: (string) unique identifier for this server instance. [UUID](https://en.wikipedia.org/wiki/Universally_unique_identifier) recommended; 36 character limit
 * `mlat_timestamp_mhz`: (integer) MHz of the clock used in subsequent `mlat_timestamp` fields
 * `mlat_timestamp_max`: (integer) maximum value of subsequent `mlat_timestamp` fields, at which point values are expected to wrap
@@ -35,7 +35,7 @@ additional headers.
 	* `Mode-S long` (see [Packet](#packet); 28 byte payload, 14 bytes when decoded)
 * `source_id`: (string) unique value for the source that recorded this packet. [UUID](https://en.wikipedia.org/wiki/Universally_unique_identifier) recommended; 36 character limit
 * `mlat_timestamp`: (integer) value of the [MLAT](https://en.wikipedia.org/wiki/Multilateration) counter when this packet arrived at the recorder, range [0, `mlat_timestamp_max`], in units of 1 / (`mlat_timestamp_mhz` * 10^6) Hz
-* `rssi`: (integer) [RSSI](https://en.wikipedia.org/wiki/Received_signal_strength_indication) of the receiver packet at the recorder, range [0, `rssi_max`], units unspecified
+* `rssi`: (integer) [RSSI](https://en.wikipedia.org/wiki/Received_signal_strength_indication) of the received packet at the recorder, range [0, `rssi_max`], units unspecified
 * `payload`: upper-case, hex-encoded. see `type` for length
 
 
