@@ -19,24 +19,57 @@ additional headers.
   
 
 ## Header
-* `type`: `header`
-* `magic`: `aDsB`
-* `server_version`: (string) unique identifier for this server implementation. `https://url/of/source#version` recommended
-* `server_id`: (string) unique identifier for this server instance. [UUID](https://en.wikipedia.org/wiki/Universally_unique_identifier) recommended; 36 character limit
-* `mlat_timestamp_mhz`: (integer) MHz of the clock used in subsequent `mlat_timestamp` fields
-* `mlat_timestamp_max`: (integer) maximum value of subsequent `mlat_timestamp` fields, at which point values are expected to wrap
-* `rssi_max`: (integer) maximum value of subsequent `rssi` fields
+* `type`:
+	* String
+	* `header`
+* `magic`:
+	* String
+	* `aDsB`
+* `server_version`:
+	* String
+	* Unique identifier for this server implementation
+	* Recommended: `https://url/of/source#version`
+* `server_id`:
+	* String
+	* Unique identifier for this server instance
+	* [UUID](https://en.wikipedia.org/wiki/Universally_unique_identifier) recommended
+	* 36 character limit
+* `mlat_timestamp_mhz`:
+	* Integer
+	* MHz of the clock used in subsequent `mlat_timestamp` fields
+* `mlat_timestamp_max`:
+	* Integer
+	* Maximum value of subsequent `mlat_timestamp` fields, at which point values are expected to wrap
+* `rssi_max`:
+	* Integer
+	* Maximum value of subsequent `rssi` fields
 
 
 ## Packet
-* `type`: (string): one of:
-	* `Mode-AC` (see [Packet](#packet); 4 byte payload, 2 bytes when decoded)
-	* `Mode-S short` (see [Packet](#packet); 14 byte payload, 7 bytes when decoded)
-	* `Mode-S long` (see [Packet](#packet); 28 byte payload, 14 bytes when decoded)
-* `source_id`: (string) unique value for the source that recorded this packet. [UUID](https://en.wikipedia.org/wiki/Universally_unique_identifier) recommended; 36 character limit
-* `mlat_timestamp`: (integer) value of the [MLAT](https://en.wikipedia.org/wiki/Multilateration) counter when this packet arrived at the recorder, range [0, `mlat_timestamp_max`], in units of 1 / (`mlat_timestamp_mhz` * 10^6) Hz
-* `rssi`: (integer) [RSSI](https://en.wikipedia.org/wiki/Received_signal_strength_indication) of the received packet at the recorder, range [0, `rssi_max`], units unspecified
-* `payload`: upper-case, hex-encoded. see `type` for length
+* `type`:
+	* String
+	* One of:
+		* `Mode-AC` (4 byte payload, 2 bytes when decoded)
+		* `Mode-S short` (14 byte payload, 7 bytes when decoded)
+		* `Mode-S long` (28 byte payload, 14 bytes when decoded)
+* `source_id`:
+	* String
+	* Unique value for the source that recorded this packet.
+	* [UUID](https://en.wikipedia.org/wiki/Universally_unique_identifier) recommended
+	* 36 character limit
+* `mlat_timestamp`:
+	* Integer
+	* Value of the [MLAT](https://en.wikipedia.org/wiki/Multilateration) counter when this packet arrived at the recorder
+	* Range [0, `mlat_timestamp_max`]
+	* Units of 1 / (`mlat_timestamp_mhz` * 10^6) Hz
+* `rssi`:
+	* Integer
+	* [RSSI](https://en.wikipedia.org/wiki/Received_signal_strength_indication) of the received packet at the recorder
+	* Range [0, `rssi_max`]
+	* Units unspecified
+* `payload`:
+	* Upper-case, hex-encoded
+	* See `type` for length
 
 
 ## Examples
