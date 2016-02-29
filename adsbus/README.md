@@ -19,14 +19,14 @@ make
 
 ## Features
 
-* Separates the concepts of transport, data direction, and format
+* Separates the concepts of transport, data flow, and format
 * Transports:
 	* Outgoing TCP connection
 	* Incoming TCP connection
 	* Local files or [named pipes](https://en.wikipedia.org/wiki/Named_pipe)
 	* [stdin/stdout](https://en.wikipedia.org/wiki/Standard_streams)
 	* Execute a command and talk to its stdin/stdout
-* Data directions:
+* Data flows:
 	* Send (data flows out of adsbus)
 	* Receive (data flows in to adsbus)
 * Formats:
@@ -42,6 +42,8 @@ make
 	* [TCP keepalives](https://en.wikipedia.org/wiki/Keepalive#TCP_keepalive) for dead connection detection
 	* [TCP fast open](https://en.wikipedia.org/wiki/TCP_Fast_Open) for faster startup of high-latency connections
 	* [SO_REUSEPORT](https://lwn.net/Articles/542629/) for zero-downtime updates
+* Data flow features:
+	* Rapid detection and disconnection of receive <-> receive connections
 * Format features:
 	* Autodetection of received data format
 	* [MLAT](https://en.wikipedia.org/wiki/Multilateration) scaling for different clock rates and counter bit widths
