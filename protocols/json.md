@@ -5,23 +5,23 @@ This protocol was created by adsb-tools. This specification is official.
 ## Format
 
 [JSON streaming](https://en.wikipedia.org/wiki/JSON_Streaming) encoding, line delimited.
-Each line must contain a single outer JSON object; no other types are permitted.
+Each line must contain a single outer JSON object; no other outer types are permitted.
 
 First frame must always be a header; frames can otherwise appear in any order, including
 additional headers.
 
 ## Common fields
 * `type` (string): one of:
-	* `header` (see [Header])
-	* `Mode-AC` (see [Packet])
-	* `Mode-S short` (see [Packet])
-	* `Mode-S long` (see [Packet])
+	* `header` (see [Header](#header))
+	* `Mode-AC` (see [Packet](#packet))
+	* `Mode-S short` (see [Packet](#packet))
+	* `Mode-S long` (see [Packet](#packet))
   
 
 ## Header
 * `type`: `header`
 * `magic`: `aDsB`
-* `server_version`: (string)
+* `server_version`: (string) unqiue identifier for this server implementation. `https://url/of/source#version` recommended
 * `server_id`: (string) unique identifier for this server instance. [UUID](https://en.wikipedia.org/wiki/Universally_unique_identifier) recommended; 36 character limit
 * `mlat_timestamp_mhz`: (integer) MHz of the clock used in subsequent `mlat_timestamp` fields
 * `mlat_timestamp_max`: (integer) maximum value of subsequent `mlat_timestamp` fields, at which point values are expected to wrap
@@ -30,9 +30,9 @@ additional headers.
 
 ## Packet
 * `type`: (string): one of:
-	* `Mode-AC` (see [Packet]; 4 byte payload, 2 bytes when decoded)
-	* `Mode-S short` (see [Packet]; 14 byte payload, 7 bytes when decoded)
-	* `Mode-S long` (see [Packet]; 28 byte payload, 14 bytes when decoded)
+	* `Mode-AC` (see [Packet](#packet); 4 byte payload, 2 bytes when decoded)
+	* `Mode-S short` (see [Packet](#packet); 14 byte payload, 7 bytes when decoded)
+	* `Mode-S long` (see [Packet](#packet); 28 byte payload, 14 bytes when decoded)
 * `source_id`: (string) unique value for the source that recorded this packet. [UUID](https://en.wikipedia.org/wiki/Universally_unique_identifier) recommended; 36 character limit
 * `mlat_timestamp`: (integer) value of the [MLAT](https://en.wikipedia.org/wiki/Multilateration) counter when this packet arrived at the recorder, range [0, `mlat_timestamp_max`], in units of 1 / (`mlat_timestamp_mhz` * 10^6) Hz
 * `rssi`: (integer) [RSSI](https://en.wikipedia.org/wiki/Received_signal_strength_indication) of the receiver packet at the recorder, range [0, `rssi_max`], units unspecified
