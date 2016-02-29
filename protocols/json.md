@@ -12,23 +12,23 @@ additional headers.
 
 ## Common fields
 * `type` (string): one of:
-	* `header` (see [Header](#header))
-	* `Mode-AC` (see [Packet](#packet))
-	* `Mode-S short` (see [Packet](#packet))
-	* `Mode-S long` (see [Packet](#packet))
+	* `"header"` (see [Header](#header))
+	* `"Mode-AC"` (see [Packet](#packet))
+	* `"Mode-S short"` (see [Packet](#packet))
+	* `"Mode-S long"` (see [Packet](#packet))
   
 
 ## Header
 * `type`:
 	* String
-	* `header`
+	* `"header"`
 * `magic`:
 	* String
-	* `aDsB`
+	* `"aDsB"`
 * `server_version`:
 	* String
 	* Unique identifier for this server implementation
-	* Recommended: `https://url/of/source#version`
+	* Recommended: `"https://url/of/source#version"`
 * `server_id`:
 	* String
 	* Unique identifier for this server instance
@@ -49,9 +49,9 @@ additional headers.
 * `type`:
 	* String
 	* One of:
-		* `Mode-AC` (4 byte payload, 2 bytes when decoded)
-		* `Mode-S short` (14 byte payload, 7 bytes when decoded)
-		* `Mode-S long` (28 byte payload, 14 bytes when decoded)
+		* `"Mode-AC"` (4 byte payload, 2 bytes when decoded)
+		* `"Mode-S short"` (14 byte payload, 7 bytes when decoded)
+		* `"Mode-S long"` (28 byte payload, 14 bytes when decoded)
 * `source_id`:
 	* String
 	* Unique value for the source that recorded this packet.
