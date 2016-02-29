@@ -44,6 +44,7 @@ make
 	* [SO_REUSEPORT](https://lwn.net/Articles/542629/) for zero-downtime updates
 * Data flow features:
 	* Rapid detection and disconnection of receive <-> receive connections
+	* Slight less rapid detection and disconnection of send <-> send connections
 * Format features:
 	* Autodetection of received data format
 	* [MLAT](https://en.wikipedia.org/wiki/Multilateration) scaling for different clock rates and counter bit widths
