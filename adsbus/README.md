@@ -25,22 +25,22 @@ make
 	* Incoming TCP connection
 	* Local files or [named pipes](https://en.wikipedia.org/wiki/Named_pipe)
 	* [stdin/stdout](https://en.wikipedia.org/wiki/Standard_streams)
-	* Execute a command and use its stdin/stdout
+	* Execute a command and talk to its stdin/stdout
 * Data directions:
 	* Send (data flows out of adsbus)
 	* Receive (data flows in to adsbus)
 * Formats:
-	* [airspy_adsb](../airspy_adsb.md) (a.k.a. ASAVR)
-	* [beast](../beast.md)
-	* [json](../json.md)
-	* [proto](../proto.md) (a.k.a. ProtoBuf, Protocol Buffers)
-	* [raw](../raw.md) (a.k.a. AVR)
-	* stats (outgoing only, summary aggregated data)
+	* [airspy_adsb](../protocols/airspy_adsb.md) (a.k.a. ASAVR)
+	* [beast](../protocols/beast.md)
+	* [json](../protocols/json.md)
+	* [proto](../protocols/proto.md) (a.k.a. ProtoBuf, Protocol Buffers)
+	* [raw](../protocols/raw.md) (a.k.a. AVR)
+	* stats (send only, summary aggregated data)
 * Transport features:
 	* [IPv4](https://en.wikipedia.org/wiki/IPv4) and [IPv6](https://en.wikipedia.org/wiki/IPv6) support
-	* Reresolution/reconnection on disconnect, with backoff and jitter
+	* Reresolution and reconnection on disconnect, with backoff and jitter
 	* [TCP keepalives](https://en.wikipedia.org/wiki/Keepalive#TCP_keepalive) for dead connection detection
-	* [TCP fast open](https://en.wikipedia.org/wiki/TCP_Fast_Open) for faster startup on high-latency connections
+	* [TCP fast open](https://en.wikipedia.org/wiki/TCP_Fast_Open) for faster startup of high-latency connections
 	* [SO_REUSEPORT](https://lwn.net/Articles/542629/) for zero-downtime updates
 * Format features:
 	* Autodetection of received data format
