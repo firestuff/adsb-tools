@@ -35,6 +35,10 @@ void socket_send_init(int fd) {
 	// Called by data flow code; NOT safe to assume that fd is a socket
 	int res = shutdown(fd, SHUT_RD);
 	assert(res == 0 || (res == -1 && errno == ENOTSOCK));
+
+	int optval = 128; // Lowest value that the kernel will accept
+	res = setsockopt(fd, SOL_SOCKET, SO_RCVBUF, &optval, sizeof(optval));
+	assert(res == 0 || (res == -1 && errno == ENOTSOCK));
 }
 
 void socket_receive_init(int fd) {
