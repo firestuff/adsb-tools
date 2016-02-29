@@ -39,6 +39,14 @@ void socket_send_init(int fd) {
 	int optval = 128; // Lowest value that the kernel will accept
 	res = setsockopt(fd, SOL_SOCKET, SO_RCVBUF, &optval, sizeof(optval));
 	assert(res == 0 || (res == -1 && errno == ENOTSOCK));
+
+	optval = 128; // Lowest value that the kernel will accept
+	res = setsockopt(fd, IPPROTO_TCP, TCP_WINDOW_CLAMP, &optval, sizeof(optval));
+	assert(res == 0 || (res == -1 && errno == ENOTSOCK));
+
+	optval = 60000; // 60s
+	res = setsockopt(fd, IPPROTO_TCP, TCP_USER_TIMEOUT, &optval, sizeof(optval));
+	assert(res == 0 || (res == -1 && errno == ENOTSOCK));
 }
 
 void socket_receive_init(int fd) {
