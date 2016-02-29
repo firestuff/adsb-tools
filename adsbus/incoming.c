@@ -79,8 +79,6 @@ static void incoming_handler(struct peer *peer) {
 			local_hbuf, local_sbuf,
 			peer_hbuf, peer_sbuf);
 
-	socket_connected_init(fd);
-
 	if (!incoming_hello(fd, incoming)) {
 		fprintf(stderr, "I %s: Error writing greeting\n", incoming->id);
 		assert(!close(fd));

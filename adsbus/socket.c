@@ -17,6 +17,10 @@ void socket_bound_init(int fd) {
 	// Called by transport code; safe to assume that fd is a socket
 	int qlen = 5;
 	assert(!setsockopt(fd, SOL_TCP, TCP_FASTOPEN, &qlen, sizeof(qlen)));
+
+	// These options are inherited through accept()
+	// Verified by flamingcow on kernel 4.2.0
+	socket_connected_init(fd);
 }
 
 void socket_connected_init(int fd) {
