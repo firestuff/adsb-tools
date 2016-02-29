@@ -18,6 +18,7 @@
 #include "peer.h"
 #include "proto.h"
 #include "raw.h"
+#include "socket.h"
 #include "stats.h"
 #include "uuid.h"
 
@@ -114,8 +115,7 @@ struct serializer *send_get_serializer(char *name) {
 void send_new(int fd, struct serializer *serializer, struct peer *on_close) {
 	peer_count_out++;
 
-	int res = shutdown(fd, SHUT_RD);
-	assert(res == 0 || (res == -1 && errno == ENOTSOCK));
+	socket_send_init(fd);
 
 	struct send *send = malloc(sizeof(*send));
 	assert(send);

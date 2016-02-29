@@ -14,6 +14,7 @@
 #include "peer.h"
 #include "proto.h"
 #include "raw.h"
+#include "socket.h"
 #include "send.h"
 #include "uuid.h"
 
@@ -132,8 +133,7 @@ void receive_cleanup() {
 void receive_new(int fd, void __attribute__((unused)) *passthrough, struct peer *on_close) {
 	peer_count_in++;
 
-	int res = shutdown(fd, SHUT_WR);
-	assert(res == 0 || (res == -1 && errno == ENOTSOCK));
+	socket_receive_init(fd);
 
 	struct receive *receive = malloc(sizeof(*receive));
 	assert(receive);
