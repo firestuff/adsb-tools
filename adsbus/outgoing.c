@@ -66,8 +66,8 @@ static void outgoing_connect_next(struct outgoing *outgoing) {
 	if (outgoing->hello) {
 		outgoing->hello(&buf_ptr, outgoing->passthrough);
 	}
-	int result = (int) sendto(outgoing->peer.fd, buf_at(buf_ptr, 0), buf_ptr->length, MSG_FASTOPEN, outgoing->addr->ai_addr, outgoing->addr->ai_addrlen);
-	outgoing_connect_result(outgoing, result == 0 ? result : errno);
+	ssize_t result = sendto(outgoing->peer.fd, buf_at(buf_ptr, 0), buf_ptr->length, MSG_FASTOPEN, outgoing->addr->ai_addr, outgoing->addr->ai_addrlen);
+	outgoing_connect_result(outgoing, result == (ssize_t) buf_ptr->length ? EINPROGRESS : errno);
 }
 
 static void outgoing_connect_handler(struct peer *peer) {
