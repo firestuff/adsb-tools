@@ -171,7 +171,7 @@ void incoming_new(char *node, char *service, incoming_connection_handler handler
 	struct incoming *incoming = malloc(sizeof(*incoming));
 	incoming->peer.event_handler = incoming_handler;
 	uuid_gen(incoming->id);
-	incoming->node = strdup(node);
+	incoming->node = node ? strdup(node) : NULL;
 	incoming->service = strdup(service);
 	incoming->attempt = 0;
 	incoming->handler = handler;
