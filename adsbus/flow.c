@@ -1,8 +1,16 @@
 #include <unistd.h>
 
 #include "buf.h"
+#include "socket.h"
 
 #include "flow.h"
+
+void flow_socket_connected(int fd, struct flow *flow) {
+	socket_connected(fd);
+	if (flow->socket_connected) {
+		flow->socket_connected(fd);
+	}
+}
 
 bool flow_hello(int fd, struct flow *flow, void *passthrough) {
 	if (!flow->get_hello) {

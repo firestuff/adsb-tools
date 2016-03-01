@@ -6,15 +6,13 @@
 struct buf;
 struct peer;
 
-typedef void (*flow_bound_socket_init)(int);
-typedef void (*flow_new)(int, void *, struct peer *);
-typedef void (*flow_get_hello)(struct buf **, void *);
 struct flow {
 	const char *name;
-	flow_bound_socket_init bound_socket_init;
-	flow_new new;
-	flow_get_hello get_hello;
+	void (*socket_connected)(int);
+	void (*new)(int, void *, struct peer *);
+	void (*get_hello)(struct buf **, void *);
 	uint32_t *ref_count;
 };
 
+void flow_socket_connected(int, struct flow *);
 bool flow_hello(int, struct flow *, void *);

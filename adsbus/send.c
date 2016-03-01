@@ -38,6 +38,7 @@ static void send_get_hello(struct buf **, void *);
 
 static struct flow _send_flow = {
 	.name = "send",
+	.socket_connected = socket_connected_send,
 	.new = send_new,
 	.get_hello = send_get_hello,
 	.ref_count = &peer_count_out,
@@ -104,7 +105,7 @@ static void send_new(int fd, void *passthrough, struct peer *on_close) {
 
 	peer_count_out++;
 
-	socket_send_init(fd);
+	socket_send(fd);
 
 	struct send *send = malloc(sizeof(*send));
 	assert(send);

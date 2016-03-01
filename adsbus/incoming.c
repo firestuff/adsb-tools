@@ -95,7 +95,7 @@ static void incoming_listen(struct incoming *incoming) {
 		incoming->peer.fd = socket(addr->ai_family, addr->ai_socktype | SOCK_CLOEXEC, addr->ai_protocol);
 		assert(incoming->peer.fd >= 0);
 
-		socket_pre_bind_init(incoming->peer.fd);
+		socket_pre_bind(incoming->peer.fd);
 
 		if (bind(incoming->peer.fd, addr->ai_addr, addr->ai_addrlen) != 0) {
 			fprintf(stderr, "I %s: Failed to bind to %s/%s: %s\n", incoming->id, hbuf, sbuf, strerror(errno));
@@ -103,7 +103,9 @@ static void incoming_listen(struct incoming *incoming) {
 			continue;
 		}
 
-		socket_bound_init(incoming->peer.fd);
+		socket_pre_listen(incoming->peer.fd);
+		// Options are inherited through accept()
+		flow_socket_connected(incoming->peer.fd, incoming->flow);
 
 		assert(listen(incoming->peer.fd, 255) == 0);
 		break;

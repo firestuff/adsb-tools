@@ -137,7 +137,7 @@ static void receive_read(struct peer *peer) {
 static void receive_new(int fd, void __attribute__((unused)) *passthrough, struct peer *on_close) {
 	peer_count_in++;
 
-	socket_receive_init(fd);
+	socket_receive(fd);
 
 	struct receive *receive = malloc(sizeof(*receive));
 	assert(receive);
