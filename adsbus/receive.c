@@ -37,6 +37,8 @@ struct receive {
 };
 static struct receive *receive_head = NULL;
 
+static void receive_new(int, void *, struct peer *);
+
 static struct flow _receive_flow = {
 	.name = "receive",
 	.new = receive_new,
@@ -132,13 +134,7 @@ static void receive_read(struct peer *peer) {
 	}
 }
 
-void receive_cleanup() {
-	while (receive_head) {
-		receive_del(receive_head);
-	}
-}
-
-void receive_new(int fd, void __attribute__((unused)) *passthrough, struct peer *on_close) {
+static void receive_new(int fd, void __attribute__((unused)) *passthrough, struct peer *on_close) {
 	peer_count_in++;
 
 	socket_receive_init(fd);
@@ -162,6 +158,12 @@ void receive_new(int fd, void __attribute__((unused)) *passthrough, struct peer 
 	peer_epoll_add((struct peer *) receive, EPOLLIN);
 
 	fprintf(stderr, "R %s: New receive connection\n", receive->id);
+}
+
+void receive_cleanup() {
+	while (receive_head) {
+		receive_del(receive_head);
+	}
 }
 
 void receive_print_usage() {

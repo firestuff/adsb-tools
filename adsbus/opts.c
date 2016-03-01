@@ -97,7 +97,8 @@ bool opts_add_file_read(char *arg) {
 	if (fd == -1) {
 		return false;
 	}
-	receive_new(fd, NULL, NULL);
+	// TODO: add file.[ch]
+	receive_flow->new(fd, NULL, NULL);
 	return true;
 }
 
@@ -145,7 +146,8 @@ bool opts_add_exec_send(char *arg) {
 bool opts_add_stdin(char __attribute__((unused)) *arg) {
 	int fd = dup(0);
 	assert(!fcntl(fd, F_SETFD, FD_CLOEXEC));
-	receive_new(fd, NULL, NULL);
+	// TODO: add file.[ch]
+	receive_flow->new(fd, NULL, NULL);
 	return true;
 }
 
