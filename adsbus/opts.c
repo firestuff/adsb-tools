@@ -133,8 +133,8 @@ bool opts_add_exec_send(char *arg) {
 }
 
 bool opts_add_stdin(char __attribute__((unused)) *arg) {
-	int fd = dup(0);
-	assert(!fcntl(fd, F_SETFD, FD_CLOEXEC));
+	int fd = fcntl(0, F_DUPFD_CLOEXEC, 0);
+	assert(fd >= 0);
 	file_fd_new(fd, receive_flow, NULL);
 	return true;
 }
@@ -144,8 +144,8 @@ bool opts_add_stdout(char *arg) {
 	if (!serializer) {
 		return false;
 	}
-	int fd = dup(1);
-	assert(!fcntl(fd, F_SETFD, FD_CLOEXEC));
+	int fd = fcntl(1, F_DUPFD_CLOEXEC, 0);
+	assert(fd >= 0);
 	file_fd_new(fd, send_flow, serializer);
 	return true;
 }
