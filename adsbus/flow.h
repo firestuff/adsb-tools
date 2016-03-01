@@ -1,5 +1,6 @@
 #pragma once
 
+#include <stdbool.h>
 #include <stdint.h>
 
 struct buf;
@@ -15,3 +16,5 @@ struct flow {
 	flow_get_hello get_hello;
 	uint32_t *ref_count;
 };
+
+bool flow_hello(int, struct flow *, void *);

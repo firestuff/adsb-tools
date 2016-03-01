@@ -60,23 +60,11 @@ static void exec_close_handler(struct peer *peer) {
 	wakeup_add((struct peer *) exec, delay);
 }
 
-static bool exec_hello(int fd, struct exec *exec) {
-	if (!exec->flow->get_hello) {
-		return true;
-	}
-	struct buf buf = BUF_INIT, *buf_ptr = &buf;
-	exec->flow->get_hello(&buf_ptr, exec->passthrough);
-	if (!buf_ptr->length) {
-		return true;
-	}
-	return (write(fd, buf_at(buf_ptr, 0), buf_ptr->length) == (ssize_t) buf_ptr->length);
-}
-
 static void exec_parent(struct exec *exec, pid_t child, int fd) {
 	exec->child = child;
 	fprintf(stderr, "E %s: Child started as process %d\n", exec->id, exec->child);
 
-	if (!exec_hello(fd, exec)) {
+	if (!flow_hello(fd, exec->flow, exec->passthrough)) {
 		assert(!close(fd));
 		exec_close_handler((struct peer *) exec);
 		return;

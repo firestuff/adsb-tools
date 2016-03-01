@@ -7,7 +7,7 @@
 #include <unistd.h>
 
 #include "exec.h"
-#include "flow.h"
+#include "file.h"
 #include "incoming.h"
 #include "outgoing.h"
 #include "receive.h"
@@ -93,39 +93,28 @@ bool opts_add_listen_send(char *arg) {
 }
 
 bool opts_add_file_read(char *arg) {
-	int fd = open(arg, O_RDONLY | O_CLOEXEC);
-	if (fd == -1) {
-		return false;
-	}
-	// TODO: add file.[ch]
-	receive_flow->new(fd, NULL, NULL);
+	file_read_new(arg, receive_flow, NULL);
 	return true;
 }
 
 bool opts_add_file_write(char *arg) {
 	struct serializer *serializer = opts_get_serializer(&arg);
 	if (!serializer) {
-		return NULL;
-	}
-
-	int fd = open(arg, O_WRONLY | O_CREAT | O_NOFOLLOW | O_TRUNC | O_CLOEXEC, S_IRWXU);
-	if (fd == -1) {
 		return false;
 	}
-	return send_new_hello(fd, serializer, NULL);
+
+	file_write_new(arg, send_flow, serializer);
+	return true;
 }
 
 bool opts_add_file_append(char *arg) {
 	struct serializer *serializer = opts_get_serializer(&arg);
 	if (!serializer) {
-		return NULL;
-	}
-
-	int fd = open(arg, O_WRONLY | O_CREAT | O_NOFOLLOW | O_CLOEXEC, S_IRWXU);
-	if (fd == -1) {
 		return false;
 	}
-	return send_new_hello(fd, serializer, NULL);
+
+	file_append_new(arg, send_flow, serializer);
+	return true;
 }
 
 bool opts_add_exec_receive(char *arg) {
@@ -136,7 +125,7 @@ bool opts_add_exec_receive(char *arg) {
 bool opts_add_exec_send(char *arg) {
 	struct serializer *serializer = opts_get_serializer(&arg);
 	if (!serializer) {
-		return NULL;
+		return false;
 	}
 
 	exec_new(arg, send_flow, serializer);
@@ -146,8 +135,7 @@ bool opts_add_exec_send(char *arg) {
 bool opts_add_stdin(char __attribute__((unused)) *arg) {
 	int fd = dup(0);
 	assert(!fcntl(fd, F_SETFD, FD_CLOEXEC));
-	// TODO: add file.[ch]
-	receive_flow->new(fd, NULL, NULL);
+	file_fd_new(fd, receive_flow, NULL);
 	return true;
 }
 
@@ -158,5 +146,6 @@ bool opts_add_stdout(char *arg) {
 	}
 	int fd = dup(1);
 	assert(!fcntl(fd, F_SETFD, FD_CLOEXEC));
-	return send_new_hello(fd, serializer, NULL);
+	file_fd_new(fd, send_flow, serializer);
+	return true;
 }

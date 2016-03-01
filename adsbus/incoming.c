@@ -43,18 +43,6 @@ static void incoming_retry(struct incoming *incoming) {
 	wakeup_add((struct peer *) incoming, delay);
 }
 
-static bool incoming_hello(int fd, struct incoming *incoming) {
-	if (!incoming->flow->get_hello) {
-		return true;
-	}
-	struct buf buf = BUF_INIT, *buf_ptr = &buf;
-	incoming->flow->get_hello(&buf_ptr, incoming->passthrough);
-	if (!buf_ptr->length) {
-		return true;
-	}
-	return (write(fd, buf_at(buf_ptr, 0), buf_ptr->length) == (ssize_t) buf_ptr->length);
-}
-
 static void incoming_handler(struct peer *peer) {
 	struct incoming *incoming = (struct incoming *) peer;
 
@@ -78,7 +66,7 @@ static void incoming_handler(struct peer *peer) {
 			local_hbuf, local_sbuf,
 			peer_hbuf, peer_sbuf);
 
-	if (!incoming_hello(fd, incoming)) {
+	if (!flow_hello(fd, incoming->flow, incoming->passthrough)) {
 		fprintf(stderr, "I %s: Error writing greeting\n", incoming->id);
 		assert(!close(fd));
 		return;

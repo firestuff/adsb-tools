@@ -10,7 +10,8 @@ VALGRIND ?= valgrind
 VALGRIND_FLAGS ?= --error-exitcode=1 --trace-children=yes --track-fds=yes --show-leak-kinds=all --leak-check=full
 ADSBUS_TEST_FLAGS ?= --stdin --stdout=airspy_adsb --stdout=beast --stdout=json --stdout=proto --stdout=raw --stdout=stats
 
-OBJ_TRANSPORT = exec.o incoming.o outgoing.o receive.o send.o
+OBJ_TRANSPORT = exec.o file.o incoming.o outgoing.o
+OBJ_FLOW = flow.o receive.o send.o
 OBJ_PROTOCOL = airspy_adsb.o beast.o json.o proto.o raw.o stats.o
 OBJ_UTIL = buf.o hex.o list.o opts.o packet.o peer.o rand.o resolve.o server.o socket.o uuid.o wakeup.o
 OBJ_PROTO = adsb.pb-c.o
@@ -26,8 +27,8 @@ clean:
 adsb.pb-c.c: ../proto/adsb.proto
 	protoc-c --c_out=./ --proto_path=$(dir $<) $<
 
-adsbus: adsbus.o $(OBJ_TRANSPORT) $(OBJ_PROTOCOL) $(OBJ_UTIL) $(OBJ_PROTO)
-	$(COMP) $(LDFLAGS) -o adsbus adsbus.o $(OBJ_TRANSPORT) $(OBJ_PROTOCOL) $(OBJ_UTIL) $(OBJ_PROTO) $(LIBS)
+adsbus: adsbus.o $(OBJ_TRANSPORT) $(OBJ_FLOW) $(OBJ_PROTOCOL) $(OBJ_UTIL) $(OBJ_PROTO)
+	$(COMP) $(LDFLAGS) -o adsbus adsbus.o $(OBJ_TRANSPORT) $(OBJ_FLOW) $(OBJ_PROTOCOL) $(OBJ_UTIL) $(OBJ_PROTO) $(LIBS)
 
 fuzz:
 	rm -rf findings

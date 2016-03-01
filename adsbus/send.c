@@ -153,19 +153,6 @@ void *send_get_serializer(char *name) {
 	return NULL;
 }
 
-bool send_new_hello(int fd, void *passthrough, struct peer *on_close) {
-	struct buf buf = BUF_INIT, *buf_ptr = &buf;
-	send_get_hello(&buf_ptr, passthrough);
-	if (buf_ptr->length) {
-		if (write(fd, buf_at(buf_ptr, 0), buf_ptr->length) != (ssize_t) buf_ptr->length) {
-			assert(!close(fd));
-			return false;
-		}
-	}
-	send_new(fd, passthrough, on_close);
-	return true;
-}
-
 void send_write(struct packet *packet) {
 	packet_sanity_check(packet);
 	for (size_t i = 0; i < NUM_SERIALIZERS; i++) {
