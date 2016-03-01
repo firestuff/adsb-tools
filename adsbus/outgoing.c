@@ -26,7 +26,6 @@ struct outgoing {
 	char *service;
 	struct addrinfo *addrs;
 	struct addrinfo *addr;
-	const char *error;
 	uint32_t attempt;
 	struct flow *flow;
 	void *passthrough;
@@ -122,20 +121,20 @@ static void outgoing_connect_result(struct outgoing *outgoing, int result) {
 
 static void outgoing_resolve_handler(struct peer *peer) {
 	struct outgoing *outgoing = (struct outgoing *) peer;
-	if (outgoing->addrs) {
+	int err = resolve_result(peer, &outgoing->addrs);
+	if (err) {
+		fprintf(stderr, "O %s: Failed to resolve %s/%s: %s\n", outgoing->id, outgoing->node, outgoing->service, gai_strerror(err));
+		outgoing_retry(outgoing);
+	} else {
 		outgoing->addr = outgoing->addrs;
 		outgoing_connect_next(outgoing);
-	} else {
-		fprintf(stderr, "O %s: Failed to resolve %s/%s: %s\n", outgoing->id, outgoing->node, outgoing->service, outgoing->error);
-		outgoing_retry(outgoing);
 	}
 }
 
 static void outgoing_resolve(struct outgoing *outgoing) {
 	fprintf(stderr, "O %s: Resolving %s/%s...\n", outgoing->id, outgoing->node, outgoing->service);
-	outgoing->peer.fd = -1;
 	outgoing->peer.event_handler = outgoing_resolve_handler;
-	resolve((struct peer *) outgoing, outgoing->node, outgoing->service, 0, &outgoing->addrs, &outgoing->error);
+	resolve((struct peer *) outgoing, outgoing->node, outgoing->service, 0);
 }
 
 static void outgoing_resolve_wrapper(struct peer *peer) {
