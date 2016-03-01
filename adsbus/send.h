@@ -1,6 +1,9 @@
 #pragma once
 
+#include <stdbool.h>
+
 struct buf;
+struct flow;
 struct packet;
 struct peer;
 
@@ -13,3 +16,4 @@ bool send_new_hello(int, struct serializer *, struct peer *);
 void send_hello(struct buf **, void *);
 void send_write(struct packet *);
 void send_print_usage(void);
+extern struct flow *send_flow;

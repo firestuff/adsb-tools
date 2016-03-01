@@ -6,11 +6,10 @@
 #include <sys/types.h>
 #include <unistd.h>
 
-#include "buf.h"
 #include "exec.h"
+#include "flow.h"
 #include "incoming.h"
 #include "outgoing.h"
-#include "peer.h"
 #include "receive.h"
 #include "send.h"
 
@@ -26,13 +25,13 @@ static char *opts_split(char **arg, char delim) {
 	return ret;
 }
 
-static void opts_add_listen(char *host_port, incoming_connection_handler handler, incoming_get_hello hello, void *passthrough, uint32_t *count) {
+static void opts_add_listen(char *host_port, struct flow *flow, void *passthrough) {
 	char *host = opts_split(&host_port, '/');
 	if (host) {
-		incoming_new(host, host_port, handler, hello, passthrough, count);
+		incoming_new(host, host_port, flow, passthrough);
 		free(host);
 	} else {
-		incoming_new(NULL, host_port, handler, hello, passthrough, count);
+		incoming_new(NULL, host_port, flow, passthrough);
 	}
 }
 
@@ -57,7 +56,7 @@ bool opts_add_connect_receive(char *arg) {
 		return false;
 	}
 
-	outgoing_new(host, arg, receive_new, NULL, NULL, &peer_count_in);
+	outgoing_new(host, arg, receive_flow, NULL);
 	free(host);
 	return true;
 }
@@ -73,13 +72,13 @@ bool opts_add_connect_send(char *arg) {
 		return false;
 	}
 
-	outgoing_new(host, arg, send_new_wrapper, send_hello, serializer, &peer_count_out);
+	outgoing_new(host, arg, send_flow, serializer);
 	free(host);
 	return true;
 }
 
 bool opts_add_listen_receive(char *arg) {
-	opts_add_listen(arg, receive_new, NULL, NULL, &peer_count_in);
+	opts_add_listen(arg, receive_flow, NULL);
 	return true;
 }
 
@@ -89,7 +88,7 @@ bool opts_add_listen_send(char *arg) {
 		return false;
 	}
 
-	opts_add_listen(arg, send_new_wrapper, send_hello, serializer, &peer_count_out);
+	opts_add_listen(arg, send_flow, serializer);
 	return true;
 }
 
@@ -129,7 +128,7 @@ bool opts_add_file_append(char *arg) {
 }
 
 bool opts_add_exec_receive(char *arg) {
-	exec_new(arg, receive_new, NULL, NULL, &peer_count_in);
+	exec_new(arg, receive_flow, NULL);
 	return true;
 }
 
@@ -139,7 +138,7 @@ bool opts_add_exec_send(char *arg) {
 		return NULL;
 	}
 
-	exec_new(arg, send_new_wrapper, send_hello, serializer, &peer_count_out);
+	exec_new(arg, send_flow, serializer);
 	return true;
 }
 

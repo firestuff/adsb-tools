@@ -9,6 +9,7 @@
 #include <unistd.h>
 
 #include "buf.h"
+#include "flow.h"
 #include "list.h"
 #include "peer.h"
 #include "resolve.h"
@@ -27,10 +28,8 @@ struct outgoing {
 	struct addrinfo *addr;
 	const char *error;
 	uint32_t attempt;
-	outgoing_connection_handler handler;
-	outgoing_get_hello hello;
+	struct flow *flow;
 	void *passthrough;
-	uint32_t *count;
 	struct list_head outgoing_list;
 };
 
@@ -63,8 +62,8 @@ static void outgoing_connect_next(struct outgoing *outgoing) {
 	assert(outgoing->peer.fd >= 0);
 
 	struct buf buf = BUF_INIT, *buf_ptr = &buf;
-	if (outgoing->hello) {
-		outgoing->hello(&buf_ptr, outgoing->passthrough);
+	if (outgoing->flow->get_hello) {
+		outgoing->flow->get_hello(&buf_ptr, outgoing->passthrough);
 	}
 	ssize_t result = sendto(outgoing->peer.fd, buf_at(buf_ptr, 0), buf_ptr->length, MSG_FASTOPEN, outgoing->addr->ai_addr, outgoing->addr->ai_addrlen);
 	outgoing_connect_result(outgoing, result == (ssize_t) buf_ptr->length ? EINPROGRESS : errno);
@@ -102,7 +101,7 @@ static void outgoing_connect_result(struct outgoing *outgoing, int result) {
 			int fd = outgoing->peer.fd;
 			outgoing->peer.fd = -1;
 			outgoing->peer.event_handler = outgoing_disconnect_handler;
-			outgoing->handler(fd, outgoing->passthrough, (struct peer *) outgoing);
+			outgoing->flow->new(fd, outgoing->passthrough, (struct peer *) outgoing);
 			break;
 
 		case EINPROGRESS:
@@ -144,7 +143,7 @@ static void outgoing_resolve_wrapper(struct peer *peer) {
 }
 
 static void outgoing_del(struct outgoing *outgoing) {
-	(*outgoing->count)--;
+	(*outgoing->flow->ref_count)--;
 	if (outgoing->peer.fd >= 0) {
 		assert(!close(outgoing->peer.fd));
 	}
@@ -160,18 +159,16 @@ void outgoing_cleanup() {
 	}
 }
 
-void outgoing_new(char *node, char *service, outgoing_connection_handler handler, outgoing_get_hello hello, void *passthrough, uint32_t *count) {
-	(*count)++;
+void outgoing_new(char *node, char *service, struct flow *flow, void *passthrough) {
+	(*flow->ref_count)++;
 
 	struct outgoing *outgoing = malloc(sizeof(*outgoing));
 	uuid_gen(outgoing->id);
 	outgoing->node = strdup(node);
 	outgoing->service = strdup(service);
 	outgoing->attempt = 0;
-	outgoing->handler = handler;
-	outgoing->hello = hello;
+	outgoing->flow = flow;
 	outgoing->passthrough = passthrough;
-	outgoing->count = count;
 
 	list_add(&outgoing->outgoing_list, &outgoing_head);
 

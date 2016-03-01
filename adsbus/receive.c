@@ -9,6 +9,7 @@
 #include "airspy_adsb.h"
 #include "beast.h"
 #include "buf.h"
+#include "flow.h"
 #include "json.h"
 #include "packet.h"
 #include "peer.h"
@@ -35,6 +36,13 @@ struct receive {
 	struct receive *next;
 };
 static struct receive *receive_head = NULL;
+
+static struct flow _receive_flow = {
+	.name = "receive",
+	.new = receive_new,
+	.ref_count = &peer_count_in,
+};
+struct flow *receive_flow = &_receive_flow;
 
 static struct parser {
 	char *name;

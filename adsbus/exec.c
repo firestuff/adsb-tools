@@ -9,6 +9,7 @@
 #include <unistd.h>
 
 #include "buf.h"
+#include "flow.h"
 #include "list.h"
 #include "peer.h"
 #include "uuid.h"
@@ -20,10 +21,8 @@ struct exec {
 	struct peer peer;
 	uint8_t id[UUID_LEN];
 	char *command;
-	exec_connection_handler handler;
-	exec_get_hello hello;
+	struct flow *flow;
 	void *passthrough;
-	uint32_t *count;
 	pid_t child;
 	struct list_head exec_list;
 };
@@ -33,7 +32,7 @@ static struct list_head exec_head = LIST_HEAD_INIT(exec_head);
 static void exec_spawn_wrapper(struct peer *);
 
 static void exec_del(struct exec *exec) {
-	(*exec->count)--;
+	(*exec->flow->ref_count)--;
 	if (exec->child > 0) {
 		fprintf(stderr, "E %s: Sending SIGTERM to child process %d\n", exec->id, exec->child);
 		// Racy with the process terminating, so don't assert on it
@@ -62,11 +61,11 @@ static void exec_close_handler(struct peer *peer) {
 }
 
 static bool exec_hello(int fd, struct exec *exec) {
-	if (!exec->hello) {
+	if (!exec->flow->get_hello) {
 		return true;
 	}
 	struct buf buf = BUF_INIT, *buf_ptr = &buf;
-	exec->hello(&buf_ptr, exec->passthrough);
+	exec->flow->get_hello(&buf_ptr, exec->passthrough);
 	if (!buf_ptr->length) {
 		return true;
 	}
@@ -84,7 +83,7 @@ static void exec_parent(struct exec *exec, pid_t child, int fd) {
 	}
 
 	exec->peer.event_handler = exec_close_handler;
-	exec->handler(fd, exec->passthrough, (struct peer *) exec);
+	exec->flow->new(fd, exec->passthrough, (struct peer *) exec);
 }
 
 static void __attribute__ ((noreturn)) exec_child(const struct exec *exec, int fd) {
@@ -132,17 +131,15 @@ void exec_cleanup() {
 	}
 }
 
-void exec_new(char *command, exec_connection_handler handler, exec_get_hello hello, void *passthrough, uint32_t *count) {
-	(*count)++;
+void exec_new(char *command, struct flow *flow, void *passthrough) {
+	(*flow->ref_count)++;
 
 	struct exec *exec = malloc(sizeof(*exec));
 	exec->peer.fd = -1;
 	uuid_gen(exec->id);
 	exec->command = strdup(command);
-	exec->handler = handler;
-	exec->hello = hello;
+	exec->flow = flow;
 	exec->passthrough = passthrough;
-	exec->count = count;
 
 	list_add(&exec->exec_list, &exec_head);
 

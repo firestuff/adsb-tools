@@ -12,6 +12,7 @@
 #include "airspy_adsb.h"
 #include "beast.h"
 #include "buf.h"
+#include "flow.h"
 #include "json.h"
 #include "list.h"
 #include "packet.h"
@@ -31,6 +32,14 @@ struct send {
 	struct serializer *serializer;
 	struct list_head send_list;
 };
+
+static struct flow _send_flow = {
+	.name = "send",
+	.new = send_new_wrapper,
+	.get_hello = send_hello,
+	.ref_count = &peer_count_out,
+};
+struct flow *send_flow = &_send_flow;
 
 typedef void (*serialize)(struct packet *, struct buf *);
 typedef void (*hello)(struct buf **);

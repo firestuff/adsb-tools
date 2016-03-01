@@ -9,6 +9,7 @@
 #include <unistd.h>
 
 #include "buf.h"
+#include "flow.h"
 #include "list.h"
 #include "peer.h"
 #include "resolve.h"
@@ -26,10 +27,8 @@ struct incoming {
 	struct addrinfo *addrs;
 	const char *error;
 	uint32_t attempt;
-	incoming_connection_handler handler;
-	incoming_get_hello hello;
+	struct flow *flow;
 	void *passthrough;
-	uint32_t *count;
 	struct list_head incoming_list;
 };
 
@@ -45,11 +44,11 @@ static void incoming_retry(struct incoming *incoming) {
 }
 
 static bool incoming_hello(int fd, struct incoming *incoming) {
-	if (!incoming->hello) {
+	if (!incoming->flow->get_hello) {
 		return true;
 	}
 	struct buf buf = BUF_INIT, *buf_ptr = &buf;
-	incoming->hello(&buf_ptr, incoming->passthrough);
+	incoming->flow->get_hello(&buf_ptr, incoming->passthrough);
 	if (!buf_ptr->length) {
 		return true;
 	}
@@ -85,11 +84,11 @@ static void incoming_handler(struct peer *peer) {
 		return;
 	}
 
-	incoming->handler(fd, incoming->passthrough, NULL);
+	incoming->flow->new(fd, incoming->passthrough, NULL);
 }
 
 static void incoming_del(struct incoming *incoming) {
-	(*incoming->count)--;
+	(*incoming->flow->ref_count)--;
 	if (incoming->peer.fd >= 0) {
 		assert(!close(incoming->peer.fd));
 	}
@@ -163,8 +162,8 @@ void incoming_cleanup() {
 	}
 }
 
-void incoming_new(char *node, char *service, incoming_connection_handler handler, incoming_get_hello hello, void *passthrough, uint32_t *count) {
-	(*count)++;
+void incoming_new(char *node, char *service, struct flow *flow, void *passthrough) {
+	(*flow->ref_count)++;
 
 	struct incoming *incoming = malloc(sizeof(*incoming));
 	incoming->peer.event_handler = incoming_handler;
@@ -172,10 +171,8 @@ void incoming_new(char *node, char *service, incoming_connection_handler handler
 	incoming->node = node ? strdup(node) : NULL;
 	incoming->service = strdup(service);
 	incoming->attempt = 0;
-	incoming->handler = handler;
-	incoming->hello = hello;
+	incoming->flow = flow;
 	incoming->passthrough = passthrough;
-	incoming->count = count;
 
 	list_add(&incoming->incoming_list, &incoming_head);
 
