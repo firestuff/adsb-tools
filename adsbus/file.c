@@ -9,6 +9,15 @@
 
 #include "file.h"
 
+static void file_open_new(char *path, struct flow *flow, void *passthrough, int flags) {
+	int fd = open(path, flags | O_CLOEXEC, S_IRUSR | S_IWUSR);
+	if (fd == -1) {
+		// TODO: log error; retry?
+		return;
+	}
+	file_fd_new(fd, flow, passthrough);
+}
+
 void file_fd_new(int fd, struct flow *flow, void *passthrough) {
 	flow->new(fd, passthrough, NULL);
 	// TODO: log error; retry?
@@ -16,28 +25,13 @@ void file_fd_new(int fd, struct flow *flow, void *passthrough) {
 }
 
 void file_read_new(char *path, struct flow *flow, void *passthrough) {
-	int fd = open(path, O_RDONLY | O_CLOEXEC);
-	if (fd == -1) {
-		// TODO: log error; retry?
-		return;
-	}
-	file_fd_new(fd, flow, passthrough);
+	file_open_new(path, flow, passthrough, O_RDONLY);
 }
 
 void file_write_new(char *path, struct flow *flow, void *passthrough) {
-	int fd = open(path, O_WRONLY | O_CREAT | O_NOFOLLOW | O_TRUNC | O_CLOEXEC, S_IRUSR | S_IWUSR);
-	if (fd == -1) {
-		// TODO: log error; retry?
-		return;
-	}
-	file_fd_new(fd, flow, passthrough);
+	file_open_new(path, flow, passthrough, O_WRONLY | O_CREAT | O_NOFOLLOW | O_TRUNC);
 }
 
 void file_append_new(char *path, struct flow *flow, void *passthrough) {
-	int fd = open(path, O_WRONLY | O_CREAT | O_NOFOLLOW | O_CLOEXEC, S_IRWXU);
-	if (fd == -1) {
-		// TODO: log error; retry?
-		return;
-	}
-	flow->new(fd, flow, passthrough);
+	file_open_new(path, flow, passthrough, O_WRONLY | O_CREAT | O_NOFOLLOW);
 }
