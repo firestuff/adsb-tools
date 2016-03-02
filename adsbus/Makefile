@@ -30,7 +30,7 @@ adsb.pb-c.c: ../proto/adsb.proto
 adsbus: adsbus.o $(OBJ_TRANSPORT) $(OBJ_FLOW) $(OBJ_PROTOCOL) $(OBJ_UTIL) $(OBJ_PROTO)
 	$(COMP) $(LDFLAGS) -o adsbus adsbus.o $(OBJ_TRANSPORT) $(OBJ_FLOW) $(OBJ_PROTOCOL) $(OBJ_UTIL) $(OBJ_PROTO) $(LIBS)
 
-fuzz:
+afl-fuzz:
 	rm -rf findings
 	mkdir findings
 	$(MAKE) clean
