@@ -1,0 +1,3 @@
+{"mlat_timestamp_mhz": 120, "type": "header", "magic": "aDsB", "on": "ht#1", "rssi_max":295, "server_id": "4ba8", "mlat_timestamp_max": 807}
+{"mlat_timestamp_mhz":  120, "type": "header", "magic": "aDsB", "on": "", "rssi_max":295, "server_id": "4ba8", "mlat_timestamp_max": 807}
+{"mlat_timestamp_mhz": 120, "type": "header", "magic": "aDsB", "on": "ht#1", "rssi_max":295, "ser_timestamp":-4511000}tim

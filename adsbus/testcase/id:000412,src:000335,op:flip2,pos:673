@@ -1,0 +1,7 @@
+{"mlat_timestamp_mhz": 120, "type": "header", "magic": "aDsB", "on": "ht#1", "rssi_max": 4294967295, "server_id": "4ba8", "mlat_timestamp_max": 807}
+{"rssi": 286331153, "type": "Mode-S short", "payload": "5DA4C0A87FE1BD", "source_id": "f5d9", "mlat_timestamp":34511000}
+{"rssi": 589505315, "type": "Mode-S short", "payload": "5DA4C0A87FE1BD", "source_id": "e348f712f5d9", "mlat_timestamp": 238.66636272600}
+{"rssi": 5, "type": "Mode-S short", "payload": "5DA4C0A87FE1BD", "source_id": "e348f718-1aba-48db-9ae9-bd26ff22f5d9", "mlat_timestamp": 2.63780}
+{"rssi":33, "type": "Mode-S long", "payload": "8DA810009910F09348440CF5EC47", "source_id": "f5d9", "mlat_timestamp":0.00}
+{"rssi": 17, "type": "Mode-S short", "payload": "5DA8100045E59B", "source_id": "e348f718-1aba-48db-9ae9-bd26ff22f5d9", "mlat_timestamp": 26650685680}
+{"rssi": 197053, "type": "Mode-S short", "payload": "02A1859495B3E9", "source_id": "e348f718-1aba-48db-9ae9-bd26ff22f5d9", "mlat_timestamp":666681271400}
