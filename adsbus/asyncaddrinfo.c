@@ -1,4 +1,5 @@
 #include <assert.h>
+#include <fcntl.h>
 #include <netdb.h>
 #include <pthread.h>
 #include <stdlib.h>
@@ -65,7 +66,7 @@ void asyncaddrinfo_init(size_t threads) {
 	assert(asyncaddrinfo_threads);
 
 	for (size_t i = 0; i < asyncaddrinfo_num_threads; i++) {
-		int subfd = dup(fds[0]);
+		int subfd = fcntl(fds[0], F_DUPFD_CLOEXEC, 0);
 		assert(subfd >= 0);
 		assert(!pthread_create(&asyncaddrinfo_threads[i], NULL, asyncaddrinfo_main, (void *) (intptr_t) subfd));
 	}
@@ -83,7 +84,7 @@ void asyncaddrinfo_cleanup() {
 	asyncaddrinfo_threads = NULL;
 }
 
-int asyncaddrinfo_resolve(const char *node, const char *service, struct addrinfo *hints) {
+int asyncaddrinfo_resolve(const char *node, const char *service, const struct addrinfo *hints) {
 	int fds[2];
 	assert(!socketpair(AF_UNIX, SOCK_SEQPACKET | SOCK_CLOEXEC, 0, fds));
 
