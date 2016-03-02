@@ -9,6 +9,7 @@
 #include <unistd.h>
 
 #include "buf.h"
+#include "flow.h"
 #include "list.h"
 #include "peer.h"
 #include "resolve.h"
@@ -25,12 +26,9 @@ struct outgoing {
 	char *service;
 	struct addrinfo *addrs;
 	struct addrinfo *addr;
-	const char *error;
 	uint32_t attempt;
-	outgoing_connection_handler handler;
-	outgoing_get_hello hello;
+	struct flow *flow;
 	void *passthrough;
-	uint32_t *count;
 	struct list_head outgoing_list;
 };
 
@@ -41,7 +39,7 @@ static void outgoing_resolve(struct outgoing *);
 static void outgoing_resolve_wrapper(struct peer *);
 
 static void outgoing_retry(struct outgoing *outgoing) {
-	uint32_t delay = wakeup_get_retry_delay_ms(outgoing->attempt++);
+	uint32_t delay = wakeup_get_retry_delay_ms(++outgoing->attempt);
 	fprintf(stderr, "O %s: Will retry in %ds\n", outgoing->id, delay / 1000);
 	outgoing->peer.event_handler = outgoing_resolve_wrapper;
 	wakeup_add((struct peer *) outgoing, delay);
@@ -63,11 +61,11 @@ static void outgoing_connect_next(struct outgoing *outgoing) {
 	assert(outgoing->peer.fd >= 0);
 
 	struct buf buf = BUF_INIT, *buf_ptr = &buf;
-	if (outgoing->hello) {
-		outgoing->hello(&buf_ptr, outgoing->passthrough);
+	if (outgoing->flow->get_hello) {
+		outgoing->flow->get_hello(&buf_ptr, outgoing->passthrough);
 	}
-	int result = (int) sendto(outgoing->peer.fd, buf_at(buf_ptr, 0), buf_ptr->length, MSG_FASTOPEN, outgoing->addr->ai_addr, outgoing->addr->ai_addrlen);
-	outgoing_connect_result(outgoing, result == 0 ? result : errno);
+	ssize_t result = sendto(outgoing->peer.fd, buf_at(buf_ptr, 0), buf_ptr->length, MSG_FASTOPEN, outgoing->addr->ai_addr, outgoing->addr->ai_addrlen);
+	outgoing_connect_result(outgoing, result == (ssize_t) buf_ptr->length ? EINPROGRESS : errno);
 }
 
 static void outgoing_connect_handler(struct peer *peer) {
@@ -97,12 +95,12 @@ static void outgoing_connect_result(struct outgoing *outgoing, int result) {
 		case 0:
 			fprintf(stderr, "O %s: Connected to %s/%s\n", outgoing->id, hbuf, sbuf);
 			freeaddrinfo(outgoing->addrs);
-			socket_connected_init(outgoing->peer.fd);
+			flow_socket_connected(outgoing->peer.fd, outgoing->flow);
 			outgoing->attempt = 0;
 			int fd = outgoing->peer.fd;
 			outgoing->peer.fd = -1;
 			outgoing->peer.event_handler = outgoing_disconnect_handler;
-			outgoing->handler(fd, outgoing->passthrough, (struct peer *) outgoing);
+			outgoing->flow->new(fd, outgoing->passthrough, (struct peer *) outgoing);
 			break;
 
 		case EINPROGRESS:
@@ -123,20 +121,20 @@ static void outgoing_connect_result(struct outgoing *outgoing, int result) {
 
 static void outgoing_resolve_handler(struct peer *peer) {
 	struct outgoing *outgoing = (struct outgoing *) peer;
-	if (outgoing->addrs) {
+	int err = resolve_result(peer, &outgoing->addrs);
+	if (err) {
+		fprintf(stderr, "O %s: Failed to resolve %s/%s: %s\n", outgoing->id, outgoing->node, outgoing->service, gai_strerror(err));
+		outgoing_retry(outgoing);
+	} else {
 		outgoing->addr = outgoing->addrs;
 		outgoing_connect_next(outgoing);
-	} else {
-		fprintf(stderr, "O %s: Failed to resolve %s/%s: %s\n", outgoing->id, outgoing->node, outgoing->service, outgoing->error);
-		outgoing_retry(outgoing);
 	}
 }
 
 static void outgoing_resolve(struct outgoing *outgoing) {
 	fprintf(stderr, "O %s: Resolving %s/%s...\n", outgoing->id, outgoing->node, outgoing->service);
-	outgoing->peer.fd = -1;
 	outgoing->peer.event_handler = outgoing_resolve_handler;
-	resolve((struct peer *) outgoing, outgoing->node, outgoing->service, 0, &outgoing->addrs, &outgoing->error);
+	resolve((struct peer *) outgoing, outgoing->node, outgoing->service, 0);
 }
 
 static void outgoing_resolve_wrapper(struct peer *peer) {
@@ -144,7 +142,7 @@ static void outgoing_resolve_wrapper(struct peer *peer) {
 }
 
 static void outgoing_del(struct outgoing *outgoing) {
-	(*outgoing->count)--;
+	(*outgoing->flow->ref_count)--;
 	if (outgoing->peer.fd >= 0) {
 		assert(!close(outgoing->peer.fd));
 	}
@@ -160,18 +158,16 @@ void outgoing_cleanup() {
 	}
 }
 
-void outgoing_new(char *node, char *service, outgoing_connection_handler handler, outgoing_get_hello hello, void *passthrough, uint32_t *count) {
-	(*count)++;
+void outgoing_new(char *node, char *service, struct flow *flow, void *passthrough) {
+	(*flow->ref_count)++;
 
 	struct outgoing *outgoing = malloc(sizeof(*outgoing));
 	uuid_gen(outgoing->id);
 	outgoing->node = strdup(node);
 	outgoing->service = strdup(service);
 	outgoing->attempt = 0;
-	outgoing->handler = handler;
-	outgoing->hello = hello;
+	outgoing->flow = flow;
 	outgoing->passthrough = passthrough;
-	outgoing->count = count;
 
 	list_add(&outgoing->outgoing_list, &outgoing_head);
 

@@ -9,6 +9,7 @@
 #include <unistd.h>
 
 #include "buf.h"
+#include "flow.h"
 #include "list.h"
 #include "peer.h"
 #include "resolve.h"
@@ -23,13 +24,9 @@ struct incoming {
 	uint8_t id[UUID_LEN];
 	char *node;
 	char *service;
-	struct addrinfo *addrs;
-	const char *error;
 	uint32_t attempt;
-	incoming_connection_handler handler;
-	incoming_get_hello hello;
+	struct flow *flow;
 	void *passthrough;
-	uint32_t *count;
 	struct list_head incoming_list;
 };
 
@@ -42,18 +39,6 @@ static void incoming_retry(struct incoming *incoming) {
 	fprintf(stderr, "I %s: Will retry in %ds\n", incoming->id, delay / 1000);
 	incoming->peer.event_handler = incoming_resolve_wrapper;
 	wakeup_add((struct peer *) incoming, delay);
-}
-
-static bool incoming_hello(int fd, struct incoming *incoming) {
-	if (!incoming->hello) {
-		return true;
-	}
-	struct buf buf = BUF_INIT, *buf_ptr = &buf;
-	incoming->hello(&buf_ptr, incoming->passthrough);
-	if (!buf_ptr->length) {
-		return true;
-	}
-	return (write(fd, buf_at(buf_ptr, 0), buf_ptr->length) == (ssize_t) buf_ptr->length);
 }
 
 static void incoming_handler(struct peer *peer) {
@@ -79,19 +64,17 @@ static void incoming_handler(struct peer *peer) {
 			local_hbuf, local_sbuf,
 			peer_hbuf, peer_sbuf);
 
-	socket_connected_init(fd);
-
-	if (!incoming_hello(fd, incoming)) {
+	if (!flow_hello(fd, incoming->flow, incoming->passthrough)) {
 		fprintf(stderr, "I %s: Error writing greeting\n", incoming->id);
 		assert(!close(fd));
 		return;
 	}
 
-	incoming->handler(fd, incoming->passthrough, NULL);
+	incoming->flow->new(fd, incoming->passthrough, NULL);
 }
 
 static void incoming_del(struct incoming *incoming) {
-	(*incoming->count)--;
+	(*incoming->flow->ref_count)--;
 	if (incoming->peer.fd >= 0) {
 		assert(!close(incoming->peer.fd));
 	}
@@ -100,9 +83,19 @@ static void incoming_del(struct incoming *incoming) {
 	free(incoming);
 }
 
-static void incoming_listen(struct incoming *incoming) {
+static void incoming_listen(struct peer *peer) {
+	struct incoming *incoming = (struct incoming *) peer;
+
+	struct addrinfo *addrs;
+	int err = resolve_result(peer, &addrs);
+	if (err) {
+		fprintf(stderr, "I %s: Failed to resolve %s/%s: %s\n", incoming->id, incoming->node, incoming->service, gai_strerror(err));
+		incoming_retry(incoming);
+		return;
+	}
+
 	struct addrinfo *addr;
-	for (addr = incoming->addrs; addr; addr = addr->ai_next) {
+	for (addr = addrs; addr; addr = addr->ai_next) {
 		char hbuf[NI_MAXHOST], sbuf[NI_MAXSERV];
 		assert(getnameinfo(addr->ai_addr, addr->ai_addrlen, hbuf, sizeof(hbuf), sbuf, sizeof(sbuf), NI_NUMERICHOST | NI_NUMERICSERV) == 0);
 		fprintf(stderr, "I %s: Listening on %s/%s...\n", incoming->id, hbuf, sbuf);
@@ -110,8 +103,7 @@ static void incoming_listen(struct incoming *incoming) {
 		incoming->peer.fd = socket(addr->ai_family, addr->ai_socktype | SOCK_CLOEXEC, addr->ai_protocol);
 		assert(incoming->peer.fd >= 0);
 
-		int optval = 1;
-		setsockopt(incoming->peer.fd, SOL_SOCKET, SO_REUSEPORT, &optval, sizeof(optval));
+		socket_pre_bind(incoming->peer.fd);
 
 		if (bind(incoming->peer.fd, addr->ai_addr, addr->ai_addrlen) != 0) {
 			fprintf(stderr, "I %s: Failed to bind to %s/%s: %s\n", incoming->id, hbuf, sbuf, strerror(errno));
@@ -119,13 +111,15 @@ static void incoming_listen(struct incoming *incoming) {
 			continue;
 		}
 
-		socket_bound_init(incoming->peer.fd);
+		socket_pre_listen(incoming->peer.fd);
+		// Options are inherited through accept()
+		flow_socket_connected(incoming->peer.fd, incoming->flow);
 
 		assert(listen(incoming->peer.fd, 255) == 0);
 		break;
 	}
 
-	freeaddrinfo(incoming->addrs);
+	freeaddrinfo(addrs);
 
 	if (addr == NULL) {
 		fprintf(stderr, "I %s: Failed to bind any addresses for %s/%s...\n", incoming->id, incoming->node, incoming->service);
@@ -138,21 +132,10 @@ static void incoming_listen(struct incoming *incoming) {
 	peer_epoll_add((struct peer *) incoming, EPOLLIN);
 }
 
-static void incoming_resolve_handler(struct peer *peer) {
-	struct incoming *incoming = (struct incoming *) peer;
-	if (incoming->addrs) {
-		incoming_listen(incoming);
-	} else {
-		fprintf(stderr, "I %s: Failed to resolve %s/%s: %s\n", incoming->id, incoming->node, incoming->service, incoming->error);
-		incoming_retry(incoming);
-	}
-}
-
 static void incoming_resolve(struct incoming *incoming) {
 	fprintf(stderr, "I %s: Resolving %s/%s...\n", incoming->id, incoming->node, incoming->service);
-	incoming->peer.fd = -1;
-	incoming->peer.event_handler = incoming_resolve_handler;
-	resolve((struct peer *) incoming, incoming->node, incoming->service, AI_PASSIVE, &incoming->addrs, &incoming->error);
+	incoming->peer.event_handler = incoming_listen;
+	resolve((struct peer *) incoming, incoming->node, incoming->service, AI_PASSIVE);
 }
 
 static void incoming_resolve_wrapper(struct peer *peer) {
@@ -166,19 +149,17 @@ void incoming_cleanup() {
 	}
 }
 
-void incoming_new(char *node, char *service, incoming_connection_handler handler, incoming_get_hello hello, void *passthrough, uint32_t *count) {
-	(*count)++;
+void incoming_new(char *node, char *service, struct flow *flow, void *passthrough) {
+	(*flow->ref_count)++;
 
 	struct incoming *incoming = malloc(sizeof(*incoming));
 	incoming->peer.event_handler = incoming_handler;
 	uuid_gen(incoming->id);
-	incoming->node = strdup(node);
+	incoming->node = node ? strdup(node) : NULL;
 	incoming->service = strdup(service);
 	incoming->attempt = 0;
-	incoming->handler = handler;
-	incoming->hello = hello;
+	incoming->flow = flow;
 	incoming->passthrough = passthrough;
-	incoming->count = count;
 
 	list_add(&incoming->incoming_list, &incoming_head);
 

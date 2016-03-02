@@ -1,93 +1,33 @@
-#include <assert.h>
-#include <fcntl.h>
+#include <sys/types.h>
+#include <sys/socket.h>
 #include <netdb.h>
-#include <stdlib.h>
-#include <unistd.h>
-#include <pthread.h>
 
+#include "asyncaddrinfo.h"
 #include "peer.h"
 
 #include "resolve.h"
 
-struct resolve_request {
-	int fd;
-	const char *node;
-	const char *service;
-	int flags;
-	struct addrinfo **addrs;
-	const char **error;
-};
-
-struct resolve_peer {
-	struct peer peer;
-	struct peer *inner_peer;
-};
-
-static pthread_t resolve_thread;
-static int resolve_write_fd;
-
-static void resolve_handler(struct peer *peer) {
-	struct resolve_peer *resolve_peer = (struct resolve_peer *) peer;
-
-	assert(!close(resolve_peer->peer.fd));
-
-	peer_call(resolve_peer->inner_peer);
-	free(resolve_peer);
-}
-
-static void *resolve_main(void *arg) {
-	int fd = (int) (intptr_t) arg;
-	struct resolve_request *request;
-	ssize_t ret;
-	while ((ret = read(fd, &request, sizeof(request))) == sizeof(request)) {
-		struct addrinfo hints = {
-			.ai_family = AF_UNSPEC,
-			.ai_socktype = SOCK_STREAM,
-			.ai_flags = AI_V4MAPPED | AI_ADDRCONFIG | request->flags,
-		};
-		int err = getaddrinfo(request->node, request->service, &hints, request->addrs);
-		if (err) {
-			*request->addrs = NULL;
-			*request->error = gai_strerror(err);
-		} else {
-			*request->error = NULL;
-		}
-		close(request->fd);
-		free(request);
-	}
-	assert(!ret);
-	assert(!close(fd));
-	return NULL;
-}
-
 void resolve_init() {
-	int fds[2];
-	assert(!pipe2(fds, O_CLOEXEC));
-	resolve_write_fd = fds[1];
-	assert(!pthread_create(&resolve_thread, NULL, resolve_main, (void *) (intptr_t) fds[0]));
+	asyncaddrinfo_init(2);
 }
 
 void resolve_cleanup() {
-	assert(!close(resolve_write_fd));
-	assert(!pthread_join(resolve_thread, NULL));
+	asyncaddrinfo_cleanup();
 }
 
-void resolve(struct peer *peer, const char *node, const char *service, int flags, struct addrinfo **addrs, const char **error) {
-	int fds[2];
-	assert(!pipe2(fds, O_CLOEXEC));
+void resolve(struct peer *peer, const char *node, const char *service, int flags) {
+	struct addrinfo hints = {
+		.ai_flags = AI_V4MAPPED | AI_ADDRCONFIG | flags,
+		.ai_family = AF_UNSPEC,
+		.ai_socktype = SOCK_STREAM,
+	};
 
-	struct resolve_request *request = malloc(sizeof(*request));
-	request->fd = fds[1];
-	request->node = node;
-	request->service = service;
-	request->flags = flags;
-	request->addrs = addrs;
-	request->error = error;
-	assert(write(resolve_write_fd, &request, sizeof(request)) == sizeof(request));
+	peer->fd = asyncaddrinfo_resolve(node, service, &hints);
+	peer_epoll_add(peer, EPOLLIN);
+}
 
-	struct resolve_peer *resolve_peer = malloc(sizeof(*resolve_peer));
-	resolve_peer->peer.fd = fds[0];
-	resolve_peer->peer.event_handler = resolve_handler;
-	resolve_peer->inner_peer = peer;
-	peer_epoll_add((struct peer *) resolve_peer, EPOLLRDHUP);
+int resolve_result(struct peer *peer, struct addrinfo **addrs) {
+	int err = asyncaddrinfo_result(peer->fd, addrs);
+	peer->fd = -1;
+	return err;
 }

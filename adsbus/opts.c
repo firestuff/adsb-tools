@@ -1,11 +1,15 @@
+#include <assert.h>
+#include <fcntl.h>
 #include <stdlib.h>
 #include <string.h>
+#include <sys/stat.h>
+#include <sys/types.h>
 #include <unistd.h>
 
-#include "buf.h"
+#include "exec.h"
+#include "file.h"
 #include "incoming.h"
 #include "outgoing.h"
-#include "peer.h"
 #include "receive.h"
 #include "send.h"
 
@@ -21,13 +25,13 @@ static char *opts_split(char **arg, char delim) {
 	return ret;
 }
 
-static void opts_add_listen(char *host_port, incoming_connection_handler handler, incoming_get_hello hello, void *passthrough, uint32_t *count) {
+static void opts_add_listen(char *host_port, struct flow *flow, void *passthrough) {
 	char *host = opts_split(&host_port, '/');
 	if (host) {
-		incoming_new(host, host_port, handler, hello, passthrough, count);
+		incoming_new(host, host_port, flow, passthrough);
 		free(host);
 	} else {
-		incoming_new(NULL, host_port, handler, hello, passthrough, count);
+		incoming_new(NULL, host_port, flow, passthrough);
 	}
 }
 
@@ -52,7 +56,7 @@ bool opts_add_connect_receive(char *arg) {
 		return false;
 	}
 
-	outgoing_new(host, arg, receive_new, NULL, NULL, &peer_count_in);
+	outgoing_new(host, arg, receive_flow, NULL);
 	free(host);
 	return true;
 }
@@ -68,13 +72,13 @@ bool opts_add_connect_send(char *arg) {
 		return false;
 	}
 
-	outgoing_new(host, arg, send_new_wrapper, send_hello, serializer, &peer_count_out);
+	outgoing_new(host, arg, send_flow, serializer);
 	free(host);
 	return true;
 }
 
 bool opts_add_listen_receive(char *arg) {
-	opts_add_listen(arg, receive_new, NULL, NULL, &peer_count_in);
+	opts_add_listen(arg, receive_flow, NULL);
 	return true;
 }
 
@@ -84,12 +88,54 @@ bool opts_add_listen_send(char *arg) {
 		return false;
 	}
 
-	opts_add_listen(arg, send_new_wrapper, send_hello, serializer, &peer_count_out);
+	opts_add_listen(arg, send_flow, serializer);
+	return true;
+}
+
+bool opts_add_file_read(char *arg) {
+	file_read_new(arg, receive_flow, NULL);
+	return true;
+}
+
+bool opts_add_file_write(char *arg) {
+	struct serializer *serializer = opts_get_serializer(&arg);
+	if (!serializer) {
+		return false;
+	}
+
+	file_write_new(arg, send_flow, serializer);
+	return true;
+}
+
+bool opts_add_file_append(char *arg) {
+	struct serializer *serializer = opts_get_serializer(&arg);
+	if (!serializer) {
+		return false;
+	}
+
+	file_append_new(arg, send_flow, serializer);
+	return true;
+}
+
+bool opts_add_exec_receive(char *arg) {
+	exec_new(arg, receive_flow, NULL);
+	return true;
+}
+
+bool opts_add_exec_send(char *arg) {
+	struct serializer *serializer = opts_get_serializer(&arg);
+	if (!serializer) {
+		return false;
+	}
+
+	exec_new(arg, send_flow, serializer);
 	return true;
 }
 
 bool opts_add_stdin(char __attribute__((unused)) *arg) {
-	receive_new(dup(0), NULL, NULL);
+	int fd = fcntl(0, F_DUPFD_CLOEXEC, 0);
+	assert(fd >= 0);
+	file_fd_new(fd, receive_flow, NULL);
 	return true;
 }
 
@@ -98,17 +144,8 @@ bool opts_add_stdout(char *arg) {
 	if (!serializer) {
 		return false;
 	}
-	int fd = dup(1);
-	{
-		// TODO: move into standard location for non-socket fd handling
-		struct buf buf = BUF_INIT, *buf_ptr = &buf;
-		send_hello(&buf_ptr, serializer);
-		if (buf_ptr->length) {
-			if (write(fd, buf_at(buf_ptr, 0), buf_ptr->length) != (ssize_t) buf_ptr->length) {
-				return false;
-			}
-		}
-	}
-	send_new(fd, serializer, NULL);
+	int fd = fcntl(1, F_DUPFD_CLOEXEC, 0);
+	assert(fd >= 0);
+	file_fd_new(fd, send_flow, serializer);
 	return true;
 }

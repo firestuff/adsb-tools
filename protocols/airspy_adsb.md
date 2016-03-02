@@ -12,7 +12,7 @@ level data.
 
 ## Frame structure
 * `*` (`0x2a`)
-* Uppercase hex-encoded 2, 7, or 14 byte frame (4, 14, or 28 bytes after encoding)
+* Uppercase hex-encoded 4, 14, or 28 byte payload (2, 7, or 14 bytes when decoded)
 * `;` (`0x3b`)
 * 4 byte MLAT timestamp (see below)
 * `;` (`0x3b`)

@@ -9,11 +9,13 @@
 #include "airspy_adsb.h"
 #include "beast.h"
 #include "buf.h"
+#include "flow.h"
 #include "json.h"
 #include "packet.h"
 #include "peer.h"
 #include "proto.h"
 #include "raw.h"
+#include "socket.h"
 #include "send.h"
 #include "uuid.h"
 
@@ -34,6 +36,15 @@ struct receive {
 	struct receive *next;
 };
 static struct receive *receive_head = NULL;
+
+static void receive_new(int, void *, struct peer *);
+
+static struct flow _receive_flow = {
+	.name = "receive",
+	.new = receive_new,
+	.ref_count = &peer_count_in,
+};
+struct flow *receive_flow = &_receive_flow;
 
 static struct parser {
 	char *name;
@@ -123,17 +134,10 @@ static void receive_read(struct peer *peer) {
 	}
 }
 
-void receive_cleanup() {
-	while (receive_head) {
-		receive_del(receive_head);
-	}
-}
-
-void receive_new(int fd, void __attribute__((unused)) *passthrough, struct peer *on_close) {
+static void receive_new(int fd, void __attribute__((unused)) *passthrough, struct peer *on_close) {
 	peer_count_in++;
 
-	int res = shutdown(fd, SHUT_WR);
-	assert(res == 0 || (res == -1 && errno == ENOTSOCK));
+	socket_receive(fd);
 
 	struct receive *receive = malloc(sizeof(*receive));
 	assert(receive);
@@ -154,6 +158,12 @@ void receive_new(int fd, void __attribute__((unused)) *passthrough, struct peer 
 	peer_epoll_add((struct peer *) receive, EPOLLIN);
 
 	fprintf(stderr, "R %s: New receive connection\n", receive->id);
+}
+
+void receive_cleanup() {
+	while (receive_head) {
+		receive_del(receive_head);
+	}
 }
 
 void receive_print_usage() {

@@ -6,6 +6,7 @@
 #include <unistd.h>
 
 #include "beast.h"
+#include "exec.h"
 #include "hex.h"
 #include "incoming.h"
 #include "json.h"
@@ -32,6 +33,11 @@ static void print_usage(const char *name) {
 			"\t--connect-send=FORMAT=HOST/PORT\n"
 			"\t--listen-receive=[HOST/]PORT\n"
 			"\t--listen-send=FORMAT=[HOST/]PORT\n"
+			"\t--file-read=PATH\n"
+			"\t--file-write=FORMAT=PATH\n"
+			"\t--file-append=FORMAT=PATH\n"
+			"\t--exec-receive=COMMAND\n"
+			"\t--exec-send=FORMAT=COMMAND\n"
 			"\t--stdin\n"
 			"\t--stdout=FORMAT\n"
 			, name);
@@ -45,6 +51,11 @@ static bool parse_opts(int argc, char *argv[]) {
 		{"connect-send",    required_argument, 0, 's'},
 		{"listen-receive",  required_argument, 0, 'l'},
 		{"listen-send",     required_argument, 0, 'm'},
+		{"file-read",       required_argument, 0, 'r'},
+		{"file-write",      required_argument, 0, 'w'},
+		{"file-append",     required_argument, 0, 'a'},
+		{"exec-receive",    required_argument, 0, 'e'},
+		{"exec-send",       required_argument, 0, 'f'},
 		{"stdin",           no_argument,       0, 'i'},
 		{"stdout",          required_argument, 0, 'o'},
 		{"help",            no_argument,       0, 'h'},
@@ -69,6 +80,26 @@ static bool parse_opts(int argc, char *argv[]) {
 
 			case 'm':
 				handler = opts_add_listen_send;
+				break;
+
+			case 'r':
+				handler = opts_add_file_read;
+				break;
+
+			case 'w':
+				handler = opts_add_file_write;
+				break;
+
+			case 'a':
+				handler = opts_add_file_append;
+				break;
+
+			case 'e':
+				handler = opts_add_exec_receive;
+				break;
+
+			case 'f':
+				handler = opts_add_exec_send;
 				break;
 
 		  case 'i':
@@ -133,6 +164,7 @@ int main(int argc, char *argv[]) {
 	send_cleanup();
 	incoming_cleanup();
 	outgoing_cleanup();
+	exec_cleanup();
 
 	json_cleanup();
 	proto_cleanup();
