@@ -117,10 +117,13 @@ static void receive_read(struct peer *peer) {
 		return;
 	}
 
-	struct packet packet = {
-		.source_id = receive->id,
-	};
-	while (receive->buf.length && receive->parser_wrapper(receive, &packet)) {
+	while (receive->buf.length) {
+		struct packet packet = {
+			.source_id = receive->id,
+		};
+		if (!receive->parser_wrapper(receive, &packet)) {
+			break;
+		}
 		if (packet.type == PACKET_TYPE_NONE) {
 			continue;
 		}
