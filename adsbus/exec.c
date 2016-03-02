@@ -123,9 +123,11 @@ void exec_new(char *command, struct flow *flow, void *passthrough) {
 	(*flow->ref_count)++;
 
 	struct exec *exec = malloc(sizeof(*exec));
+	assert(exec);
 	exec->peer.fd = -1;
 	uuid_gen(exec->id);
 	exec->command = strdup(command);
+	assert(exec->command);
 	exec->flow = flow;
 	exec->passthrough = passthrough;
 
