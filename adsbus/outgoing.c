@@ -95,7 +95,7 @@ static void outgoing_connect_result(struct outgoing *outgoing, int result) {
 		case 0:
 			fprintf(stderr, "O %s: Connected to %s/%s\n", outgoing->id, hbuf, sbuf);
 			freeaddrinfo(outgoing->addrs);
-			flow_socket_connected(outgoing->peer.fd, outgoing->flow);
+			flow_socket_ready(outgoing->peer.fd, outgoing->flow);
 			outgoing->attempt = 0;
 			int fd = outgoing->peer.fd;
 			outgoing->peer.fd = -1;

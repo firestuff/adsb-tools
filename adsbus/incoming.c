@@ -114,7 +114,7 @@ static void incoming_listen(struct peer *peer) {
 
 		socket_pre_listen(incoming->peer.fd);
 		// Options are inherited through accept()
-		flow_socket_connected(incoming->peer.fd, incoming->flow);
+		flow_socket_ready(incoming->peer.fd, incoming->flow);
 
 		assert(listen(incoming->peer.fd, 255) == 0);
 		break;

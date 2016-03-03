@@ -5,10 +5,10 @@
 
 #include "flow.h"
 
-void flow_socket_connected(int fd, struct flow *flow) {
-	socket_connected(fd);
-	if (flow->socket_connected) {
-		flow->socket_connected(fd);
+void flow_socket_ready(int fd, struct flow *flow) {
+	socket_ready(fd);
+	if (flow->socket_ready) {
+		flow->socket_ready(fd);
 	}
 }
 

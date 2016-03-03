@@ -19,7 +19,7 @@ void socket_pre_listen(int fd) {
 	assert(!setsockopt(fd, SOL_TCP, TCP_FASTOPEN, &qlen, sizeof(qlen)));
 }
 
-void socket_connected(int fd) {
+void socket_ready(int fd) {
 	// Called by transport code; safe to assume that fd is a socket
 	int optval = 1;
 	assert(!setsockopt(fd, SOL_SOCKET, SO_KEEPALIVE, &optval, sizeof(optval)));
@@ -31,7 +31,7 @@ void socket_connected(int fd) {
 	assert(!setsockopt(fd, IPPROTO_TCP, TCP_KEEPCNT, &optval, sizeof(optval)));
 }
 
-void socket_connected_send(int fd) {
+void socket_ready_send(int fd) {
 	int optval = 128; // Lowest value that the kernel will accept
 	int res = setsockopt(fd, SOL_SOCKET, SO_RCVBUF, &optval, sizeof(optval));
 	if (res == -1 && errno == ENOTSOCK) {
