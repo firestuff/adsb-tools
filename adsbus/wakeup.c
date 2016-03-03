@@ -10,6 +10,7 @@
 #include <time.h>
 #include <unistd.h>
 
+#include "list.h"
 #include "peer.h"
 #include "rand.h"
 
@@ -19,10 +20,10 @@ struct wakeup_entry {
 	int fd;
 	uint64_t absolute_time_ms;
 	struct peer *peer;
-	struct wakeup_entry *next;
+	struct list_head wakeup_list;
 };
 
-static struct wakeup_entry *head = NULL;
+static struct list_head wakeup_head = LIST_HEAD_INIT(wakeup_head);
 
 static uint64_t wakeup_get_time_ms() {
 	struct timespec tp;
@@ -38,20 +39,20 @@ void wakeup_init() {
 }
 
 void wakeup_cleanup() {
-	while (head) {
-		struct wakeup_entry *next = head->next;
-		free(head);
-		head = next;
+	struct wakeup_entry *iter, *next;
+	list_for_each_entry_safe(iter, next, &wakeup_head, wakeup_list) {
+		free(iter);
 	}
 }
 
 int wakeup_get_delay() {
-	if (!head) {
+	if (list_is_empty(&wakeup_head)) {
 		return -1;
 	}
 	uint64_t now = wakeup_get_time_ms();
-	if (head->absolute_time_ms > now) {
-		uint64_t delta = head->absolute_time_ms - now;
+	struct wakeup_entry *next_to_fire = list_entry(wakeup_head.next, struct wakeup_entry, wakeup_list);
+	if (next_to_fire->absolute_time_ms > now) {
+		uint64_t delta = next_to_fire->absolute_time_ms - now;
 		assert(delta < INT_MAX);
 		return (int) delta;
 	} else {
@@ -61,11 +62,14 @@ int wakeup_get_delay() {
 
 void wakeup_dispatch() {
 	uint64_t now = wakeup_get_time_ms();
-	while (head && head->absolute_time_ms <= now) {
-		peer_call(head->peer);
-		struct wakeup_entry *next = head->next;
-		free(head);
-		head = next;
+	struct wakeup_entry *iter, *next;
+	list_for_each_entry_safe(iter, next, &wakeup_head, wakeup_list) {
+		if (iter->absolute_time_ms > now) {
+			break;
+		}
+		peer_call(iter->peer);
+		list_del(&iter->wakeup_list);
+		free(iter);
 	}
 }
 
@@ -74,22 +78,14 @@ void wakeup_add(struct peer *peer, uint32_t delay_ms) {
 	entry->absolute_time_ms = wakeup_get_time_ms() + delay_ms;
 	entry->peer = peer;
 
-	struct wakeup_entry *prev = NULL, *iter = head;
-	while (iter) {
+	struct wakeup_entry *iter, *next;
+	list_for_each_entry_safe(iter, next, &wakeup_head, wakeup_list) {
 		if (iter->absolute_time_ms > entry->absolute_time_ms) {
-			break;
+			list_add(&entry->wakeup_list, &iter->wakeup_list);
+			return;
 		}
-		prev = iter;
-		iter = iter->next;
 	}
-
-	if (prev) {
-		entry->next = prev->next;
-		prev->next = entry;
-	} else {
-		entry->next = head;
-		head = entry;
-	}
+	list_add(&entry->wakeup_list, &wakeup_head);
 }
 
 #define RETRY_MIN_MS 2000
