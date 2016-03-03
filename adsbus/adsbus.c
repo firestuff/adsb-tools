@@ -7,6 +7,7 @@
 
 #include "beast.h"
 #include "exec.h"
+#include "file.h"
 #include "hex.h"
 #include "incoming.h"
 #include "json.h"
@@ -165,6 +166,7 @@ int main(int argc, char *argv[]) {
 	incoming_cleanup();
 	outgoing_cleanup();
 	exec_cleanup();
+	file_cleanup();
 
 	json_cleanup();
 	proto_cleanup();

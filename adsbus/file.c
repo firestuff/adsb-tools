@@ -1,4 +1,5 @@
 #include <assert.h>
+#include <errno.h>
 #include <fcntl.h>
 #include <stdlib.h>
 #include <stdio.h>
@@ -14,6 +15,7 @@
 #include "receive.h"
 #include "send.h"
 #include "uuid.h"
+#include "wakeup.h"
 
 #include "file.h"
 
@@ -22,6 +24,7 @@ struct file {
 	uint8_t id[UUID_LEN];
 	char *path;
 	int flags;
+	uint32_t attempt;
 	struct flow *flow;
 	void *passthrough;
 	bool retry;
@@ -29,6 +32,8 @@ struct file {
 };
 
 static struct list_head file_head = LIST_HEAD_INIT(file_head);
+
+static void file_open_wrapper(struct peer *);
 
 static bool file_should_retry(int fd, struct file *file) {
 	// We want to retry most files, except if we're reading from a regular file
@@ -60,24 +65,47 @@ static void file_del(struct file *file) {
 	free(file);
 }
 
+static void file_retry(struct file *file) {
+	uint32_t delay = wakeup_get_retry_delay_ms(file->attempt++);
+	fprintf(stderr, "F %s: Will retry in %ds\n", file->id, delay / 1000);
+	file->peer.event_handler = file_open_wrapper;
+	wakeup_add((struct peer *) file, delay);
+}
+
 static void file_handle_close(struct peer *peer) {
 	struct file *file = (struct file *) peer;
+	fprintf(stderr, "F %s: File closed: %s\n", file->id, file->path);
 
-	file_del(file);
+	if (file->retry) {
+		file_retry(file);
+	} else {
+		file_del(file);
+	}
 }
 
 static void file_open(struct file *file) {
+	fprintf(stderr, "F %s: Opening file: %s\n", file->id, file->path);
 	int fd = open(file->path, file->flags | O_CLOEXEC, S_IRUSR | S_IWUSR);
 	if (fd == -1) {
-		// TODO: log error; retry?
+		fprintf(stderr, "F %s: Error opening file: %s\n", file->id, strerror(errno));
+		file_retry(file);
 		return;
 	}
 
 	file->retry = file_should_retry(fd, file);
 	file->peer.event_handler = file_handle_close;
+	if (!flow_hello(fd, file->flow, file->passthrough)) {
+		fprintf(stderr, "F %s: Error writing greeting\n", file->id);
+		file_retry(file);
+		return;
+	}
+	file->attempt = 0;
 	file->flow->new(fd, file->passthrough, (struct peer *) file);
-	// TODO: log error; retry?
-	flow_hello(fd, file->flow, file->passthrough);
+}
+
+static void file_open_wrapper(struct peer *peer) {
+	struct file *file = (struct file *) peer;
+	file_open(file);
 }
 
 static void file_new(char *path, int flags, struct flow *flow, void *passthrough) {
@@ -90,6 +118,7 @@ static void file_new(char *path, int flags, struct flow *flow, void *passthrough
 	file->path = strdup(path);
 	assert(file->path);
 	file->flags = flags;
+	file->attempt = 0;
 	file->flow = flow;
 	file->passthrough = passthrough;
 
@@ -98,11 +127,18 @@ static void file_new(char *path, int flags, struct flow *flow, void *passthrough
 	file_open(file);
 }
 
+void file_cleanup() {
+	struct file *iter, *next;
+	list_for_each_entry_safe(iter, next, &file_head, file_list) {
+		file_del(iter);
+	}
+}
+
 // TODO: this code probably belongs elsewhere
 void file_fd_new(int fd, struct flow *flow, void *passthrough) {
-	flow->new(fd, passthrough, NULL);
-	// TODO: log error; retry?
+	// TODO: log error
 	flow_hello(fd, flow, passthrough);
+	flow->new(fd, passthrough, NULL);
 }
 
 void file_read_new(char *path, struct flow *flow, void *passthrough) {
