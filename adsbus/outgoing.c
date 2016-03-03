@@ -146,6 +146,7 @@ static void outgoing_del(struct outgoing *outgoing) {
 	if (outgoing->peer.fd >= 0) {
 		assert(!close(outgoing->peer.fd));
 	}
+	list_del(&outgoing->outgoing_list);
 	free(outgoing->node);
 	free(outgoing->service);
 	free(outgoing);

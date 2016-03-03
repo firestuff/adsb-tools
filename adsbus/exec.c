@@ -39,6 +39,7 @@ static void exec_del(struct exec *exec) {
 		kill(exec->child, SIGTERM);
 		assert(waitpid(exec->child, NULL, 0) == exec->child);
 	}
+	list_del(&exec->exec_list);
 	free(exec->command);
 	free(exec);
 }

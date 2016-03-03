@@ -78,6 +78,7 @@ static void incoming_del(struct incoming *incoming) {
 	if (incoming->peer.fd >= 0) {
 		assert(!close(incoming->peer.fd));
 	}
+	list_del(&incoming->incoming_list);
 	free(incoming->node);
 	free(incoming->service);
 	free(incoming);
