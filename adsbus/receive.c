@@ -41,6 +41,7 @@ static void receive_new(int, void *, struct peer *);
 
 static struct flow _receive_flow = {
 	.name = "receive",
+	.socket_connected = socket_connected_receive,
 	.new = receive_new,
 	.ref_count = &peer_count_in,
 };
@@ -132,8 +133,6 @@ static void receive_read(struct peer *peer) {
 
 static void receive_new(int fd, void __attribute__((unused)) *passthrough, struct peer *on_close) {
 	peer_count_in++;
-
-	socket_receive(fd);
 
 	struct receive *receive = malloc(sizeof(*receive));
 	assert(receive);

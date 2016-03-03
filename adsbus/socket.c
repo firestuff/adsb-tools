@@ -48,13 +48,13 @@ void socket_ready_send(int fd) {
 	assert(res == 0);
 }
 
-void socket_send(int fd) {
+void socket_connected_send(int fd) {
 	// Called by data flow code; NOT safe to assume that fd is a socket
 	int res = shutdown(fd, SHUT_RD);
 	assert(res == 0 || (res == -1 && errno == ENOTSOCK));
 }
 
-void socket_receive(int fd) {
+void socket_connected_receive(int fd) {
 	// Called by data flow code; NOT safe to assume that fd is a socket
 	int res = shutdown(fd, SHUT_WR);
 	assert(res == 0 || (res == -1 && errno == ENOTSOCK));

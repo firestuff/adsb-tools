@@ -95,11 +95,12 @@ static void outgoing_connect_result(struct outgoing *outgoing, int result) {
 		case 0:
 			fprintf(stderr, "O %s: Connected to %s/%s\n", outgoing->id, hbuf, sbuf);
 			freeaddrinfo(outgoing->addrs);
-			flow_socket_ready(outgoing->peer.fd, outgoing->flow);
 			outgoing->attempt = 0;
 			int fd = outgoing->peer.fd;
 			outgoing->peer.fd = -1;
 			outgoing->peer.event_handler = outgoing_disconnect_handler;
+			flow_socket_ready(fd, outgoing->flow);
+			flow_socket_connected(fd, outgoing->flow);
 			outgoing->flow->new(fd, outgoing->passthrough, (struct peer *) outgoing);
 			break;
 

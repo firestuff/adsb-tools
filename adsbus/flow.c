@@ -12,6 +12,12 @@ void flow_socket_ready(int fd, struct flow *flow) {
 	}
 }
 
+void flow_socket_connected(int fd, struct flow *flow) {
+	if (flow->socket_connected) {
+		flow->socket_connected(fd);
+	}
+}
+
 bool flow_hello(int fd, struct flow *flow, void *passthrough) {
 	if (!flow->get_hello) {
 		return true;

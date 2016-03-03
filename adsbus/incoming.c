@@ -64,6 +64,8 @@ static void incoming_handler(struct peer *peer) {
 			local_hbuf, local_sbuf,
 			peer_hbuf, peer_sbuf);
 
+	flow_socket_connected(fd, incoming->flow);
+
 	if (!flow_hello(fd, incoming->flow, incoming->passthrough)) {
 		fprintf(stderr, "I %s: Error writing greeting\n", incoming->id);
 		assert(!close(fd));
