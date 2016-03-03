@@ -74,7 +74,7 @@ static void incoming_handler(struct peer *peer) {
 }
 
 static void incoming_del(struct incoming *incoming) {
-	(*incoming->flow->ref_count)--;
+	flow_ref_dec(incoming->flow);
 	if (incoming->peer.fd >= 0) {
 		assert(!close(incoming->peer.fd));
 	}
@@ -151,7 +151,7 @@ void incoming_cleanup() {
 }
 
 void incoming_new(char *node, char *service, struct flow *flow, void *passthrough) {
-	(*flow->ref_count)++;
+	flow_ref_inc(flow);
 
 	struct incoming *incoming = malloc(sizeof(*incoming));
 	incoming->peer.event_handler = incoming_handler;

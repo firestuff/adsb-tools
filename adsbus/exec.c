@@ -32,7 +32,8 @@ static struct list_head exec_head = LIST_HEAD_INIT(exec_head);
 static void exec_spawn_wrapper(struct peer *);
 
 static void exec_del(struct exec *exec) {
-	(*exec->flow->ref_count)--;
+	flow_ref_dec(exec->flow);
+
 	if (exec->child > 0) {
 		fprintf(stderr, "E %s: Sending SIGTERM to child process %d\n", exec->id, exec->child);
 		// Racy with the process terminating, so don't assert on it
@@ -121,7 +122,7 @@ void exec_cleanup() {
 }
 
 void exec_new(char *command, struct flow *flow, void *passthrough) {
-	(*flow->ref_count)++;
+	flow_ref_inc(flow);
 
 	struct exec *exec = malloc(sizeof(*exec));
 	assert(exec);

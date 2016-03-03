@@ -31,3 +31,11 @@ bool flow_new(int fd, struct flow *flow, void *passthrough) {
 	flow->new(fd, passthrough, NULL);
 	return true;
 }
+
+void flow_ref_inc(struct flow *flow) {
+	(*flow->ref_count)++;
+}
+
+void flow_ref_dec(struct flow *flow) {
+	(*flow->ref_count)--;
+}

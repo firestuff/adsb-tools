@@ -59,7 +59,7 @@ static bool file_should_retry(int fd, struct file *file) {
 }
 
 static void file_del(struct file *file) {
-	(*file->flow->ref_count)--;
+	flow_ref_dec(file->flow);
 	list_del(&file->file_list);
 	free(file->path);
 	free(file);
@@ -109,7 +109,7 @@ static void file_open_wrapper(struct peer *peer) {
 }
 
 static void file_new(char *path, int flags, struct flow *flow, void *passthrough) {
-	(*flow->ref_count)++;
+	flow_ref_inc(flow);
 
 	struct file *file = malloc(sizeof(*file));
 	assert(file);
