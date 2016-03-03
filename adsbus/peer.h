@@ -14,7 +14,7 @@ struct peer {
 	bool always_trigger;
 };
 
-extern uint32_t peer_count_in, peer_count_out;
+extern uint32_t peer_count_in, peer_count_out, peer_count_out_in;
 
 void peer_init(void);
 void peer_cleanup(void);

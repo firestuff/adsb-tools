@@ -14,7 +14,7 @@
 
 #include "peer.h"
 
-uint32_t peer_count_in = 0, peer_count_out = 0;
+uint32_t peer_count_in = 0, peer_count_out = 0, peer_count_out_in = 0;
 
 static int peer_epoll_fd;
 static int peer_shutdown_fd;
@@ -97,10 +97,10 @@ void peer_call(struct peer *peer) {
 void peer_loop() {
 	fprintf(stderr, "X %s: Starting event loop\n", server_id);
 	while (!peer_shutdown_flag) {
-		if (!peer_count_in) {
+		if (!(peer_count_in + peer_count_out_in)) {
 			fprintf(stderr, "X %s: No remaining inputs\n", server_id);
 			peer_shutdown(0);
-		} else if (!peer_count_out) {
+		} else if (!(peer_count_out + peer_count_out_in)) {
 			fprintf(stderr, "X %s: No remaining outputs\n", server_id);
 			peer_shutdown(0);
 		}
