@@ -34,7 +34,6 @@ struct send {
 };
 
 static void send_new(int, void *, struct peer *);
-static void send_get_hello(struct buf **, void *);
 
 static struct flow _send_flow = {
 	.name = "send",
@@ -121,13 +120,6 @@ static void send_new(int fd, void *passthrough, struct peer *on_close) {
 	fprintf(stderr, "S %s (%s): New send connection\n", send->id, serializer->name);
 }
 
-static void send_get_hello(struct buf **buf_pp, void *passthrough) {
-	struct serializer *serializer = (struct serializer *) passthrough;
-	if (serializer->hello) {
-		serializer->hello(buf_pp);
-	}
-}
-
 void send_init() {
 	assert(signal(SIGPIPE, SIG_IGN) != SIG_ERR);
 	for (size_t i = 0; i < NUM_SERIALIZERS; i++) {
@@ -151,6 +143,13 @@ void *send_get_serializer(char *name) {
 		}
 	}
 	return NULL;
+}
+
+void send_get_hello(struct buf **buf_pp, void *passthrough) {
+	struct serializer *serializer = (struct serializer *) passthrough;
+	if (serializer->hello) {
+		serializer->hello(buf_pp);
+	}
 }
 
 void send_write(struct packet *packet) {
