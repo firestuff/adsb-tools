@@ -16,3 +16,4 @@ struct flow {
 
 void flow_socket_connected(int, struct flow *);
 bool flow_hello(int, struct flow *, void *);
+bool flow_new(int, struct flow *, void *);

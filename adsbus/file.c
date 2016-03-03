@@ -134,13 +134,6 @@ void file_cleanup() {
 	}
 }
 
-// TODO: this code probably belongs elsewhere
-void file_fd_new(int fd, struct flow *flow, void *passthrough) {
-	// TODO: log error
-	flow_hello(fd, flow, passthrough);
-	flow->new(fd, passthrough, NULL);
-}
-
 void file_read_new(char *path, struct flow *flow, void *passthrough) {
 	file_new(path, O_RDONLY, flow, passthrough);
 }

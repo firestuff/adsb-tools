@@ -23,3 +23,11 @@ bool flow_hello(int fd, struct flow *flow, void *passthrough) {
 	}
 	return (write(fd, buf_at(buf_ptr, 0), buf_ptr->length) == (ssize_t) buf_ptr->length);
 }
+
+bool flow_new(int fd, struct flow *flow, void *passthrough) {
+	if (!flow_hello(fd, flow, passthrough)) {
+		return false;
+	}
+	flow->new(fd, passthrough, NULL);
+	return true;
+}
