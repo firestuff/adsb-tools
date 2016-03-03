@@ -94,13 +94,12 @@ static void file_open(struct file *file) {
 
 	file->retry = file_should_retry(fd, file);
 	file->peer.event_handler = file_handle_close;
-	if (!flow_hello(fd, file->flow, file->passthrough)) {
+	file->attempt = 0;
+	if (!flow_new_send_hello(fd, file->flow, file->passthrough, (struct peer *) file)) {
 		fprintf(stderr, "F %s: Error writing greeting\n", file->id);
 		file_retry(file);
 		return;
 	}
-	file->attempt = 0;
-	file->flow->new(fd, file->passthrough, (struct peer *) file);
 }
 
 static void file_open_wrapper(struct peer *peer) {

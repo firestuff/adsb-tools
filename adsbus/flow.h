@@ -17,7 +17,8 @@ struct flow {
 
 void flow_socket_ready(int, struct flow *);
 void flow_socket_connected(int, struct flow *);
-bool flow_hello(int, struct flow *, void *);
-bool flow_new(int, struct flow *, void *);
+void flow_new(int, struct flow *, void *, struct peer *);
+bool flow_new_send_hello(int, struct flow *, void *, struct peer *);
+void flow_get_hello(struct flow *, struct buf **, void *);
 void flow_ref_inc(struct flow *);
 void flow_ref_dec(struct flow *);

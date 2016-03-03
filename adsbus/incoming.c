@@ -66,13 +66,10 @@ static void incoming_handler(struct peer *peer) {
 
 	flow_socket_connected(fd, incoming->flow);
 
-	if (!flow_hello(fd, incoming->flow, incoming->passthrough)) {
+	if (!flow_new_send_hello(fd, incoming->flow, incoming->passthrough, NULL)) {
 		fprintf(stderr, "I %s: Error writing greeting\n", incoming->id);
-		assert(!close(fd));
 		return;
 	}
-
-	incoming->flow->new(fd, incoming->passthrough, NULL);
 }
 
 static void incoming_del(struct incoming *incoming) {

@@ -61,9 +61,7 @@ static void outgoing_connect_next(struct outgoing *outgoing) {
 	assert(outgoing->peer.fd >= 0);
 
 	struct buf buf = BUF_INIT, *buf_ptr = &buf;
-	if (outgoing->flow->get_hello) {
-		outgoing->flow->get_hello(&buf_ptr, outgoing->passthrough);
-	}
+	flow_get_hello(outgoing->flow, &buf_ptr, outgoing->passthrough);
 	ssize_t result = sendto(outgoing->peer.fd, buf_at(buf_ptr, 0), buf_ptr->length, MSG_FASTOPEN, outgoing->addr->ai_addr, outgoing->addr->ai_addrlen);
 	outgoing_connect_result(outgoing, result == (ssize_t) buf_ptr->length ? EINPROGRESS : errno);
 }
@@ -101,7 +99,7 @@ static void outgoing_connect_result(struct outgoing *outgoing, int result) {
 			outgoing->peer.event_handler = outgoing_disconnect_handler;
 			flow_socket_ready(fd, outgoing->flow);
 			flow_socket_connected(fd, outgoing->flow);
-			outgoing->flow->new(fd, outgoing->passthrough, (struct peer *) outgoing);
+			flow_new(fd, outgoing->flow, outgoing->passthrough, (struct peer *) outgoing);
 			break;
 
 		case EINPROGRESS:

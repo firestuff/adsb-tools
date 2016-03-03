@@ -136,7 +136,7 @@ bool opts_add_exec_send(char *arg) {
 bool opts_add_stdin(char __attribute__((unused)) *arg) {
 	int fd = fcntl(0, F_DUPFD_CLOEXEC, 0);
 	assert(fd >= 0);
-	return flow_new(fd, receive_flow, NULL);
+	return flow_new_send_hello(fd, receive_flow, NULL, NULL);
 }
 
 bool opts_add_stdout(char *arg) {
@@ -146,5 +146,5 @@ bool opts_add_stdout(char *arg) {
 	}
 	int fd = fcntl(1, F_DUPFD_CLOEXEC, 0);
 	assert(fd >= 0);
-	return flow_new(fd, send_flow, serializer);
+	return flow_new_send_hello(fd, send_flow, serializer, NULL);
 }

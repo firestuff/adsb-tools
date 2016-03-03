@@ -66,14 +66,11 @@ static void exec_parent(struct exec *exec, pid_t child, int fd) {
 	exec->child = child;
 	fprintf(stderr, "E %s: Child started as process %d\n", exec->id, exec->child);
 
-	if (!flow_hello(fd, exec->flow, exec->passthrough)) {
-		assert(!close(fd));
+	exec->peer.event_handler = exec_close_handler;
+	if (!flow_new_send_hello(fd, exec->flow, exec->passthrough, (struct peer *) exec)) {
 		exec_close_handler((struct peer *) exec);
 		return;
 	}
-
-	exec->peer.event_handler = exec_close_handler;
-	exec->flow->new(fd, exec->passthrough, (struct peer *) exec);
 }
 
 static void __attribute__ ((noreturn)) exec_child(const struct exec *exec, int fd) {
