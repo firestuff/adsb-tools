@@ -29,6 +29,9 @@ void socket_ready(int fd) {
 	assert(!setsockopt(fd, IPPROTO_TCP, TCP_KEEPINTVL, &optval, sizeof(optval)));
 	optval = 3;
 	assert(!setsockopt(fd, IPPROTO_TCP, TCP_KEEPCNT, &optval, sizeof(optval)));
+
+	optval = 60000; // 60s
+	assert(!setsockopt(fd, IPPROTO_TCP, TCP_USER_TIMEOUT, &optval, sizeof(optval)));
 }
 
 void socket_ready_send(int fd) {
@@ -40,12 +43,7 @@ void socket_ready_send(int fd) {
 	assert(res == 0);
 
 	optval = 128; // Lowest value that the kernel will accept
-	res = setsockopt(fd, IPPROTO_TCP, TCP_WINDOW_CLAMP, &optval, sizeof(optval));
-	assert(res == 0);
-
-	optval = 60000; // 60s
-	res = setsockopt(fd, IPPROTO_TCP, TCP_USER_TIMEOUT, &optval, sizeof(optval));
-	assert(res == 0);
+	assert(!setsockopt(fd, IPPROTO_TCP, TCP_WINDOW_CLAMP, &optval, sizeof(optval)));
 }
 
 void socket_connected_send(int fd) {
