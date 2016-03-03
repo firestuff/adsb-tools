@@ -11,6 +11,7 @@
 #include "buf.h"
 #include "flow.h"
 #include "json.h"
+#include "list.h"
 #include "packet.h"
 #include "peer.h"
 #include "proto.h"
@@ -32,10 +33,9 @@ struct receive {
 	char parser_state[PARSER_STATE_LEN];
 	parser_wrapper parser_wrapper;
 	parser parser;
-	struct receive *prev;
-	struct receive *next;
+	struct list_head receive_list;
 };
-static struct receive *receive_head = NULL;
+static struct list_head receive_head = LIST_HEAD_INIT(receive_head);
 
 static void receive_new(int, void *, struct peer *);
 
@@ -97,14 +97,7 @@ static void receive_del(struct receive *receive) {
 	peer_count_in--;
 	peer_epoll_del((struct peer *) receive);
 	assert(!close(receive->peer.fd));
-	if (receive->prev) {
-		receive->prev->next = receive->next;
-	} else {
-		receive_head = receive->next;
-	}
-	if (receive->next) {
-		receive->next->prev = receive->prev;
-	}
+	list_del(&receive->receive_list);
 	peer_call(receive->on_close);
 	free(receive);
 }
@@ -152,20 +145,18 @@ static void receive_new(int fd, void __attribute__((unused)) *passthrough, struc
 	buf_init(&receive->buf);
 	memset(receive->parser_state, 0, PARSER_STATE_LEN);
 	receive->parser_wrapper = receive_autodetect_parse;
-	receive->prev = NULL;
-	receive->next = receive_head;
-	if (receive->next) {
-		receive->next->prev = receive;
-	}
-	receive_head = receive;
+
+	list_add(&receive->receive_list, &receive_head);
+
 	peer_epoll_add((struct peer *) receive, EPOLLIN);
 
 	fprintf(stderr, "R %s: New receive connection\n", receive->id);
 }
 
 void receive_cleanup() {
-	while (receive_head) {
-		receive_del(receive_head);
+	struct receive *iter, *next;
+	list_for_each_entry_safe(iter, next, &receive_head, receive_list) {
+		receive_del(iter);
 	}
 }
 
