@@ -1,8 +1,11 @@
 #include <assert.h>
+#include <fcntl.h>
 #include <getopt.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <sys/types.h>
+#include <sys/stat.h>
 #include <unistd.h>
 
 #include "beast.h"
@@ -166,6 +169,12 @@ static bool parse_opts(int argc, char *argv[]) {
 	return true;
 }
 
+static void reopen(int fd, char *path, int flags) {
+	// Presumes that all fds < fd are open
+	assert(!close(fd));
+	assert(open(path, flags | O_CLOEXEC) == fd);
+}
+
 int main(int argc, char *argv[]) {
 	hex_init();
 	rand_init();
@@ -185,8 +194,8 @@ int main(int argc, char *argv[]) {
 		peer_shutdown(0);
 	}
 
-	assert(!close(0));
-	assert(!close(1));
+	reopen(STDIN_FILENO, "/dev/null", O_RDONLY);
+	reopen(STDOUT_FILENO, "/dev/full", O_WRONLY);
 
 	peer_loop();
 
@@ -208,7 +217,9 @@ int main(int argc, char *argv[]) {
 
 	peer_cleanup();
 
-	assert(!close(2));
+	assert(!close(STDIN_FILENO));
+	assert(!close(STDOUT_FILENO));
+	assert(!close(STDERR_FILENO));
 
 	return EXIT_SUCCESS;
 }
