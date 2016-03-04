@@ -4,6 +4,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <sys/socket.h>
+#include <sys/stat.h>
 #include <unistd.h>
 
 #include "airspy_adsb.h"
@@ -27,6 +28,7 @@ typedef bool (*parser_wrapper)(struct receive *, struct packet *);
 typedef bool (*parser)(struct buf *, struct packet *, void *state);
 struct receive {
 	struct peer peer;
+	struct stat stat;
 	struct peer *on_close;
 	uint8_t id[UUID_LEN];
 	struct buf buf;
@@ -114,6 +116,7 @@ static void receive_read(struct peer *peer) {
 	while (receive->buf.length) {
 		struct packet packet = {
 			.source_id = receive->id,
+			.input_stat = &receive->stat,
 		};
 		if (!receive->parser_wrapper(receive, &packet)) {
 			break;
@@ -144,6 +147,7 @@ static void receive_new(int fd, void __attribute__((unused)) *passthrough, struc
 	buf_init(&receive->buf);
 	memset(receive->parser_state, 0, PARSER_STATE_LEN);
 	receive->parser_wrapper = receive_autodetect_parse;
+	assert(!fstat(fd, &receive->stat));
 
 	list_add(&receive->receive_list, &receive_head);
 

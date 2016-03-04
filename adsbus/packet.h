@@ -3,9 +3,12 @@
 #include <stdbool.h>
 #include <stdint.h>
 
+struct stat;
+
 #define PACKET_DATA_LEN_MAX 14
 struct packet {
 	const uint8_t *source_id;
+	struct stat *input_stat;
 	enum packet_type {
 		PACKET_TYPE_NONE,
 		PACKET_TYPE_MODE_AC,

@@ -6,6 +6,7 @@
 #include <stdlib.h>
 #include <strings.h>
 #include <sys/socket.h>
+#include <sys/stat.h>
 #include <sys/types.h>
 #include <unistd.h>
 
@@ -27,6 +28,7 @@
 
 struct send {
 	struct peer peer;
+	struct stat stat;
 	struct peer *on_close;
 	uint8_t id[UUID_LEN];
 	struct serializer *serializer;
@@ -113,6 +115,8 @@ static void send_new(int fd, void *passthrough, struct peer *on_close) {
 	send->on_close = on_close;
 	uuid_gen(send->id);
 	send->serializer = serializer;
+	assert(!fstat(fd, &send->stat));
+
 	list_add(&send->send_list, &serializer->send_head);
 
 	peer_epoll_add((struct peer *) send, 0);
@@ -166,6 +170,11 @@ void send_write(struct packet *packet) {
 		}
 		struct send *iter, *next;
 		list_for_each_entry_safe(iter, next, &serializer->send_head, send_list) {
+			if (iter->stat.st_dev == packet->input_stat->st_dev &&
+					iter->stat.st_ino == packet->input_stat->st_ino) {
+				// Same socket that this packet came from
+				continue;
+			}
 			if (write(iter->peer.fd, buf_at(&buf, 0), buf.length) != (ssize_t) buf.length) {
 				// peer_loop() will see this shutdown and call send_del
 				int res = shutdown(iter->peer.fd, SHUT_WR);

@@ -19,6 +19,7 @@
 #include "receive.h"
 #include "resolve.h"
 #include "send.h"
+#include "send_receive.h"
 #include "server.h"
 #include "stats.h"
 #include "wakeup.h"
@@ -32,13 +33,18 @@ static void print_usage(const char *name) {
 			"\t--help\n"
 			"\t--connect-receive=HOST/PORT\n"
 			"\t--connect-send=FORMAT=HOST/PORT\n"
+			"\t--connect-send-receive=FORMAT=HOST/PORT\n"
 			"\t--listen-receive=[HOST/]PORT\n"
 			"\t--listen-send=FORMAT=[HOST/]PORT\n"
+			"\t--listen-send-receive=FORMAT=[HOST/]PORT\n"
 			"\t--file-read=PATH\n"
 			"\t--file-write=FORMAT=PATH\n"
+			"\t--file-write-read=FORMAT=PATH\n"
 			"\t--file-append=FORMAT=PATH\n"
+			"\t--file-append-read=FORMAT=PATH\n"
 			"\t--exec-receive=COMMAND\n"
 			"\t--exec-send=FORMAT=COMMAND\n"
+			"\t--exec-send-receive=FORMAT=COMMAND\n"
 			"\t--stdin\n"
 			"\t--stdout=FORMAT\n"
 			, name);
@@ -48,19 +54,24 @@ static void print_usage(const char *name) {
 
 static bool parse_opts(int argc, char *argv[]) {
 	static struct option long_options[] = {
-		{"connect-receive", required_argument, 0, 'c'},
-		{"connect-send",    required_argument, 0, 's'},
-		{"listen-receive",  required_argument, 0, 'l'},
-		{"listen-send",     required_argument, 0, 'm'},
-		{"file-read",       required_argument, 0, 'r'},
-		{"file-write",      required_argument, 0, 'w'},
-		{"file-append",     required_argument, 0, 'a'},
-		{"exec-receive",    required_argument, 0, 'e'},
-		{"exec-send",       required_argument, 0, 'f'},
-		{"stdin",           no_argument,       0, 'i'},
-		{"stdout",          required_argument, 0, 'o'},
-		{"help",            no_argument,       0, 'h'},
-		{0,                 0,                 0, 0  },
+		{"connect-receive",      required_argument, 0, 'c'},
+		{"connect-send",         required_argument, 0, 's'},
+		{"connect-send-receive", required_argument, 0, 't'},
+		{"listen-receive",       required_argument, 0, 'l'},
+		{"listen-send",          required_argument, 0, 'm'},
+		{"listen-send-receive",  required_argument, 0, 'n'},
+		{"file-read",            required_argument, 0, 'r'},
+		{"file-write",           required_argument, 0, 'w'},
+		{"file-write-read",      required_argument, 0, 'x'},
+		{"file-append",          required_argument, 0, 'a'},
+		{"file-append-read",     required_argument, 0, 'b'},
+		{"exec-receive",         required_argument, 0, 'e'},
+		{"exec-send",            required_argument, 0, 'f'},
+		{"exec-send-receive",    required_argument, 0, 'g'},
+		{"stdin",                no_argument,       0, 'i'},
+		{"stdout",               required_argument, 0, 'o'},
+		{"help",                 no_argument,       0, 'h'},
+		{0,                      0,                 0, 0  },
 	};
 
 	int opt;
@@ -75,12 +86,20 @@ static bool parse_opts(int argc, char *argv[]) {
 				handler = opts_add_connect_send;
 				break;
 
+			case 't':
+				handler = opts_add_connect_send_receive;
+				break;
+
 			case 'l':
 				handler = opts_add_listen_receive;
 				break;
 
 			case 'm':
 				handler = opts_add_listen_send;
+				break;
+
+			case 'n':
+				handler = opts_add_listen_send_receive;
 				break;
 
 			case 'r':
@@ -91,8 +110,16 @@ static bool parse_opts(int argc, char *argv[]) {
 				handler = opts_add_file_write;
 				break;
 
+			case 'x':
+				handler = opts_add_file_write_read;
+				break;
+
 			case 'a':
 				handler = opts_add_file_append;
+				break;
+
+			case 'b':
+				handler = opts_add_file_append_read;
 				break;
 
 			case 'e':
@@ -101,6 +128,10 @@ static bool parse_opts(int argc, char *argv[]) {
 
 			case 'f':
 				handler = opts_add_exec_send;
+				break;
+
+			case 'g':
+				handler = opts_add_exec_send_receive;
 				break;
 
 		  case 'i':
@@ -163,6 +194,7 @@ int main(int argc, char *argv[]) {
 
 	receive_cleanup();
 	send_cleanup();
+	send_receive_cleanup();
 	incoming_cleanup();
 	outgoing_cleanup();
 	exec_cleanup();
