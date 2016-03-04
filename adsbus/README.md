@@ -29,7 +29,7 @@ make
 * Data flows:
 	* Send (data flows out of adsbus)
 	* Receive (data flows in to adsbus)
-	* Send + Receive (both directions on the same socket, without echo)
+	* Send & receive (both directions on the same socket, without echo)
 * Formats:
 	* [airspy_adsb](../protocols/airspy_adsb.md) (a.k.a. ASAVR)
 	* [beast](../protocols/beast.md)
