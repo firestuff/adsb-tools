@@ -43,6 +43,7 @@ void peer_init() {
 
 	peer_shutdown_fd = shutdown_fds[1];
 	signal(SIGINT, peer_shutdown);
+	signal(SIGTERM, peer_shutdown);
 }
 
 void peer_cleanup() {
