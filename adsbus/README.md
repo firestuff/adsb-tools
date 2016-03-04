@@ -23,12 +23,13 @@ make
 * Transports:
 	* Outgoing TCP connection
 	* Incoming TCP connection
-	* Local files or [named pipes](https://en.wikipedia.org/wiki/Named_pipe)
+	* Local files, [named pipes](https://en.wikipedia.org/wiki/Named_pipe), and [character devices](https://en.wikipedia.org/wiki/Device_file#Character_devices)
 	* [stdin/stdout](https://en.wikipedia.org/wiki/Standard_streams)
 	* Execute a command and talk to its stdin/stdout
 * Data flows:
 	* Send (data flows out of adsbus)
 	* Receive (data flows in to adsbus)
+	* Send + Receive (both directions on the same socket, without echo)
 * Formats:
 	* [airspy_adsb](../protocols/airspy_adsb.md) (a.k.a. ASAVR)
 	* [beast](../protocols/beast.md)
