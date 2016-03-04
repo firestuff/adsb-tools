@@ -46,6 +46,7 @@ make
 * Data flow features:
 	* Rapid detection and disconnection of receive <-> receive connections
 	* Less rapid detection and disconnection of send <-> send connections
+	* Hop counting and limits (json and proto formats only) to stop infinite routing loops
 * Format features:
 	* Autodetection of received data format
 	* [MLAT](https://en.wikipedia.org/wiki/Multilateration) scaling for different clock rates and counter bit widths
