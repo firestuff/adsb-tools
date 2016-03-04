@@ -1,8 +1,0 @@
-{"mlat_timestamp_mhz": 920, "type": "header", "magic": "aDsB", "on": "ht#1", "rssi_max":295, "server_id": "4ba8", "mlat_timestamp_max": 807}
-{"rssi": 28.331153, "type": "Mode-S short", "payload": "5DA4C0A87FE1BD", "source_id": "f5d9", "mlat_timestamp":1000}
-{"": 5, "type": "Mode-S short", "payload": "5DA4C0A87FE1BD", "source_id": "e349", "mlat_timestamp": 230}
-{"2ssi": 5, "type": "Mode-S short", "payload": "5DA4C0A87FE1BD", "source_id": "e3d9", "mlat_timestamp": 280}
-{"rssi":33, "type": "Mode-S long", "payload": "8DA810009910F09348440CF5EC47", "source_id": "", "mlat_timestamp":4472}
-{"rssi": 17, "type": "Mode-S short", "payload": "5DA8100045E59B", "source_id": "e3d9", "mlat_timestamp": 280}
-{"rssi": 197.53, "type": "Mode-S short", "paO": "02A1859495B3E9", "source_id": "8f718bd26ff22ong", "payload": 2381, "ax": 807}
-{type"type": "Mode-S 
