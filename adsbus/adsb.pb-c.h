@@ -45,6 +45,7 @@ struct  _AdsbPacket
 {
   ProtobufCMessage base;
   char *source_id;
+  uint32_t hops;
   protobuf_c_boolean has_mlat_timestamp;
   uint64_t mlat_timestamp;
   protobuf_c_boolean has_rssi;
@@ -53,7 +54,7 @@ struct  _AdsbPacket
 };
 #define ADSB_PACKET__INIT \
  { PROTOBUF_C_MESSAGE_INIT (&adsb_packet__descriptor) \
-    , NULL, 0,0, 0,0, {0,NULL} }
+    , NULL, 0, 0,0, 0,0, {0,NULL} }
 
 
 struct  _Adsb

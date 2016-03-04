@@ -183,6 +183,7 @@ int main(int argc, char *argv[]) {
 	wakeup_init();
 	peer_init();
 
+	receive_init();
 	send_init();
 
 	beast_init();

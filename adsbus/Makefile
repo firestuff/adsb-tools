@@ -27,7 +27,7 @@ clean:
 adsb.pb-c.c: ../proto/adsb.proto
 	protoc-c --c_out=./ --proto_path=$(dir $<) $<
 
-adsbus: adsbus.o $(OBJ_TRANSPORT) $(OBJ_FLOW) $(OBJ_PROTOCOL) $(OBJ_UTIL) $(OBJ_PROTO)
+adsbus: adsbus.o $(OBJ_PROTO) $(OBJ_TRANSPORT) $(OBJ_FLOW) $(OBJ_PROTOCOL) $(OBJ_UTIL)
 	$(COMP) $(LDFLAGS) -o adsbus adsbus.o $(OBJ_TRANSPORT) $(OBJ_FLOW) $(OBJ_PROTOCOL) $(OBJ_UTIL) $(OBJ_PROTO) $(LIBS)
 
 afl-fuzz:

@@ -34,6 +34,7 @@ static void json_serialize_to_buf(json_t *obj, struct buf *buf) {
 }
 
 static void json_add_common(struct packet *packet, json_t *obj) {
+	json_object_set_new(obj, "hops", json_integer(packet->hops));
 	json_object_set_new(obj, "type", json_string(packet_type_names[packet->type]));
 	json_object_set_new(obj, "source_id", json_string((const char *) packet->source_id));
 	if (packet->mlat_timestamp) {
@@ -78,16 +79,16 @@ static bool json_parse_header(json_t *in, struct packet *packet, struct json_par
 		return false;
 	}
 
-	state->mlat_timestamp_mhz = (uint16_t) mlat_timestamp_mhz;
-	state->mlat_timestamp_max = (uint64_t) mlat_timestamp_max;
-	state->rssi_max = (uint32_t) rssi_max;
-
 	if (!strcmp(json_server_id, (const char *) server_id)) {
 		fprintf(stderr, "R %s: Attempt to receive json data from our own server ID (%s); loop!\n", packet->source_id, server_id);
 		return false;
 	}
 
 	fprintf(stderr, "R %s: Connected to server ID: %s\n", packet->source_id, json_server_id);
+
+	state->mlat_timestamp_mhz = (uint16_t) mlat_timestamp_mhz;
+	state->mlat_timestamp_max = (uint64_t) mlat_timestamp_max;
+	state->rssi_max = (uint32_t) rssi_max;
 
 	state->have_header = true;
 	packet->type = PACKET_TYPE_NONE;
@@ -99,13 +100,23 @@ static bool json_parse_common(json_t *in, struct packet *packet, struct json_par
 		return false;
 	}
 
-	if (json_unpack(in, "{s:s}", "source_id", &packet->source_id)) {
+	json_int_t hops;
+
+	if (json_unpack(
+			in, "{s:s, s:I}",
+			"source_id", &packet->source_id,
+			"hops", &hops)) {
 		return false;
 	}
 
 	if (!packet_validate_id(packet->source_id)) {
 		return false;
 	}
+
+	if (hops < 0 || hops > UINT32_MAX) {
+		return false;
+	}
+	packet->hops = (uint16_t) hops;
 
 	json_t *mlat_timestamp = json_object_get(in, "mlat_timestamp");
 	if (mlat_timestamp && json_is_integer(mlat_timestamp)) {

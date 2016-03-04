@@ -27,22 +27,25 @@ message AdsbPacket {
 	// 36 character limit
 	required string source_id = 1;
 
+	// Number of routing hops since source, when carried by protocols with a hop count.
+	required uint32 hops = 2;
+
 	// Value of the MLAT counter when this packet arrived at the recorder
 	// Range [0, mlat_timestamp_max]
 	// Units of 1 / (mlat_timestamp_mhz * 10^6) Hz
-	optional fixed64 mlat_timestamp = 2;
+	optional fixed64 mlat_timestamp = 3;
 
 	// RSSI of the received packet at the recorder
 	// Range [0, rssi_max]
 	// Units unspecified
-	optional fixed32 rssi = 3;
+	optional fixed32 rssi = 4;
 
 	// Binary packet payload.
 	// Length:
 	//   mode_ac: 2 bytes
 	//   mode_s_short: 7 bytes
 	//   mode_s_long: 14 bytes
-	required bytes payload = 4;
+	required bytes payload = 5;
 }
 
 message Adsb {

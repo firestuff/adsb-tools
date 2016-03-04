@@ -16,6 +16,7 @@ struct packet {
 		PACKET_TYPE_MODE_S_LONG,
 	} type;
 #define NUM_TYPES 4
+	uint32_t hops;
 	uint8_t payload[PACKET_DATA_LEN_MAX];
 	uint64_t mlat_timestamp;
 	uint32_t rssi;

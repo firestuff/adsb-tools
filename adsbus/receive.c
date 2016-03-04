@@ -76,6 +76,8 @@ static struct parser {
 };
 #define NUM_PARSERS (sizeof(parsers) / sizeof(*parsers))
 
+static uint32_t receive_max_hops = 10;
+
 static bool receive_parse_wrapper(struct receive *receive, struct packet *packet) {
 	return receive->parser(&receive->buf, packet, receive->parser_state);
 }
@@ -84,12 +86,19 @@ static bool receive_autodetect_parse(struct receive *receive, struct packet *pac
 	struct buf *buf = &receive->buf;
 	void *state = receive->parser_state;
 
+	// We don't trust parsers not to scribble over the packet.
+	struct packet orig_packet;
+	memcpy(&orig_packet, packet, sizeof(orig_packet));
+
 	for (size_t i = 0; i < NUM_PARSERS; i++) {
 		if (parsers[i].parse(buf, packet, state)) {
 			fprintf(stderr, "R %s: Detected input format %s\n", receive->id, parsers[i].name);
 			receive->parser_wrapper = receive_parse_wrapper;
 			receive->parser = parsers[i].parse;
 			return true;
+		}
+		if (i < NUM_PARSERS - 1) {
+			memcpy(packet, &orig_packet, sizeof(*packet));
 		}
 	}
 	return false;
@@ -124,6 +133,10 @@ static void receive_read(struct peer *peer) {
 		if (packet.type == PACKET_TYPE_NONE) {
 			continue;
 		}
+		if (++packet.hops > receive_max_hops) {
+			fprintf(stderr, "R %s: Packet exceeded hop limit (%u > %u); dropping. You may have a loop in your configuration.\n", receive->id, packet.hops, receive_max_hops);
+			continue;
+		}
 		send_write(&packet);
 	}
 
@@ -154,6 +167,18 @@ static void receive_new(int fd, void __attribute__((unused)) *passthrough, struc
 	peer_epoll_add((struct peer *) receive, EPOLLIN);
 
 	fprintf(stderr, "R %s: New receive connection\n", receive->id);
+}
+
+void receive_init() {
+	char *max_hops = getenv("ADSBUS_MAX_HOPS");
+	if (max_hops) {
+		char *end_ptr;
+		unsigned long max_hops_ul = strtoul(max_hops, &end_ptr, 10);
+		assert(max_hops[0] != '\0');
+		assert(end_ptr[0] == '\0');
+		assert(max_hops_ul <= UINT32_MAX);
+		receive_max_hops = (uint32_t) max_hops_ul;
+	}
 }
 
 void receive_cleanup() {

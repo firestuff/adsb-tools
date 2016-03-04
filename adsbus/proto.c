@@ -43,6 +43,7 @@ static void proto_wrap_to_buf(Adsb *msg, struct buf *buf) {
 
 static void proto_serialize_packet(struct packet *packet, AdsbPacket *out, size_t len) {
 	out->source_id = (char *) packet->source_id;
+	out->hops = packet->hops;
 	if (packet->mlat_timestamp) {
 		out->mlat_timestamp = packet->mlat_timestamp;
 		out->has_mlat_timestamp = true;
@@ -165,7 +166,9 @@ static bool proto_parse_packet(AdsbPacket *in, struct packet *packet, struct pro
 	if (!packet_validate_id((const uint8_t *) in->source_id)) {
 		return false;
 	}
+
 	packet->source_id = (uint8_t *) in->source_id;
+	packet->hops = (uint16_t) in->hops;
 	memcpy(packet->payload, in->payload.data, len);
 
 	if (in->has_mlat_timestamp) {

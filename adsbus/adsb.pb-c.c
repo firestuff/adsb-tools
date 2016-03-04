@@ -282,7 +282,7 @@ const ProtobufCMessageDescriptor adsb_header__descriptor =
   (ProtobufCMessageInit) adsb_header__init,
   NULL,NULL,NULL    /* reserved[123] */
 };
-static const ProtobufCFieldDescriptor adsb_packet__field_descriptors[4] =
+static const ProtobufCFieldDescriptor adsb_packet__field_descriptors[5] =
 {
   {
     "source_id",
@@ -297,8 +297,20 @@ static const ProtobufCFieldDescriptor adsb_packet__field_descriptors[4] =
     0,NULL,NULL    /* reserved1,reserved2, etc */
   },
   {
-    "mlat_timestamp",
+    "hops",
     2,
+    PROTOBUF_C_LABEL_REQUIRED,
+    PROTOBUF_C_TYPE_UINT32,
+    0,   /* quantifier_offset */
+    offsetof(AdsbPacket, hops),
+    NULL,
+    NULL,
+    0,             /* flags */
+    0,NULL,NULL    /* reserved1,reserved2, etc */
+  },
+  {
+    "mlat_timestamp",
+    3,
     PROTOBUF_C_LABEL_OPTIONAL,
     PROTOBUF_C_TYPE_FIXED64,
     offsetof(AdsbPacket, has_mlat_timestamp),
@@ -310,7 +322,7 @@ static const ProtobufCFieldDescriptor adsb_packet__field_descriptors[4] =
   },
   {
     "rssi",
-    3,
+    4,
     PROTOBUF_C_LABEL_OPTIONAL,
     PROTOBUF_C_TYPE_FIXED32,
     offsetof(AdsbPacket, has_rssi),
@@ -322,7 +334,7 @@ static const ProtobufCFieldDescriptor adsb_packet__field_descriptors[4] =
   },
   {
     "payload",
-    4,
+    5,
     PROTOBUF_C_LABEL_REQUIRED,
     PROTOBUF_C_TYPE_BYTES,
     0,   /* quantifier_offset */
@@ -334,15 +346,16 @@ static const ProtobufCFieldDescriptor adsb_packet__field_descriptors[4] =
   },
 };
 static const unsigned adsb_packet__field_indices_by_name[] = {
-  1,   /* field[1] = mlat_timestamp */
-  3,   /* field[3] = payload */
-  2,   /* field[2] = rssi */
+  1,   /* field[1] = hops */
+  2,   /* field[2] = mlat_timestamp */
+  4,   /* field[4] = payload */
+  3,   /* field[3] = rssi */
   0,   /* field[0] = source_id */
 };
 static const ProtobufCIntRange adsb_packet__number_ranges[1 + 1] =
 {
   { 1, 0 },
-  { 0, 4 }
+  { 0, 5 }
 };
 const ProtobufCMessageDescriptor adsb_packet__descriptor =
 {
@@ -352,7 +365,7 @@ const ProtobufCMessageDescriptor adsb_packet__descriptor =
   "AdsbPacket",
   "",
   sizeof(AdsbPacket),
-  4,
+  5,
   adsb_packet__field_descriptors,
   adsb_packet__field_indices_by_name,
   1,  adsb_packet__number_ranges,
