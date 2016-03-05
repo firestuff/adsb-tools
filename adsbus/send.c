@@ -177,8 +177,8 @@ void send_write(struct packet *packet) {
 			}
 			if (write(iter->peer.fd, buf_at(&buf, 0), buf.length) != (ssize_t) buf.length) {
 				// peer_loop() will see this shutdown and call send_del
-				int res = shutdown(iter->peer.fd, SHUT_WR);
-				assert(res == 0 || (res == -1 && errno == ENOTSOCK));
+				// Ignore error
+				shutdown(iter->peer.fd, SHUT_WR);
 			}
 		}
 	}
