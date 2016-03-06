@@ -13,6 +13,7 @@
 #include "flow.h"
 #include "json.h"
 #include "list.h"
+#include "log.h"
 #include "packet.h"
 #include "peer.h"
 #include "proto.h"
@@ -92,7 +93,7 @@ static bool receive_autodetect_parse(struct receive *receive, struct packet *pac
 
 	for (size_t i = 0; i < NUM_PARSERS; i++) {
 		if (parsers[i].parse(buf, packet, state)) {
-			fprintf(stderr, "R %s: Detected input format %s\n", receive->id, parsers[i].name);
+			log_write('R', receive->id, "Detected input format: %s", parsers[i].name);
 			receive->parser_wrapper = receive_parse_wrapper;
 			receive->parser = parsers[i].parse;
 			return true;
@@ -105,7 +106,7 @@ static bool receive_autodetect_parse(struct receive *receive, struct packet *pac
 }
 
 static void receive_del(struct receive *receive) {
-	fprintf(stderr, "R %s: Connection closed\n", receive->id);
+	log_write('R', receive->id, "Connection closed");
 	peer_count_in--;
 	peer_epoll_del((struct peer *) receive);
 	assert(!close(receive->peer.fd));
@@ -134,14 +135,14 @@ static void receive_read(struct peer *peer) {
 			continue;
 		}
 		if (++packet.hops > receive_max_hops) {
-			fprintf(stderr, "R %s: Packet exceeded hop limit (%u > %u); dropping. You may have a loop in your configuration.\n", receive->id, packet.hops, receive_max_hops);
+			log_write('R', receive->id, "Packet exceeded hop limit (%u > %u); dropping. You may have a loop in your configuration.", packet.hops, receive_max_hops);
 			continue;
 		}
 		send_write(&packet);
 	}
 
 	if (receive->buf.length == BUF_LEN_MAX) {
-		fprintf(stderr, "R %s: Input buffer overrun. This probably means that adsbus doesn't understand the protocol that this source is speaking.\n", receive->id);
+		log_write('R', receive->id, "Input buffer overrun. This probably means that adsbus doesn't understand the protocol that this source is speaking.");
 		receive_del(receive);
 		return;
 	}
@@ -166,7 +167,7 @@ static void receive_new(int fd, void __attribute__((unused)) *passthrough, struc
 
 	peer_epoll_add((struct peer *) receive, EPOLLIN);
 
-	fprintf(stderr, "R %s: New receive connection\n", receive->id);
+	log_write('R', receive->id, "New receive connection");
 }
 
 void receive_init() {

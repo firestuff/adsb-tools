@@ -1,7 +1,6 @@
 #include <assert.h>
 #include <signal.h>
 #include <stdlib.h>
-#include <stdio.h>
 #include <string.h>
 #include <sys/socket.h>
 #include <sys/types.h>
@@ -11,6 +10,7 @@
 #include "buf.h"
 #include "flow.h"
 #include "list.h"
+#include "log.h"
 #include "peer.h"
 #include "uuid.h"
 #include "wakeup.h"
@@ -35,7 +35,7 @@ static void exec_del(struct exec *exec) {
 	flow_ref_dec(exec->flow);
 
 	if (exec->child > 0) {
-		fprintf(stderr, "E %s: Sending SIGTERM to child process %d\n", exec->id, exec->child);
+		log_write('E', exec->id, "Sending SIGTERM to child process %d", exec->child);
 		// Racy with the process terminating, so don't assert on it
 		kill(exec->child, SIGTERM);
 		assert(waitpid(exec->child, NULL, 0) == exec->child);
@@ -51,20 +51,20 @@ static void exec_close_handler(struct peer *peer) {
 	assert(waitpid(exec->child, &status, WNOHANG) == exec->child);
 	exec->child = -1;
 	if (WIFEXITED(status)) {
-		fprintf(stderr, "E %s: Client exited with status %d\n", exec->id, WEXITSTATUS(status));
+		log_write('E', exec->id, "Client exited with status %d", WEXITSTATUS(status));
 	} else {
 		assert(WIFSIGNALED(status));
-		fprintf(stderr, "E %s: Client exited with signal %d\n", exec->id, WTERMSIG(status));
+		log_write('E', exec->id, "Client exited with signal %d", WTERMSIG(status));
 	}
 	uint32_t delay = wakeup_get_retry_delay_ms(1);
-	fprintf(stderr, "E %s: Will retry in %ds\n", exec->id, delay / 1000);
+	log_write('E', exec->id, "Will retry in %ds", delay / 1000);
 	exec->peer.event_handler = exec_spawn_wrapper;
 	wakeup_add((struct peer *) exec, delay);
 }
 
 static void exec_parent(struct exec *exec, pid_t child, int fd) {
 	exec->child = child;
-	fprintf(stderr, "E %s: Child started as process %d\n", exec->id, exec->child);
+	log_write('E', exec->id, "Child started as process %d", exec->child);
 
 	exec->peer.event_handler = exec_close_handler;
 	if (!flow_new_send_hello(fd, exec->flow, exec->passthrough, (struct peer *) exec)) {
@@ -91,7 +91,7 @@ static void __attribute__ ((noreturn)) exec_child(const struct exec *exec, int f
 }
 
 static void exec_spawn(struct exec *exec) {
-	fprintf(stderr, "E %s: Executing: %s\n", exec->id, exec->command);
+	log_write('E', exec->id, "Executing: %s", exec->id, exec->command);
 	int fds[2];
 	assert(!socketpair(AF_UNIX, SOCK_STREAM | SOCK_NONBLOCK, 0, fds));
 	

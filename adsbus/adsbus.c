@@ -14,6 +14,7 @@
 #include "hex.h"
 #include "incoming.h"
 #include "json.h"
+#include "log.h"
 #include "opts.h"
 #include "outgoing.h"
 #include "peer.h"
@@ -176,6 +177,8 @@ static void reopen(int fd, char *path, int flags) {
 }
 
 int main(int argc, char *argv[]) {
+	log_init();
+
 	hex_init();
 	rand_init();
 	resolve_init();
@@ -218,9 +221,11 @@ int main(int argc, char *argv[]) {
 
 	peer_cleanup();
 
+	log_cleanup();
+
 	assert(!close(STDIN_FILENO));
 	assert(!close(STDOUT_FILENO));
-	assert(!close(STDERR_FILENO));
+	close(STDERR_FILENO); // 2>&1 breaks this
 
 	return EXIT_SUCCESS;
 }

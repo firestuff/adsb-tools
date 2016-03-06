@@ -2,7 +2,6 @@
 #include <errno.h>
 #include <fcntl.h>
 #include <stdlib.h>
-#include <stdio.h>
 #include <string.h>
 #include <sys/epoll.h>
 #include <sys/stat.h>
@@ -11,6 +10,7 @@
 
 #include "flow.h"
 #include "list.h"
+#include "log.h"
 #include "peer.h"
 #include "receive.h"
 #include "send.h"
@@ -67,14 +67,14 @@ static void file_del(struct file *file) {
 
 static void file_retry(struct file *file) {
 	uint32_t delay = wakeup_get_retry_delay_ms(file->attempt++);
-	fprintf(stderr, "F %s: Will retry in %ds\n", file->id, delay / 1000);
+	log_write('F', file->id, "Will retry in %ds", delay / 1000);
 	file->peer.event_handler = file_open_wrapper;
 	wakeup_add((struct peer *) file, delay);
 }
 
 static void file_handle_close(struct peer *peer) {
 	struct file *file = (struct file *) peer;
-	fprintf(stderr, "F %s: File closed: %s\n", file->id, file->path);
+	log_write('F', file->id, "File closed: %s", file->path);
 
 	if (file->retry) {
 		file_retry(file);
@@ -84,10 +84,10 @@ static void file_handle_close(struct peer *peer) {
 }
 
 static void file_open(struct file *file) {
-	fprintf(stderr, "F %s: Opening file: %s\n", file->id, file->path);
+	log_write('F', file->id, "Opening file: %s", file->path);
 	int fd = open(file->path, file->flags | O_CLOEXEC, S_IRUSR | S_IWUSR);
 	if (fd == -1) {
-		fprintf(stderr, "F %s: Error opening file: %s\n", file->id, strerror(errno));
+		log_write('F', file->id, "Error opening file: %s", strerror(errno));
 		file_retry(file);
 		return;
 	}
@@ -96,7 +96,7 @@ static void file_open(struct file *file) {
 	file->peer.event_handler = file_handle_close;
 	file->attempt = 0;
 	if (!flow_new_send_hello(fd, file->flow, file->passthrough, (struct peer *) file)) {
-		fprintf(stderr, "F %s: Error writing greeting\n", file->id);
+		log_write('F', file->id, "Error writing greeting");
 		file_retry(file);
 		return;
 	}

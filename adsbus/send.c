@@ -16,6 +16,7 @@
 #include "flow.h"
 #include "json.h"
 #include "list.h"
+#include "log.h"
 #include "packet.h"
 #include "peer.h"
 #include "proto.h"
@@ -89,7 +90,7 @@ static struct serializer {
 #define NUM_SERIALIZERS (sizeof(serializers) / sizeof(*serializers))
 
 static void send_del(struct send *send) {
-	fprintf(stderr, "S %s (%s): Connection closed\n", send->id, send->serializer->name);
+	log_write('S', send->id, "Connection closed");
 	peer_count_out--;
 	peer_epoll_del((struct peer *) send);
 	assert(!close(send->peer.fd));
@@ -121,7 +122,7 @@ static void send_new(int fd, void *passthrough, struct peer *on_close) {
 
 	peer_epoll_add((struct peer *) send, 0);
 
-	fprintf(stderr, "S %s (%s): New send connection\n", send->id, serializer->name);
+	log_write('S', send->id, "New send connection: %s", serializer->name);
 }
 
 void send_init() {

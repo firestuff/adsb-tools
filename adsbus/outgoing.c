@@ -1,16 +1,16 @@
-#include <stdlib.h>
-#include <stdio.h>
 #include <assert.h>
+#include <errno.h>
+#include <netdb.h>
+#include <stdlib.h>
+#include <string.h>
 #include <sys/types.h>
 #include <sys/socket.h>
-#include <netdb.h>
-#include <errno.h>
-#include <string.h>
 #include <unistd.h>
 
 #include "buf.h"
 #include "flow.h"
 #include "list.h"
+#include "log.h"
 #include "peer.h"
 #include "resolve.h"
 #include "socket.h"
@@ -40,7 +40,7 @@ static void outgoing_resolve_wrapper(struct peer *);
 
 static void outgoing_retry(struct outgoing *outgoing) {
 	uint32_t delay = wakeup_get_retry_delay_ms(++outgoing->attempt);
-	fprintf(stderr, "O %s: Will retry in %ds\n", outgoing->id, delay / 1000);
+	log_write('O', outgoing->id, "Will retry in %ds", delay / 1000);
 	outgoing->peer.event_handler = outgoing_resolve_wrapper;
 	wakeup_add((struct peer *) outgoing, delay);
 }
@@ -48,14 +48,14 @@ static void outgoing_retry(struct outgoing *outgoing) {
 static void outgoing_connect_next(struct outgoing *outgoing) {
 	if (outgoing->addr == NULL) {
 		freeaddrinfo(outgoing->addrs);
-		fprintf(stderr, "O %s: Can't connect to any addresses of %s/%s\n", outgoing->id, outgoing->node, outgoing->service);
+		log_write('O', outgoing->id, "Can't connect to any addresses of %s/%s", outgoing->node, outgoing->service);
 		outgoing_retry(outgoing);
 		return;
 	}
 
 	char hbuf[NI_MAXHOST], sbuf[NI_MAXSERV];
 	assert(getnameinfo(outgoing->addr->ai_addr, outgoing->addr->ai_addrlen, hbuf, sizeof(hbuf), sbuf, sizeof(sbuf), NI_NUMERICHOST | NI_NUMERICSERV) == 0);
-	fprintf(stderr, "O %s: Connecting to %s/%s...\n", outgoing->id, hbuf, sbuf);
+	log_write('O', outgoing->id, "Connecting to %s/%s...", hbuf, sbuf);
 
 	outgoing->peer.fd = socket(outgoing->addr->ai_family, outgoing->addr->ai_socktype | SOCK_NONBLOCK | SOCK_CLOEXEC, outgoing->addr->ai_protocol);
 	assert(outgoing->peer.fd >= 0);
@@ -82,7 +82,7 @@ static void outgoing_disconnect_handler(struct peer *peer) {
 	if (outgoing->peer.fd != -1) {
 		assert(!close(outgoing->peer.fd));
 	}
-	fprintf(stderr, "O %s: Peer disconnected; reconnecting...\n", outgoing->id);
+	log_write('O', outgoing->id, "Peer disconnected; reconnecting...");
 	outgoing_retry(outgoing);
 }
 
@@ -91,7 +91,7 @@ static void outgoing_connect_result(struct outgoing *outgoing, int result) {
 	assert(getnameinfo(outgoing->addr->ai_addr, outgoing->addr->ai_addrlen, hbuf, sizeof(hbuf), sbuf, sizeof(sbuf), NI_NUMERICHOST | NI_NUMERICSERV) == 0);
 	switch (result) {
 		case 0:
-			fprintf(stderr, "O %s: Connected to %s/%s\n", outgoing->id, hbuf, sbuf);
+			log_write('O', outgoing->id, "Connected to %s/%s", hbuf, sbuf);
 			freeaddrinfo(outgoing->addrs);
 			outgoing->attempt = 0;
 			int fd = outgoing->peer.fd;
@@ -108,7 +108,7 @@ static void outgoing_connect_result(struct outgoing *outgoing, int result) {
 			break;
 
 		default:
-			fprintf(stderr, "O %s: Can't connect to %s/%s: %s\n", outgoing->id, hbuf, sbuf, strerror(result));
+			log_write('O', outgoing->id, "Can't connect to %s/%s: %s", hbuf, sbuf, strerror(result));
 			assert(!close(outgoing->peer.fd));
 			outgoing->peer.fd = -1;
 			outgoing->addr = outgoing->addr->ai_next;
@@ -122,7 +122,7 @@ static void outgoing_resolve_handler(struct peer *peer) {
 	struct outgoing *outgoing = (struct outgoing *) peer;
 	int err = resolve_result(peer, &outgoing->addrs);
 	if (err) {
-		fprintf(stderr, "O %s: Failed to resolve %s/%s: %s\n", outgoing->id, outgoing->node, outgoing->service, gai_strerror(err));
+		log_write('O', outgoing->id, "Failed to resolve %s/%s: %s", outgoing->node, outgoing->service, gai_strerror(err));
 		outgoing_retry(outgoing);
 	} else {
 		outgoing->addr = outgoing->addrs;
@@ -131,7 +131,7 @@ static void outgoing_resolve_handler(struct peer *peer) {
 }
 
 static void outgoing_resolve(struct outgoing *outgoing) {
-	fprintf(stderr, "O %s: Resolving %s/%s...\n", outgoing->id, outgoing->node, outgoing->service);
+	log_write('O', outgoing->id, "Resolving %s/%s...", outgoing->node, outgoing->service);
 	outgoing->peer.event_handler = outgoing_resolve_handler;
 	resolve((struct peer *) outgoing, outgoing->node, outgoing->service, 0);
 }

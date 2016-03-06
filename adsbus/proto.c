@@ -3,10 +3,10 @@
 
 #include <arpa/inet.h>
 #include <assert.h>
-#include <stdio.h>
 #include <string.h>
 
 #include "buf.h"
+#include "log.h"
 #include "packet.h"
 #include "server.h"
 #include "uuid.h"
@@ -145,12 +145,12 @@ static bool proto_parse_header(AdsbHeader *header, struct packet *packet, struct
 	state->rssi_max = header->rssi_max;
 
 	if (!strcmp(header->server_id, (const char *) server_id)) {
-		fprintf(stderr, "R %s: Attempt to receive proto data from our own server ID (%s); loop!\n", packet->source_id, server_id);
+		log_write('R', packet->source_id, "Attempt to receive proto data from our own server ID (%s); loop!", server_id);
 		return false;
 	}
 
 	state->have_header = true;
-	fprintf(stderr, "R %s: Connected to server ID: %s\n", packet->source_id, header->server_id);
+	log_write('R', packet->source_id, "Connected to server ID: %s", header->server_id);
 	return true;
 }
 

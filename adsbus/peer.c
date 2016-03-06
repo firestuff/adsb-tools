@@ -3,11 +3,11 @@
 #include <fcntl.h>
 #include <signal.h>
 #include <stdbool.h>
-#include <stdio.h>
 #include <stdlib.h>
 #include <sys/epoll.h>
 #include <unistd.h>
 
+#include "log.h"
 #include "server.h"
 #include "uuid.h"
 #include "wakeup.h"
@@ -22,7 +22,7 @@ static bool peer_shutdown_flag = false;
 static struct list_head peer_always_trigger_head = LIST_HEAD_INIT(peer_always_trigger_head);
 
 static void peer_shutdown_handler(struct peer *peer) {
-	fprintf(stderr, "X %s: Shutting down\n", server_id);
+	log_write('X', server_id, "Shutting down");
 	assert(!close(peer->fd));
 	free(peer);
 	peer_shutdown_flag = true;
@@ -96,13 +96,13 @@ void peer_call(struct peer *peer) {
 }
 
 void peer_loop() {
-	fprintf(stderr, "X %s: Starting event loop\n", server_id);
+	log_write('X', server_id, "Starting event loop");
 	while (!peer_shutdown_flag) {
 		if (!(peer_count_in + peer_count_out_in)) {
-			fprintf(stderr, "X %s: No remaining inputs\n", server_id);
+			log_write('X', server_id, "No remaining inputs");
 			peer_shutdown(0);
 		} else if (!(peer_count_out + peer_count_out_in)) {
-			fprintf(stderr, "X %s: No remaining outputs\n", server_id);
+			log_write('X', server_id, "No remaining outputs");
 			peer_shutdown(0);
 		}
 #define MAX_EVENTS 10

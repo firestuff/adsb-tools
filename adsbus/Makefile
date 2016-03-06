@@ -13,7 +13,7 @@ ADSBUS_TEST_FLAGS ?= --stdin --stdout=airspy_adsb --stdout=beast --stdout=json -
 OBJ_TRANSPORT = exec.o file.o incoming.o outgoing.o
 OBJ_FLOW = flow.o receive.o send.o send_receive.o
 OBJ_PROTOCOL = airspy_adsb.o beast.o json.o proto.o raw.o stats.o
-OBJ_UTIL = asyncaddrinfo.o buf.o hex.o list.o opts.o packet.o peer.o rand.o resolve.o server.o socket.o uuid.o wakeup.o
+OBJ_UTIL = asyncaddrinfo.o buf.o hex.o list.o log.o opts.o packet.o peer.o rand.o resolve.o server.o socket.o uuid.o wakeup.o
 OBJ_PROTO = adsb.pb-c.o
 
 all: adsbus
