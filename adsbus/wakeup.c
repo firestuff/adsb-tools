@@ -1,15 +1,8 @@
 #include <assert.h>
-#include <fcntl.h>
-#include <errno.h>
 #include <limits.h>
 #include <stdlib.h>
-#include <stdint.h>
-#include <string.h>
-#include <sys/epoll.h>
 #include <time.h>
-#include <unistd.h>
 
-#include "list.h"
 #include "peer.h"
 #include "rand.h"
 

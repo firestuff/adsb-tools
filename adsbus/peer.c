@@ -1,17 +1,15 @@
 #include <assert.h>
 #include <errno.h>
-#include <fcntl.h>
 #include <signal.h>
 #include <stdbool.h>
 #include <stdlib.h>
-#include <sys/epoll.h>
 #include <sys/socket.h>
+#include <sys/stat.h>
 #include <sys/types.h>
 #include <unistd.h>
 
 #include "log.h"
 #include "server.h"
-#include "uuid.h"
 #include "wakeup.h"
 
 #include "peer.h"

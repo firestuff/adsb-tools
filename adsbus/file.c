@@ -3,17 +3,13 @@
 #include <fcntl.h>
 #include <stdlib.h>
 #include <string.h>
-#include <sys/epoll.h>
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <unistd.h>
 
 #include "flow.h"
-#include "list.h"
 #include "log.h"
 #include "peer.h"
-#include "receive.h"
-#include "send.h"
 #include "uuid.h"
 #include "wakeup.h"
 

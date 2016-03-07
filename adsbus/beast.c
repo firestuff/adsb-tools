@@ -1,6 +1,5 @@
 #include <assert.h>
 #include <string.h>
-#include <stdint.h>
 
 #include "buf.h"
 #include "packet.h"

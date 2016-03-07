@@ -1,7 +1,5 @@
 #include <assert.h>
-#include <errno.h>
 #include <signal.h>
-#include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <strings.h>
@@ -15,7 +13,6 @@
 #include "buf.h"
 #include "flow.h"
 #include "json.h"
-#include "list.h"
 #include "log.h"
 #include "packet.h"
 #include "peer.h"

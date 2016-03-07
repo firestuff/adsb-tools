@@ -1,18 +1,16 @@
-#pragma GCC diagnostic ignored "-Wcast-qual"
-#pragma GCC diagnostic ignored "-Wpacked"
-
-#include <arpa/inet.h>
-#include <assert.h>
+#include <stdbool.h>
 #include <string.h>
 
 #include "buf.h"
 #include "log.h"
 #include "packet.h"
 #include "server.h"
-#include "uuid.h"
 
 #include "adsb.pb-c.h"
 #include "proto.h"
+
+#pragma GCC diagnostic ignored "-Wcast-qual"
+#pragma GCC diagnostic ignored "-Wpacked"
 
 #define PROTO_MAGIC "aDsB"
 

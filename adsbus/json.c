@@ -1,15 +1,15 @@
 #include <assert.h>
+#include <stdbool.h>
 #include <string.h>
 #include <jansson.h>
 
 #include "hex.h"
 #include "buf.h"
+#include "log.h"
 #include "packet.h"
 #include "rand.h"
 #include "receive.h"
-#include "send.h"
 #include "server.h"
-#include "uuid.h"
 
 #include "json.h"
 
@@ -79,11 +79,11 @@ static bool json_parse_header(json_t *in, struct packet *packet, struct json_par
 	}
 
 	if (!strcmp(json_server_id, (const char *) server_id)) {
-		fprintf(stderr, "R %s: Attempt to receive json data from our own server ID (%s); loop!\n", packet->source_id, server_id);
+		log_write('R', packet->source_id, "Attempt to receive json data from our own server ID (%s); loop!", server_id);
 		return false;
 	}
 
-	fprintf(stderr, "R %s: Connected to server ID: %s\n", packet->source_id, json_server_id);
+	log_write('R', packet->source_id, "Connected to server ID: %s", json_server_id);
 
 	state->mlat_timestamp_mhz = (uint16_t) mlat_timestamp_mhz;
 	state->mlat_timestamp_max = (uint64_t) mlat_timestamp_max;

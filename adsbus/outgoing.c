@@ -3,17 +3,16 @@
 #include <netdb.h>
 #include <stdlib.h>
 #include <string.h>
-#include <sys/types.h>
 #include <sys/socket.h>
+#include <sys/stat.h>
+#include <sys/types.h>
 #include <unistd.h>
 
 #include "buf.h"
 #include "flow.h"
-#include "list.h"
 #include "log.h"
 #include "peer.h"
 #include "resolve.h"
-#include "socket.h"
 #include "wakeup.h"
 #include "uuid.h"
 

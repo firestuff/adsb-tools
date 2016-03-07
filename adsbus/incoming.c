@@ -5,11 +5,10 @@
 #include <string.h>
 #include <sys/types.h>
 #include <sys/socket.h>
+#include <sys/stat.h>
 #include <unistd.h>
 
-#include "buf.h"
 #include "flow.h"
-#include "list.h"
 #include "log.h"
 #include "peer.h"
 #include "resolve.h"

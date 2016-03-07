@@ -1,16 +1,15 @@
 #pragma once
 
 #include <stdbool.h>
+#include <stddef.h>
 
 #pragma GCC diagnostic ignored "-Wcast-align"
 #pragma GCC diagnostic ignored "-Wgnu-statement-expression"
 #pragma GCC diagnostic ignored "-Wlanguage-extension-token"
 
-#define offset_of(type, member) ((size_t) &((type *) NULL)->member)
-
 #define container_of(ptr, type, member) ({ \
 		typeof( ((type *) NULL)->member ) *__mptr = (ptr); \
-		(type *)( (char *)__mptr - offset_of(type, member) );})
+		(type *)( (char *)__mptr - offsetof(type, member) );})
 
 struct list_head {
 	struct list_head *next;
