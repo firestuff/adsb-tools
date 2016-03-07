@@ -5,6 +5,8 @@
 #include <stdbool.h>
 #include <stdlib.h>
 #include <sys/epoll.h>
+#include <sys/socket.h>
+#include <sys/types.h>
 #include <unistd.h>
 
 #include "log.h"
@@ -33,7 +35,7 @@ void peer_init() {
 	assert(peer_epoll_fd >= 0);
 
 	int shutdown_fds[2];
-	assert(!pipe2(shutdown_fds, O_CLOEXEC));
+	assert(!socketpair(AF_UNIX, SOCK_STREAM | SOCK_CLOEXEC, 0, shutdown_fds));
 
 	struct peer *shutdown_peer = malloc(sizeof(*shutdown_peer));
 	assert(shutdown_peer);
