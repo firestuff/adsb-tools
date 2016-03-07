@@ -1,5 +1,6 @@
 #include <assert.h>
 #include <signal.h>
+#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <sys/socket.h>
@@ -19,6 +20,7 @@
 
 struct exec {
 	struct peer peer;
+	struct peer log_peer;
 	uint8_t id[UUID_LEN];
 	char *command;
 	struct flow *flow;
@@ -31,6 +33,24 @@ static struct list_head exec_head = LIST_HEAD_INIT(exec_head);
 
 static void exec_spawn_wrapper(struct peer *);
 
+static void exec_harvest(struct exec *exec) {
+	int status;
+	if (exec->child) {
+		assert(waitpid(exec->child, &status, 0) == exec->child);
+		exec->child = -1;
+		if (WIFEXITED(status)) {
+			log_write('E', exec->id, "Client exited with status %d", WEXITSTATUS(status));
+		} else {
+			assert(WIFSIGNALED(status));
+			log_write('E', exec->id, "Client exited with signal %d", WTERMSIG(status));
+		}
+	}
+	if (exec->log_peer.fd >= 0) {
+		assert(!close(exec->log_peer.fd));
+		exec->log_peer.fd = -1;
+	}
+}
+
 static void exec_del(struct exec *exec) {
 	flow_ref_dec(exec->flow);
 
@@ -38,8 +58,8 @@ static void exec_del(struct exec *exec) {
 		log_write('E', exec->id, "Sending SIGTERM to child process %d", exec->child);
 		// Racy with the process terminating, so don't assert on it
 		kill(exec->child, SIGTERM);
-		assert(waitpid(exec->child, NULL, 0) == exec->child);
 	}
+	exec_harvest(exec);
 	list_del(&exec->exec_list);
 	free(exec->command);
 	free(exec);
@@ -47,62 +67,85 @@ static void exec_del(struct exec *exec) {
 
 static void exec_close_handler(struct peer *peer) {
 	struct exec *exec = (struct exec *) peer;
-	int status;
-	assert(waitpid(exec->child, &status, WNOHANG) == exec->child);
-	exec->child = -1;
-	if (WIFEXITED(status)) {
-		log_write('E', exec->id, "Client exited with status %d", WEXITSTATUS(status));
-	} else {
-		assert(WIFSIGNALED(status));
-		log_write('E', exec->id, "Client exited with signal %d", WTERMSIG(status));
-	}
+	exec_harvest(exec);
 	uint32_t delay = wakeup_get_retry_delay_ms(1);
 	log_write('E', exec->id, "Will retry in %ds", delay / 1000);
 	exec->peer.event_handler = exec_spawn_wrapper;
 	wakeup_add((struct peer *) exec, delay);
 }
 
-static void exec_parent(struct exec *exec, pid_t child, int fd) {
+static void exec_log_handler(struct peer *peer) {
+	// Do you believe in magic?
+	struct exec *exec = container_of(peer, struct exec, log_peer);
+
+	char linebuf[4096];
+	ssize_t len = read(exec->log_peer.fd, linebuf, 4096);
+	if (len <= 0) {
+		log_write('E', exec->id, "Log input stream closed");
+		assert(!close(exec->log_peer.fd));
+		exec->log_peer.fd = -1;
+		return;
+	}
+	if (linebuf[len - 1] == '\n') {
+		len--;
+	}
+	log_write('E', exec->id, "(child output) %.*s", len, linebuf);
+}
+
+static void exec_parent(struct exec *exec, pid_t child, int data_fd, int log_fd) {
 	exec->child = child;
 	log_write('E', exec->id, "Child started as process %d", exec->child);
 
+	exec->log_peer.fd = log_fd;
+	exec->log_peer.event_handler = exec_log_handler;
+	peer_epoll_add(&exec->log_peer, EPOLLIN);
+
 	exec->peer.event_handler = exec_close_handler;
-	if (!flow_new_send_hello(fd, exec->flow, exec->passthrough, (struct peer *) exec)) {
+	if (!flow_new_send_hello(data_fd, exec->flow, exec->passthrough, (struct peer *) exec)) {
 		exec_close_handler((struct peer *) exec);
 		return;
 	}
 }
 
-static void __attribute__ ((noreturn)) exec_child(const struct exec *exec, int fd) {
+static void __attribute__ ((noreturn)) exec_child(const struct exec *exec, int data_fd, int log_fd) {
 	assert(setsid() != -1);
 	// We leave stderr open from child to parent
 	// Other than that, fds should have CLOEXEC set
-	if (fd != 0) {
-		assert(dup2(fd, 0) == 0);
+	if (data_fd != STDIN_FILENO) {
+		assert(dup2(data_fd, STDIN_FILENO) == STDIN_FILENO);
 	}
-	if (fd != 1) {
-		assert(dup2(fd, 1) == 1);
+	if (data_fd != STDOUT_FILENO) {
+		assert(dup2(data_fd, STDOUT_FILENO) == STDOUT_FILENO);
 	}
-	if (fd != 0 && fd != 1) {
-		assert(!close(fd));
+	if (data_fd != STDIN_FILENO && data_fd != STDOUT_FILENO) {
+		assert(!close(data_fd));
+	}
+	if (log_fd != STDERR_FILENO) {
+		assert(dup2(log_fd, STDERR_FILENO) == STDERR_FILENO);
+		assert(!close(log_fd));
 	}
 	assert(!execl("/bin/sh", "sh", "-c", exec->command, NULL));
 	abort();
 }
 
 static void exec_spawn(struct exec *exec) {
-	log_write('E', exec->id, "Executing: %s", exec->id, exec->command);
-	int fds[2];
-	assert(!socketpair(AF_UNIX, SOCK_STREAM | SOCK_NONBLOCK, 0, fds));
+	log_write('E', exec->id, "Executing: %s", exec->command);
+	int data_fds[2], log_fds[2];
+	// Leave these sockets blocking; we move in lock step with subprograms
+	assert(!socketpair(AF_UNIX, SOCK_STREAM, 0, data_fds));
+	assert(!socketpair(AF_UNIX, SOCK_STREAM, 0, log_fds));
 	
 	int res = fork();
 	assert(res >= 0);
 	if (res) {
-		assert(!close(fds[1]));
-		exec_parent(exec, res, fds[0]);
+		assert(!close(data_fds[1]));
+		assert(!close(log_fds[1]));
+		assert(!shutdown(log_fds[0], SHUT_WR));
+		exec_parent(exec, res, data_fds[0], log_fds[0]);
 	} else {
-		assert(!close(fds[0]));
-		exec_child(exec, fds[1]);
+		assert(!close(data_fds[0]));
+		assert(!close(log_fds[0]));
+		exec_child(exec, data_fds[1], log_fds[1]);
 	}
 }
 
