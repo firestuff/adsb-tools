@@ -34,8 +34,8 @@ static struct list_head exec_head = LIST_HEAD_INIT(exec_head);
 static void exec_spawn_wrapper(struct peer *);
 
 static void exec_harvest(struct exec *exec) {
-	int status;
-	if (exec->child) {
+	if (exec->child > 0) {
+		int status;
 		assert(waitpid(exec->child, &status, 0) == exec->child);
 		exec->child = -1;
 		if (WIFEXITED(status)) {
@@ -79,17 +79,25 @@ static void exec_log_handler(struct peer *peer) {
 	struct exec *exec = container_of(peer, struct exec, log_peer);
 
 	char linebuf[4096];
-	ssize_t len = read(exec->log_peer.fd, linebuf, 4096);
-	if (len <= 0) {
+	ssize_t ret = read(exec->log_peer.fd, linebuf, 4096);
+	if (ret <= 0) {
 		log_write('E', exec->id, "Log input stream closed");
 		assert(!close(exec->log_peer.fd));
 		exec->log_peer.fd = -1;
 		return;
 	}
-	if (linebuf[len - 1] == '\n') {
-		len--;
+	size_t len = (size_t) ret;
+	char *iter = linebuf, *eol;
+	while ((eol = memchr(iter, '\n', len))) {
+		assert(eol >= iter);
+		size_t linelen = (size_t) (eol - iter);
+		log_write('E', exec->id, "(child output) %.*s", linelen, iter);
+		iter += (linelen + 1);
+		len -= (linelen + 1);
 	}
-	log_write('E', exec->id, "(child output) %.*s", len, linebuf);
+	if (len) {
+		log_write('E', exec->id, "(child output) %.*s", len, iter);
+	}
 }
 
 static void exec_parent(struct exec *exec, pid_t child, int data_fd, int log_fd) {
