@@ -91,12 +91,12 @@ static void exec_log_handler(struct peer *peer) {
 	while ((eol = memchr(iter, '\n', len))) {
 		assert(eol >= iter);
 		size_t linelen = (size_t) (eol - iter);
-		log_write('E', exec->id, "(child output) %.*s", linelen, iter);
+		log_write('E', exec->id, "(child output) %.*s", (int) linelen, iter);
 		iter += (linelen + 1);
 		len -= (linelen + 1);
 	}
 	if (len) {
-		log_write('E', exec->id, "(child output) %.*s", len, iter);
+		log_write('E', exec->id, "(child output) %.*s", (int) len, iter);
 	}
 }
 

@@ -19,7 +19,6 @@ void log_cleanup() {
 	assert(!fclose(log_stream));
 }
 
-__attribute__ ((__format__ (__printf__, 3, 4)))
 void log_write(char type, const uint8_t *id, const char *fmt, ...) {
 	va_list ap;
 	va_start(ap, fmt);
