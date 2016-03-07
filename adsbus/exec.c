@@ -169,7 +169,7 @@ void exec_cleanup() {
 	}
 }
 
-void exec_new(char *command, struct flow *flow, void *passthrough) {
+void exec_new(const char *command, struct flow *flow, void *passthrough) {
 	flow_ref_inc(flow);
 
 	struct exec *exec = malloc(sizeof(*exec));

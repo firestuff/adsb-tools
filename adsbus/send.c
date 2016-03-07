@@ -141,7 +141,7 @@ void send_cleanup() {
 	}
 }
 
-void *send_get_serializer(char *name) {
+void *send_get_serializer(const char *name) {
 	for (size_t i = 0; i < NUM_SERIALIZERS; i++) {
 		if (strcasecmp(serializers[i].name, name) == 0) {
 			return &serializers[i];

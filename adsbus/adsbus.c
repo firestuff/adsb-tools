@@ -35,6 +35,7 @@ static void print_usage(const char *name) {
 			"\n"
 			"Options:\n"
 			"\t--help\n"
+			"\n"
 			"\t--connect-receive=HOST/PORT\n"
 			"\t--connect-send=FORMAT=HOST/PORT\n"
 			"\t--connect-send-receive=FORMAT=HOST/PORT\n"
@@ -51,6 +52,8 @@ static void print_usage(const char *name) {
 			"\t--exec-send-receive=FORMAT=COMMAND\n"
 			"\t--stdin\n"
 			"\t--stdout=FORMAT\n"
+			"\n"
+			"\t--log-file=PATH\n"
 			, name);
 	receive_print_usage();
 	send_print_usage();
@@ -58,6 +61,7 @@ static void print_usage(const char *name) {
 
 static bool parse_opts(int argc, char *argv[]) {
 	static struct option long_options[] = {
+		{"help",                 no_argument,       0, 'h'},
 		{"connect-receive",      required_argument, 0, 'c'},
 		{"connect-send",         required_argument, 0, 's'},
 		{"connect-send-receive", required_argument, 0, 't'},
@@ -74,13 +78,13 @@ static bool parse_opts(int argc, char *argv[]) {
 		{"exec-send-receive",    required_argument, 0, 'g'},
 		{"stdin",                no_argument,       0, 'i'},
 		{"stdout",               required_argument, 0, 'o'},
-		{"help",                 no_argument,       0, 'h'},
+		{"log-file",             required_argument, 0, '1'},
 		{0,                      0,                 0, 0  },
 	};
 
 	int opt;
 	while ((opt = getopt_long_only(argc, argv, "", long_options, NULL)) != -1) {
-		bool (*handler)(char *) = NULL;
+		bool (*handler)(const char *) = NULL;
 		switch (opt) {
 			case 'c':
 				handler = opts_add_connect_receive;
@@ -146,6 +150,10 @@ static bool parse_opts(int argc, char *argv[]) {
 				handler = opts_add_stdout;
 				break;
 
+			case '1':
+				handler = log_reopen;
+				break;
+
 			case 'h':
 			default:
 				print_usage(argv[0]);
@@ -177,10 +185,11 @@ static void reopen(int fd, char *path, int flags) {
 }
 
 int main(int argc, char *argv[]) {
-	log_init();
-
 	hex_init();
 	rand_init();
+
+	log_init();
+
 	resolve_init();
 	server_init();
 	wakeup_init();
@@ -200,6 +209,7 @@ int main(int argc, char *argv[]) {
 
 	reopen(STDIN_FILENO, "/dev/null", O_RDONLY);
 	reopen(STDOUT_FILENO, "/dev/full", O_WRONLY);
+	reopen(STDERR_FILENO, "/dev/full", O_WRONLY);
 
 	peer_loop();
 
@@ -225,7 +235,7 @@ int main(int argc, char *argv[]) {
 
 	assert(!close(STDIN_FILENO));
 	assert(!close(STDOUT_FILENO));
-	close(STDERR_FILENO); // 2>&1 breaks this
+	assert(!close(STDERR_FILENO));
 
 	return EXIT_SUCCESS;
 }

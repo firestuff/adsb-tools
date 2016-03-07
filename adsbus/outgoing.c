@@ -158,7 +158,7 @@ void outgoing_cleanup() {
 	}
 }
 
-void outgoing_new(char *node, char *service, struct flow *flow, void *passthrough) {
+void outgoing_new(const char *node, const char *service, struct flow *flow, void *passthrough) {
 	flow_ref_inc(flow);
 
 	struct outgoing *outgoing = malloc(sizeof(*outgoing));

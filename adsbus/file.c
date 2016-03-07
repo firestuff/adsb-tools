@@ -107,7 +107,7 @@ static void file_open_wrapper(struct peer *peer) {
 	file_open(file);
 }
 
-static void file_new(char *path, int flags, struct flow *flow, void *passthrough) {
+static void file_new(const char *path, int flags, struct flow *flow, void *passthrough) {
 	flow_ref_inc(flow);
 
 	struct file *file = malloc(sizeof(*file));
@@ -133,14 +133,14 @@ void file_cleanup() {
 	}
 }
 
-void file_read_new(char *path, struct flow *flow, void *passthrough) {
+void file_read_new(const char *path, struct flow *flow, void *passthrough) {
 	file_new(path, O_RDONLY, flow, passthrough);
 }
 
-void file_write_new(char *path, struct flow *flow, void *passthrough) {
+void file_write_new(const char *path, struct flow *flow, void *passthrough) {
 	file_new(path, O_WRONLY | O_CREAT | O_NOFOLLOW | O_TRUNC, flow, passthrough);
 }
 
-void file_append_new(char *path, struct flow *flow, void *passthrough) {
+void file_append_new(const char *path, struct flow *flow, void *passthrough) {
 	file_new(path, O_WRONLY | O_CREAT | O_NOFOLLOW, flow, passthrough);
 }

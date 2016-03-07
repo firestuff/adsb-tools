@@ -3,4 +3,4 @@
 struct flow;
 
 void outgoing_cleanup(void);
-void outgoing_new(char *, char *, struct flow *, void *);
+void outgoing_new(const char *, const char *, struct flow *, void *);

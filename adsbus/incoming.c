@@ -148,7 +148,7 @@ void incoming_cleanup() {
 	}
 }
 
-void incoming_new(char *node, char *service, struct flow *flow, void *passthrough) {
+void incoming_new(const char *node, const char *service, struct flow *flow, void *passthrough) {
 	flow_ref_inc(flow);
 
 	struct incoming *incoming = malloc(sizeof(*incoming));

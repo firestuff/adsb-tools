@@ -3,4 +3,4 @@
 struct flow;
 
 void exec_cleanup(void);
-void exec_new(char *, struct flow *, void *);
+void exec_new(const char *, struct flow *, void *);
