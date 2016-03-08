@@ -52,9 +52,9 @@ int main(int argc, char *argv[]) {
 	rand_init();
 
 	log_init();
+	server_init();
 
 	resolve_init();
-	server_init();
 	wakeup_init();
 	peer_init();
 
