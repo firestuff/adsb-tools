@@ -22,6 +22,8 @@ struct proto_parser_state {
 	bool have_header;
 };
 
+static char log_module = 'R'; // borrowing
+
 static Adsb *proto_prev = NULL;
 static struct buf proto_hello_buf = BUF_INIT;
 
@@ -143,12 +145,12 @@ static bool proto_parse_header(AdsbHeader *header, struct packet *packet, struct
 	state->rssi_max = header->rssi_max;
 
 	if (!strcmp(header->server_id, (const char *) server_id)) {
-		log_write('R', packet->source_id, "Attempt to receive proto data from our own server ID (%s); loop!", server_id);
+		LOG(packet->source_id, "Attempt to receive proto data from our own server ID (%s); loop!", server_id);
 		return false;
 	}
 
 	state->have_header = true;
-	log_write('R', packet->source_id, "Connected to server ID: %s", header->server_id);
+	LOG(packet->source_id, "Connected to server ID: %s", header->server_id);
 	return true;
 }
 

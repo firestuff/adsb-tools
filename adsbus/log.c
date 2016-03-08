@@ -20,17 +20,19 @@ static uint8_t log_id[UUID_LEN];
 static int log_rotate_fd;
 static struct peer log_rotate_peer;
 
+static char log_module = 'L';
+
 static void log_rotate() {
 	uint8_t old_log_id[UUID_LEN], new_log_id[UUID_LEN];
 	uuid_gen(new_log_id);
-	log_write('L', log_id, "Switching to new log with ID %s at: %s", new_log_id, log_path);
+	LOG(log_id, "Switching to new log with ID %s at: %s", new_log_id, log_path);
 	memcpy(old_log_id, log_id, UUID_LEN);
 	memcpy(log_id, new_log_id, UUID_LEN);
 	assert(!fclose(log_stream));
 	log_stream = fopen(log_path, "a");
 	assert(log_stream);
 	setlinebuf(log_stream);
-	log_write('L', log_id, "Log start after switch from log ID %s", old_log_id);
+	LOG(log_id, "Log start after switch from log ID %s", old_log_id);
 }
 
 static void log_rotate_handler(struct peer *peer) {
@@ -52,7 +54,7 @@ void log_init() {
 	setlinebuf(log_stream);
 
 	uuid_gen(log_id);
-	log_write('L', log_id, "Log start");
+	LOG(log_id, "Log start");
 }
 
 void log_init2() {
@@ -68,7 +70,7 @@ void log_init2() {
 }
 
 void log_cleanup() {
-	log_write('L', log_id, "Log end");
+	LOG(log_id, "Log end");
 	assert(!fclose(log_stream));
 	assert(!close(log_rotate_fd));
 	assert(!close(log_rotate_peer.fd));

@@ -14,6 +14,8 @@
 
 #include "peer.h"
 
+static char log_module = 'X';
+
 uint32_t peer_count_in = 0, peer_count_out = 0, peer_count_out_in = 0;
 
 static int peer_epoll_fd;
@@ -22,7 +24,7 @@ static bool peer_shutdown_flag = false;
 static struct list_head peer_always_trigger_head = LIST_HEAD_INIT(peer_always_trigger_head);
 
 static void peer_shutdown_handler(struct peer *peer) {
-	log_write('X', server_id, "Shutting down");
+	LOG(server_id, "Shutting down");
 	assert(!close(peer->fd));
 	free(peer);
 	peer_shutdown_flag = true;
@@ -96,13 +98,13 @@ void peer_call(struct peer *peer) {
 }
 
 void peer_loop() {
-	log_write('X', server_id, "Starting event loop");
+	LOG(server_id, "Starting event loop");
 	while (!peer_shutdown_flag) {
 		if (!(peer_count_in + peer_count_out_in)) {
-			log_write('X', server_id, "No remaining inputs");
+			LOG(server_id, "No remaining inputs");
 			peer_shutdown(0);
 		} else if (!(peer_count_out + peer_count_out_in)) {
-			log_write('X', server_id, "No remaining outputs");
+			LOG(server_id, "No remaining outputs");
 			peer_shutdown(0);
 		}
 #define MAX_EVENTS 10

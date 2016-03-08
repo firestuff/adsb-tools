@@ -45,6 +45,8 @@ static struct flow _send_flow = {
 };
 struct flow *send_flow = &_send_flow;
 
+static char log_module = 'S';
+
 typedef void (*serialize)(struct packet *, struct buf *);
 typedef void (*hello)(struct buf **);
 static struct serializer {
@@ -87,7 +89,7 @@ static struct serializer {
 #define NUM_SERIALIZERS (sizeof(serializers) / sizeof(*serializers))
 
 static void send_del(struct send *send) {
-	log_write('S', send->id, "Connection closed");
+	LOG(send->id, "Connection closed");
 	peer_count_out--;
 	peer_epoll_del((struct peer *) send);
 	assert(!close(send->peer.fd));
@@ -119,7 +121,7 @@ static void send_new(int fd, void *passthrough, struct peer *on_close) {
 
 	peer_epoll_add((struct peer *) send, 0);
 
-	log_write('S', send->id, "New send connection: %s", serializer->name);
+	LOG(send->id, "New send connection: %s", serializer->name);
 }
 
 void send_init() {

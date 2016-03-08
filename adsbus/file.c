@@ -29,6 +29,8 @@ struct file {
 
 static struct list_head file_head = LIST_HEAD_INIT(file_head);
 
+static char log_module = 'F';
+
 static void file_open_wrapper(struct peer *);
 
 static bool file_should_retry(int fd, struct file *file) {
@@ -63,14 +65,14 @@ static void file_del(struct file *file) {
 
 static void file_retry(struct file *file) {
 	uint32_t delay = wakeup_get_retry_delay_ms(file->attempt++);
-	log_write('F', file->id, "Will retry in %ds", delay / 1000);
+	LOG(file->id, "Will retry in %ds", delay / 1000);
 	file->peer.event_handler = file_open_wrapper;
 	wakeup_add((struct peer *) file, delay);
 }
 
 static void file_handle_close(struct peer *peer) {
 	struct file *file = (struct file *) peer;
-	log_write('F', file->id, "File closed: %s", file->path);
+	LOG(file->id, "File closed: %s", file->path);
 
 	if (file->retry) {
 		file_retry(file);
@@ -80,10 +82,10 @@ static void file_handle_close(struct peer *peer) {
 }
 
 static void file_open(struct file *file) {
-	log_write('F', file->id, "Opening file: %s", file->path);
+	LOG(file->id, "Opening file: %s", file->path);
 	int fd = open(file->path, file->flags | O_CLOEXEC, S_IRUSR | S_IWUSR);
 	if (fd == -1) {
-		log_write('F', file->id, "Error opening file: %s", strerror(errno));
+		LOG(file->id, "Error opening file: %s", strerror(errno));
 		file_retry(file);
 		return;
 	}
@@ -92,7 +94,7 @@ static void file_open(struct file *file) {
 	file->peer.event_handler = file_handle_close;
 	file->attempt = 0;
 	if (!flow_new_send_hello(fd, file->flow, file->passthrough, (struct peer *) file)) {
-		log_write('F', file->id, "Error writing greeting");
+		LOG(file->id, "Error writing greeting");
 		file_retry(file);
 		return;
 	}

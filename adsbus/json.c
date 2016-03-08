@@ -26,6 +26,8 @@ struct json_parser_state {
 static json_t *json_prev = NULL;
 static struct buf json_hello_buf = BUF_INIT;
 
+static char log_module = 'R'; // borrowing
+
 static void json_serialize_to_buf(json_t *obj, struct buf *buf) {
 	assert(json_dump_callback(obj, json_buf_append_callback, buf, 0) == 0);
 	json_decref(obj);
@@ -79,11 +81,11 @@ static bool json_parse_header(json_t *in, struct packet *packet, struct json_par
 	}
 
 	if (!strcmp(json_server_id, (const char *) server_id)) {
-		log_write('R', packet->source_id, "Attempt to receive json data from our own server ID (%s); loop!", server_id);
+		LOG(packet->source_id, "Attempt to receive json data from our own server ID (%s); loop!", server_id);
 		return false;
 	}
 
-	log_write('R', packet->source_id, "Connected to server ID: %s", json_server_id);
+	LOG(packet->source_id, "Connected to server ID: %s", json_server_id);
 
 	state->mlat_timestamp_mhz = (uint16_t) mlat_timestamp_mhz;
 	state->mlat_timestamp_max = (uint64_t) mlat_timestamp_max;

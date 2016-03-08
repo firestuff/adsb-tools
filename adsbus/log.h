@@ -3,6 +3,8 @@
 #include <stdbool.h>
 #include <stdint.h>
 
+#define LOG(id, ...) log_write((log_module), (id), __VA_ARGS__)
+
 void log_init(void);
 void log_init2(void);
 void log_cleanup(void);

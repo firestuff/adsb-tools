@@ -6,7 +6,9 @@
 uint8_t server_id[UUID_LEN];
 char server_version[] = "https://github.com/flamingcowtv/adsb-tools#1";
 
+static char log_module = 'X';
+
 void server_init() {
 	uuid_gen(server_id);
-	log_write('X', server_id, "Server start");
+	LOG(server_id, "Server start");
 }
