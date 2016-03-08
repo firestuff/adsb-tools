@@ -33,3 +33,6 @@
 
 # Binaries
 adsbus
+
+# Generated
+version.h

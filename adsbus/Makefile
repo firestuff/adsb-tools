@@ -24,6 +24,10 @@ clean:
 %.o: %.c *.h
 	$(COMP) -c $(CFLAGS) $< -o $@
 
+version.h:
+	echo "#define GIT_LAST_CHANGE \"$$(git log --format=%H -n 1)\"" > version.h
+	echo "#define GIT_LOCAL_CLEAN $$(git diff --exit-code > /dev/null && echo true || echo false)" >> version.h
+
 adsb.pb-c.c: ../proto/adsb.proto
 	protoc-c --c_out=./ --proto_path=$(dir $<) $<
 
