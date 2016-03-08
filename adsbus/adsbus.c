@@ -194,6 +194,8 @@ int main(int argc, char *argv[]) {
 	wakeup_init();
 	peer_init();
 
+	log_init2();
+
 	receive_init();
 	send_init();
 

@@ -1,11 +1,15 @@
 #include <assert.h>
+#include <signal.h>
 #include <stdarg.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <sys/socket.h>
+#include <sys/types.h>
 #include <unistd.h>
 
 #include "log.h"
+#include "peer.h"
 #include "uuid.h"
 
 #pragma GCC diagnostic ignored "-Wformat-nonliteral"
@@ -13,6 +17,8 @@
 static FILE *log_stream = NULL;
 static char *log_path = NULL;
 static uint8_t log_id[UUID_LEN];
+static int log_rotate_fd;
+static struct peer log_rotate_peer;
 
 static void log_rotate() {
 	uint8_t old_log_id[UUID_LEN], new_log_id[UUID_LEN];
@@ -23,7 +29,19 @@ static void log_rotate() {
 	assert(!fclose(log_stream));
 	log_stream = fopen(log_path, "a");
 	assert(log_stream);
+	setlinebuf(log_stream);
 	log_write('L', log_id, "Log start after switch from log ID %s", old_log_id);
+}
+
+static void log_rotate_handler(struct peer *peer) {
+	char buf[1];
+	assert(read(peer->fd, buf, 1) == 1);
+	assert(buf[0] == 'L');
+	log_rotate();
+}
+
+static void log_rotate_signal(int __attribute__ ((unused)) signum) {
+	assert(write(log_rotate_fd, "L", 1) == 1);
 }
 
 void log_init() {
@@ -37,9 +55,23 @@ void log_init() {
 	log_write('L', log_id, "Log start");
 }
 
+void log_init2() {
+	int rotate_fds[2];
+	assert(!socketpair(AF_UNIX, SOCK_STREAM | SOCK_CLOEXEC, 0, rotate_fds));
+	log_rotate_peer.fd = rotate_fds[0];
+	assert(!shutdown(log_rotate_peer.fd, SHUT_WR));
+	log_rotate_peer.event_handler = log_rotate_handler;
+	peer_epoll_add(&log_rotate_peer, EPOLLIN);
+
+	log_rotate_fd = rotate_fds[1];
+	signal(SIGHUP, log_rotate_signal);
+}
+
 void log_cleanup() {
 	log_write('L', log_id, "Log end");
 	assert(!fclose(log_stream));
+	assert(!close(log_rotate_fd));
+	assert(!close(log_rotate_peer.fd));
 	if (log_path) {
 		free(log_path);
 		log_path = NULL;
