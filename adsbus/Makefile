@@ -19,14 +19,16 @@ OBJ_PROTO = adsb.pb-c.o
 all: adsbus
 
 clean:
-	rm -rf *.o adsbus testout findings version.h
+	rm -rf *.o adsbus testout findings build.h
 
-%.o: %.c *.h
+%.o: %.c *.h build.h
 	$(COMP) -c $(CFLAGS) $< -o $@
 
-version.h:
-	echo "#define GIT_LAST_CHANGE \"$$(git log --format=%H -n 1)\"" > version.h
-	echo "#define GIT_LOCAL_CLEAN $$(git diff --exit-code > /dev/null && echo true || echo false)" >> version.h
+build.h:
+	echo "#define GIT_LAST_CHANGE \"$$(git log --format=%H -n 1)\"" > $@
+	echo "#define GIT_LOCAL_CLEAN $$(git diff --exit-code > /dev/null && echo true || echo false)" >> $@
+	echo "#define HOSTNAME \"$$(hostname --fqdn)\"" >> $@
+	echo "#define USERNAME \"$$(whoami)\"" >> $@
 
 adsb.pb-c.c: ../proto/adsb.proto
 	protoc-c --c_out=./ --proto_path=$(dir $<) $<
