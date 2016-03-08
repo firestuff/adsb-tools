@@ -53,6 +53,7 @@ static void print_usage(const char *name) {
 			"\t--stdout=FORMAT\n"
 			"\n"
 			"\t--log-file=PATH\n"
+			"\t--log-timestamps\n"
 			, name);
 	receive_print_usage();
 	send_print_usage();
