@@ -15,7 +15,7 @@ static struct buf rand_buf = BUF_INIT;
 static int rand_fd;
 
 void rand_init() {
-	rand_fd = open("/dev/urandom", O_RDONLY | O_CLOEXEC);
+	rand_fd = open("/dev/urandom", O_RDONLY | O_CLOEXEC | O_NOCTTY);
 	assert(rand_fd >= 0);
 	assert(read(rand_fd, buf_at(&rand_buf, 0), BUF_LEN_MAX) == BUF_LEN_MAX);
 	rand_buf.length = BUF_LEN_MAX;

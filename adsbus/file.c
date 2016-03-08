@@ -9,7 +9,11 @@
 
 #include "flow.h"
 #include "log.h"
+#include "opts.h"
 #include "peer.h"
+#include "receive.h"
+#include "send.h"
+#include "send_receive.h"
 #include "uuid.h"
 #include "wakeup.h"
 
@@ -28,6 +32,7 @@ struct file {
 };
 
 static struct list_head file_head = LIST_HEAD_INIT(file_head);
+static opts_group file_opts;
 
 static char log_module = 'F';
 
@@ -83,7 +88,7 @@ static void file_handle_close(struct peer *peer) {
 
 static void file_open(struct file *file) {
 	LOG(file->id, "Opening file: %s", file->path);
-	int fd = open(file->path, file->flags | O_CLOEXEC, S_IRUSR | S_IWUSR);
+	int fd = open(file->path, file->flags | O_CLOEXEC | O_NOCTTY, S_IRUSR | S_IWUSR);
 	if (fd == -1) {
 		LOG(file->id, "Error opening file: %s", strerror(errno));
 		file_retry(file);
@@ -122,6 +127,49 @@ static void file_new(const char *path, int flags, struct flow *flow, void *passt
 	list_add(&file->file_list, &file_head);
 
 	file_open(file);
+}
+
+static bool file_write_add(const char *path, struct flow *flow, void *passthrough) {
+	file_write_new(path, flow, passthrough);
+	return true;
+}
+
+static bool file_append_add(const char *path, struct flow *flow, void *passthrough) {
+	file_append_new(path, flow, passthrough);
+	return true;
+}
+
+static bool file_read(const char *arg) {
+	file_read_new(arg, receive_flow, NULL);
+	return true;
+}
+
+static bool file_write(const char *arg) {
+	return opts_add_send(file_write_add, send_flow, arg);
+}
+
+static bool file_write_read(const char *arg) {
+	return opts_add_send(file_write_add, send_receive_flow, arg);
+}
+
+static bool file_append(const char *arg) {
+	return opts_add_send(file_append_add, send_flow, arg);
+}
+
+static bool file_append_read(const char *arg) {
+	return opts_add_send(file_append_add, send_receive_flow, arg);
+}
+
+void file_opts_add() {
+	opts_add("file-read", "PATH", file_read, file_opts);
+	opts_add("file-write", "FORMAT=PATH", file_write, file_opts);
+	opts_add("file-write-read", "FORMAT=PATH", file_write_read, file_opts);
+	opts_add("file-append", "FORMAT=PATH", file_append, file_opts);
+	opts_add("file-append-read", "FORMAT=PATH", file_append_read, file_opts);
+}
+
+void file_init() {
+	opts_call(file_opts);
 }
 
 void file_cleanup() {

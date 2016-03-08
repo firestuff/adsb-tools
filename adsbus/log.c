@@ -1,4 +1,5 @@
 #include <assert.h>
+#include <fcntl.h>
 #include <signal.h>
 #include <stdarg.h>
 #include <stdbool.h>
@@ -12,6 +13,7 @@
 #include <unistd.h>
 
 #include "log.h"
+#include "opts.h"
 #include "peer.h"
 #include "uuid.h"
 
@@ -23,10 +25,16 @@ static uint8_t log_id[UUID_LEN];
 static int log_rotate_fd;
 static struct peer log_rotate_peer;
 static bool log_timestamps = false;
+static opts_group log_opts;
 
 static char log_module = 'L';
 
 static void log_rotate() {
+	if (!log_path) {
+		LOG(log_id, "Received SIGHUP but logging to stderr; ignoring");
+		return;
+	}
+
 	uint8_t old_log_id[UUID_LEN], new_log_id[UUID_LEN];
 	uuid_gen(new_log_id);
 	LOG(log_id, "Switching to new log with ID %s at: %s", new_log_id, log_path);
@@ -50,10 +58,34 @@ static void log_rotate_signal(int __attribute__ ((unused)) signum) {
 	assert(write(log_rotate_fd, "L", 1) == 1);
 }
 
+static bool log_set_path(const char *path) {
+	if (log_path) {
+		return false;
+	}
+	log_path = strdup(path);
+	assert(log_path);
+	return true;
+}
+
+static bool log_enable_timestamps(const char __attribute__ ((unused)) *arg) {
+	log_timestamps = true;
+	return true;
+}
+
+void log_opts_add() {
+	opts_add("log-file", "PATH", log_set_path, log_opts);
+	opts_add("log-timestamps", NULL, log_enable_timestamps, log_opts);
+}
+
 void log_init() {
-	int fd = dup(STDERR_FILENO);
-	assert(fd >= 0);
-	log_stream = fdopen(fd, "a");
+	opts_call(log_opts);
+	if (log_path) {
+		log_stream = fopen(log_path, "a");
+	} else {
+		int fd = fcntl(STDERR_FILENO, F_DUPFD_CLOEXEC, 0);
+		assert(fd >= 0);
+		log_stream = fdopen(fd, "a");
+	}
 	assert(log_stream);
 	setlinebuf(log_stream);
 
@@ -82,21 +114,6 @@ void log_cleanup() {
 		free(log_path);
 		log_path = NULL;
 	}
-}
-
-bool log_reopen(const char *path) {
-	if (log_path) {
-		free(log_path);
-	}
-	log_path = strdup(path);
-	assert(log_path);
-	log_rotate();
-	return true;
-}
-
-bool log_enable_timestamps(const char __attribute__ ((unused)) *arg) {
-	log_timestamps = true;
-	return true;
 }
 
 void log_write(char type, const char *loc, const uint8_t *id, const char *fmt, ...) {

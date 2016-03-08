@@ -10,8 +10,12 @@
 
 #include "flow.h"
 #include "log.h"
+#include "opts.h"
 #include "peer.h"
+#include "receive.h"
 #include "resolve.h"
+#include "send.h"
+#include "send_receive.h"
 #include "socket.h"
 #include "wakeup.h"
 #include "uuid.h"
@@ -30,6 +34,7 @@ struct incoming {
 };
 
 static struct list_head incoming_head = LIST_HEAD_INIT(incoming_head);
+static opts_group incoming_opts;
 
 static char log_module = 'I';
 
@@ -140,6 +145,39 @@ static void incoming_resolve(struct incoming *incoming) {
 
 static void incoming_resolve_wrapper(struct peer *peer) {
 	incoming_resolve((struct incoming *) peer);
+}
+
+static bool incoming_add(const char *host_port, struct flow *flow, void *passthrough) {
+	char *host = opts_split(&host_port, '/');
+	if (host) {
+		incoming_new(host, host_port, flow, passthrough);
+		free(host);
+	} else {
+		incoming_new(NULL, host_port, flow, passthrough);
+	}
+	return true;
+}
+
+static bool incoming_listen_receive(const char *arg) {
+	return incoming_add(arg, receive_flow, NULL);
+}
+
+static bool incoming_listen_send(const char *arg) {
+	return opts_add_send(incoming_add, send_flow, arg);
+}
+
+static bool incoming_listen_send_receive(const char *arg) {
+	return opts_add_send(incoming_add, send_receive_flow, arg);
+}
+
+void incoming_opts_add() {
+	opts_add("listen-receive", "[HOST/]PORT", incoming_listen_receive, incoming_opts);
+	opts_add("listen-send", "FORMAT=[HOST/]PORT", incoming_listen_send, incoming_opts);
+	opts_add("listen-send-receive", "FORMAT=[HOST/]PORT", incoming_listen_send_receive, incoming_opts);
+}
+
+void incoming_init() {
+	opts_call(incoming_opts);
 }
 
 void incoming_cleanup() {

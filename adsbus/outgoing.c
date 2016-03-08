@@ -11,8 +11,12 @@
 #include "buf.h"
 #include "flow.h"
 #include "log.h"
+#include "opts.h"
 #include "peer.h"
+#include "receive.h"
 #include "resolve.h"
+#include "send.h"
+#include "send_receive.h"
 #include "wakeup.h"
 #include "uuid.h"
 
@@ -32,6 +36,7 @@ struct outgoing {
 };
 
 static struct list_head outgoing_head = LIST_HEAD_INIT(outgoing_head);
+static opts_group outgoing_opts;
 
 static char log_module = 'O';
 
@@ -150,6 +155,39 @@ static void outgoing_del(struct outgoing *outgoing) {
 	free(outgoing->node);
 	free(outgoing->service);
 	free(outgoing);
+}
+
+static bool outgoing_add(const char *host_port, struct flow *flow, void *passthrough) {
+	char *host = opts_split(&host_port, '/');
+	if (!host) {
+		return false;
+	}
+
+	outgoing_new(host, host_port, flow, passthrough);
+	free(host);
+	return true;
+}
+
+static bool outgoing_connect_receive(const char *arg) {
+	return outgoing_add(arg, receive_flow, NULL);
+}
+
+static bool outgoing_connect_send(const char *arg) {
+	return opts_add_send(outgoing_add, send_flow, arg);
+}
+
+static bool outgoing_connect_send_receive(const char *arg) {
+	return opts_add_send(outgoing_add, send_receive_flow, arg);
+}
+
+void outgoing_opts_add() {
+	opts_add("connect-receive", "HOST/PORT", outgoing_connect_receive, outgoing_opts);
+	opts_add("connect-send", "FORMAT=HOST/PORT", outgoing_connect_send, outgoing_opts);
+	opts_add("connect-send-receive", "FORMAT=HOST/PORT", outgoing_connect_send_receive, outgoing_opts);
+}
+
+void outgoing_init() {
+	opts_call(outgoing_opts);
 }
 
 void outgoing_cleanup() {

@@ -10,7 +10,11 @@
 
 #include "flow.h"
 #include "log.h"
+#include "opts.h"
 #include "peer.h"
+#include "receive.h"
+#include "send.h"
+#include "send_receive.h"
 #include "uuid.h"
 #include "wakeup.h"
 
@@ -28,6 +32,7 @@ struct exec {
 };
 
 static struct list_head exec_head = LIST_HEAD_INIT(exec_head);
+static opts_group exec_opts;
 
 static char log_module = 'E';
 
@@ -160,6 +165,33 @@ static void exec_spawn(struct exec *exec) {
 static void exec_spawn_wrapper(struct peer *peer) {
 	struct exec *exec = (struct exec *) peer;
 	exec_spawn(exec);
+}
+
+static bool exec_add(const char *cmd, struct flow *flow, void *passthrough) {
+	exec_new(cmd, flow, passthrough);
+	return true;
+}
+
+static bool exec_receive(const char *arg) {
+	return exec_add(arg, receive_flow, NULL);
+}
+
+static bool exec_send(const char *arg) {
+	return opts_add_send(exec_add, send_flow, arg);
+}
+
+static bool exec_send_receive(const char *arg) {
+	return opts_add_send(exec_add, send_receive_flow, arg);
+}
+
+void exec_opts_add() {
+	opts_add("exec-receive", "COMMAND", exec_receive, exec_opts);
+	opts_add("exec-send", "FORMAT=COMMAND", exec_send, exec_opts);
+	opts_add("exec-send-receive", "FORMAT=COMMAND", exec_send_receive, exec_opts);
+}
+
+void exec_init() {
+	opts_call(exec_opts);
 }
 
 void exec_cleanup() {
