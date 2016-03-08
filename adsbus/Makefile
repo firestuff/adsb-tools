@@ -19,7 +19,7 @@ OBJ_PROTO = adsb.pb-c.o
 all: adsbus
 
 clean:
-	rm -rf *.o adsbus testout findings
+	rm -rf *.o adsbus testout findings version.h
 
 %.o: %.c *.h
 	$(COMP) -c $(CFLAGS) $< -o $@
