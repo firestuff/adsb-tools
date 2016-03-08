@@ -1,11 +1,14 @@
 #include <assert.h>
 #include <signal.h>
 #include <stdarg.h>
+#include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <sys/socket.h>
+#include <sys/stat.h>
 #include <sys/types.h>
+#include <time.h>
 #include <unistd.h>
 
 #include "log.h"
@@ -19,6 +22,7 @@ static char *log_path = NULL;
 static uint8_t log_id[UUID_LEN];
 static int log_rotate_fd;
 static struct peer log_rotate_peer;
+static bool log_timestamps = false;
 
 static char log_module = 'L';
 
@@ -90,10 +94,25 @@ bool log_reopen(const char *path) {
 	return true;
 }
 
+bool log_enable_timestamps(const char __attribute__ ((unused)) *arg) {
+	log_timestamps = true;
+	return true;
+}
+
 void log_write(char type, const char *loc, const uint8_t *id, const char *fmt, ...) {
 	va_list ap;
 	va_start(ap, fmt);
-	assert(fprintf(log_stream, "%c [%18s] %s: ", type, loc, id) > 0);
+
+	char datetime[64] = "";
+	if (log_timestamps) {
+		time_t now;
+		assert(time(&now) >= 0);
+		struct tm tmnow;
+		assert(gmtime_r(&now, &tmnow));
+		assert(strftime(datetime, sizeof(datetime), "%FT%TZ ", &tmnow) > 0);
+	}
+
+	assert(fprintf(log_stream, "%s[%18s] %c %s: ", datetime, loc, type, id) > 0);
 	assert(vfprintf(log_stream, fmt, ap) > 0);
 	assert(fprintf(log_stream, "\n") == 1);
 	va_end(ap);

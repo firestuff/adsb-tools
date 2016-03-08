@@ -78,6 +78,7 @@ static bool parse_opts(int argc, char *argv[]) {
 		{"stdin",                no_argument,       0, 'i'},
 		{"stdout",               required_argument, 0, 'o'},
 		{"log-file",             required_argument, 0, '1'},
+		{"log-timestamps",       no_argument,       0, '2'},
 		{0,                      0,                 0, 0  },
 	};
 
@@ -151,6 +152,10 @@ static bool parse_opts(int argc, char *argv[]) {
 
 			case '1':
 				handler = log_reopen;
+				break;
+
+			case '2':
+				handler = log_enable_timestamps;
 				break;
 
 			case 'h':
