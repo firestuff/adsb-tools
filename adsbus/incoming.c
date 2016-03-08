@@ -163,11 +163,11 @@ static bool incoming_listen_receive(const char *arg) {
 }
 
 static bool incoming_listen_send(const char *arg) {
-	return opts_add_send(incoming_add, send_flow, arg);
+	return send_add(incoming_add, send_flow, arg);
 }
 
 static bool incoming_listen_send_receive(const char *arg) {
-	return opts_add_send(incoming_add, send_receive_flow, arg);
+	return send_add(incoming_add, send_receive_flow, arg);
 }
 
 void incoming_opts_add() {

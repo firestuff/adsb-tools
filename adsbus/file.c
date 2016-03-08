@@ -145,19 +145,19 @@ static bool file_read(const char *arg) {
 }
 
 static bool file_write(const char *arg) {
-	return opts_add_send(file_write_add, send_flow, arg);
+	return send_add(file_write_add, send_flow, arg);
 }
 
 static bool file_write_read(const char *arg) {
-	return opts_add_send(file_write_add, send_receive_flow, arg);
+	return send_add(file_write_add, send_receive_flow, arg);
 }
 
 static bool file_append(const char *arg) {
-	return opts_add_send(file_append_add, send_flow, arg);
+	return send_add(file_append_add, send_flow, arg);
 }
 
 static bool file_append_read(const char *arg) {
-	return opts_add_send(file_append_add, send_receive_flow, arg);
+	return send_add(file_append_add, send_receive_flow, arg);
 }
 
 void file_opts_add() {

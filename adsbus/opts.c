@@ -4,8 +4,6 @@
 #include <stdio.h>
 #include <string.h>
 
-#include "send.h"
-
 #include "opts.h"
 
 #define OPTS_MAX 128
@@ -21,21 +19,6 @@ static size_t opts_num = 0;
 static int opts_argc;
 static char **opts_argv;
 static opts_group opts_group_internal;
-
-static struct serializer *opts_get_serializer(const char **arg) {
-	char *format = opts_split(arg, '=');
-	if (!format) {
-		return NULL;
-	}
-
-	struct serializer *serializer = send_get_serializer(format);
-	free(format);
-	if (!serializer) {
-		return NULL;
-	}
-
-	return serializer;
-}
 
 static void opts_print_usage() {
 	fprintf(stderr,
@@ -110,12 +93,4 @@ char *opts_split(const char **arg, char delim) {
 	char *ret = strndup(*arg, split - *arg);
 	*arg = split + 1;
 	return ret;
-}
-
-bool opts_add_send(bool (*next)(const char *, struct flow *, void *), struct flow *flow, const char *arg) {
-	struct serializer *serializer = opts_get_serializer(&arg);
-	if (!serializer) {
-		return false;
-	}
-	return next(arg, flow, serializer);
 }

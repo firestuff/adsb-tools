@@ -14,6 +14,7 @@
 #include "flow.h"
 #include "json.h"
 #include "log.h"
+#include "opts.h"
 #include "packet.h"
 #include "peer.h"
 #include "proto.h"
@@ -124,6 +125,21 @@ static void send_new(int fd, void *passthrough, struct peer *on_close) {
 	LOG(send->id, "New send connection: %s", serializer->name);
 }
 
+static struct serializer *send_parse_format(const char **arg) {
+	char *format = opts_split(arg, '=');
+	if (!format) {
+		return NULL;
+	}
+
+	struct serializer *serializer = send_get_serializer(format);
+	free(format);
+	if (!serializer) {
+		return NULL;
+	}
+
+	return serializer;
+}
+
 void send_init() {
 	assert(signal(SIGPIPE, SIG_IGN) != SIG_ERR);
 	for (size_t i = 0; i < NUM_SERIALIZERS; i++) {
@@ -189,4 +205,12 @@ void send_print_usage() {
 	for (size_t i = 0; i < NUM_SERIALIZERS; i++) {
 		fprintf(stderr, "\t%s\n", serializers[i].name);
 	}
+}
+
+bool send_add(bool (*next)(const char *, struct flow *, void *), struct flow *flow, const char *arg) {
+	struct serializer *serializer = send_parse_format(&arg);
+	if (!serializer) {
+		return false;
+	}
+	return next(arg, flow, serializer);
 }

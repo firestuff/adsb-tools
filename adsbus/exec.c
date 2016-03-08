@@ -177,11 +177,11 @@ static bool exec_receive(const char *arg) {
 }
 
 static bool exec_send(const char *arg) {
-	return opts_add_send(exec_add, send_flow, arg);
+	return send_add(exec_add, send_flow, arg);
 }
 
 static bool exec_send_receive(const char *arg) {
-	return opts_add_send(exec_add, send_receive_flow, arg);
+	return send_add(exec_add, send_receive_flow, arg);
 }
 
 void exec_opts_add() {

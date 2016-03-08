@@ -173,11 +173,11 @@ static bool outgoing_connect_receive(const char *arg) {
 }
 
 static bool outgoing_connect_send(const char *arg) {
-	return opts_add_send(outgoing_add, send_flow, arg);
+	return send_add(outgoing_add, send_flow, arg);
 }
 
 static bool outgoing_connect_send_receive(const char *arg) {
-	return opts_add_send(outgoing_add, send_receive_flow, arg);
+	return send_add(outgoing_add, send_receive_flow, arg);
 }
 
 void outgoing_opts_add() {
