@@ -90,10 +90,10 @@ bool log_reopen(const char *path) {
 	return true;
 }
 
-void log_write(char type, const uint8_t *id, const char *fmt, ...) {
+void log_write(char type, const char *loc, const uint8_t *id, const char *fmt, ...) {
 	va_list ap;
 	va_start(ap, fmt);
-	assert(fprintf(log_stream, "%c %s: ", type, id) > 0);
+	assert(fprintf(log_stream, "%c [%20s] %s: ", type, loc, id) > 0);
 	assert(vfprintf(log_stream, fmt, ap) > 0);
 	assert(fprintf(log_stream, "\n") == 1);
 	va_end(ap);
