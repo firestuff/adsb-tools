@@ -1,0 +1,3 @@
+{"mlat_timestamp_max": 907, "mlat_timestamp_mhz": 120, "type": "header", "magic": "aDsB", "serven": "htt1", "server_id": "5a6f", "rssi_max": 4294967295}
+{"rssi": 32171, "payload": "p0A184B4CDFBD5", "mlat_timestamp": 290548142386500, "hops": 1, "type": "Mode-S short", "source_id": "5ba0eb5d-1d8e-4471-9ea7-e74ce75d6574"}
+{"rssi": 606348324, "payloa 290548166532480, "hops": 1, "type": "Mode-S short", "source_id"
