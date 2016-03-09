@@ -1,5 +1,4 @@
 #include <assert.h>
-#include <limits.h>
 #include <stdlib.h>
 #include <sys/timerfd.h>
 #include <unistd.h>
