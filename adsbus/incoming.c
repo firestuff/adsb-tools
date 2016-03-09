@@ -48,7 +48,7 @@ static void incoming_retry(struct incoming *incoming) {
 }
 
 static void incoming_handler(struct peer *peer) {
-	struct incoming *incoming = (struct incoming *) peer;
+	struct incoming *incoming = container_of(peer, struct incoming, peer);
 
 	struct sockaddr peer_addr, local_addr;
 	socklen_t peer_addrlen = sizeof(peer_addr), local_addrlen = sizeof(local_addr);
@@ -87,7 +87,7 @@ static void incoming_del(struct incoming *incoming) {
 }
 
 static void incoming_listen(struct peer *peer) {
-	struct incoming *incoming = (struct incoming *) peer;
+	struct incoming *incoming = container_of(peer, struct incoming, peer);
 
 	struct addrinfo *addrs;
 	int err = resolve_result(peer, &addrs);
@@ -142,7 +142,7 @@ static void incoming_resolve(struct incoming *incoming) {
 }
 
 static void incoming_resolve_wrapper(struct peer *peer) {
-	incoming_resolve((struct incoming *) peer);
+	incoming_resolve(container_of(peer, struct incoming, peer));
 }
 
 static bool incoming_add(const char *host_port, struct flow *flow, void *passthrough) {

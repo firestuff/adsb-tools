@@ -68,7 +68,7 @@ static void exec_del(struct exec *exec) {
 }
 
 static void exec_close_handler(struct peer *peer) {
-	struct exec *exec = (struct exec *) peer;
+	struct exec *exec = container_of(peer, struct exec, peer);
 	exec_harvest(exec);
 	uint32_t delay = wakeup_get_retry_delay_ms(1);
 	LOG(exec->id, "Will retry in %ds", delay / 1000);
@@ -159,7 +159,7 @@ static void exec_spawn(struct exec *exec) {
 }
 
 static void exec_spawn_wrapper(struct peer *peer) {
-	struct exec *exec = (struct exec *) peer;
+	struct exec *exec = container_of(peer, struct exec, peer);
 	exec_spawn(exec);
 }
 

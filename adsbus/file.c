@@ -76,7 +76,7 @@ static void file_retry(struct file *file) {
 }
 
 static void file_handle_close(struct peer *peer) {
-	struct file *file = (struct file *) peer;
+	struct file *file = container_of(peer, struct file, peer);
 	LOG(file->id, "File closed: %s", file->path);
 
 	if (file->retry) {
@@ -106,7 +106,7 @@ static void file_open(struct file *file) {
 }
 
 static void file_open_wrapper(struct peer *peer) {
-	struct file *file = (struct file *) peer;
+	struct file *file = container_of(peer, struct file, peer);
 	file_open(file);
 }
 

@@ -4,7 +4,6 @@
 #include <string.h>
 #include <sys/stat.h>
 #include <sys/types.h>
-#include <unistd.h>
 
 #include "airspy_adsb.h"
 #include "beast.h"
@@ -115,7 +114,7 @@ static void receive_del(struct receive *receive) {
 }
 
 static void receive_read(struct peer *peer) {
-	struct receive *receive = (struct receive *) peer;
+	struct receive *receive = container_of(peer, struct receive, peer);
 
 	if (buf_fill(&receive->buf, receive->peer.fd) <= 0) {
 		receive_del(receive);

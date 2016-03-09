@@ -99,7 +99,7 @@ static void send_del(struct send *send) {
 }
 
 static void send_del_wrapper(struct peer *peer) {
-	send_del((struct send *) peer);
+	send_del(container_of(peer, struct send, peer));
 }
 
 static void send_new(int fd, void *passthrough, struct peer *on_close) {

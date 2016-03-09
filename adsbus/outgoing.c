@@ -6,7 +6,6 @@
 #include <sys/socket.h>
 #include <sys/stat.h>
 #include <sys/types.h>
-#include <unistd.h>
 
 #include "buf.h"
 #include "flow.h"
@@ -73,7 +72,7 @@ static void outgoing_connect_next(struct outgoing *outgoing) {
 }
 
 static void outgoing_connect_handler(struct peer *peer) {
-	struct outgoing *outgoing = (struct outgoing *) peer;
+	struct outgoing *outgoing = container_of(peer, struct outgoing, peer);
 
 	peer_epoll_del(&outgoing->peer);
 
@@ -84,7 +83,7 @@ static void outgoing_connect_handler(struct peer *peer) {
 }
 
 static void outgoing_disconnect_handler(struct peer *peer) {
-	struct outgoing *outgoing = (struct outgoing *) peer;
+	struct outgoing *outgoing = container_of(peer, struct outgoing, peer);
 	LOG(outgoing->id, "Peer disconnected; reconnecting...");
 	outgoing_retry(outgoing);
 }
@@ -121,7 +120,7 @@ static void outgoing_connect_result(struct outgoing *outgoing, int result) {
 }
 
 static void outgoing_resolve_handler(struct peer *peer) {
-	struct outgoing *outgoing = (struct outgoing *) peer;
+	struct outgoing *outgoing = container_of(peer, struct outgoing, peer);
 	int err = resolve_result(peer, &outgoing->addrs);
 	if (err) {
 		LOG(outgoing->id, "Failed to resolve %s/%s: %s", outgoing->node, outgoing->service, gai_strerror(err));
@@ -139,7 +138,7 @@ static void outgoing_resolve(struct outgoing *outgoing) {
 }
 
 static void outgoing_resolve_wrapper(struct peer *peer) {
-	outgoing_resolve((struct outgoing *) peer);
+	outgoing_resolve(container_of(peer, struct outgoing, peer));
 }
 
 static void outgoing_del(struct outgoing *outgoing) {

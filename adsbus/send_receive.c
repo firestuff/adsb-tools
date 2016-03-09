@@ -35,7 +35,7 @@ static void send_receive_del(struct send_receive *send_receive) {
 }
 
 static void send_receive_on_close(struct peer *peer) {
-	struct send_receive *send_receive = (struct send_receive *) peer;
+	struct send_receive *send_receive = container_of(peer, struct send_receive, peer);
 
 	if (!--(send_receive->ref_count)) {
 		send_receive_del(send_receive);
