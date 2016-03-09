@@ -1,18 +1,16 @@
 #include <assert.h>
-#include <errno.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <sys/socket.h>
 #include <sys/stat.h>
-#include <unistd.h>
+#include <sys/types.h>
 
 #include "airspy_adsb.h"
 #include "beast.h"
 #include "buf.h"
 #include "flow.h"
 #include "json.h"
-#include "list.h"
+#include "log.h"
 #include "packet.h"
 #include "peer.h"
 #include "proto.h"
@@ -38,6 +36,8 @@ struct receive {
 	struct list_head receive_list;
 };
 static struct list_head receive_head = LIST_HEAD_INIT(receive_head);
+
+static char log_module = 'R';
 
 static void receive_new(int, void *, struct peer *);
 
@@ -92,7 +92,7 @@ static bool receive_autodetect_parse(struct receive *receive, struct packet *pac
 
 	for (size_t i = 0; i < NUM_PARSERS; i++) {
 		if (parsers[i].parse(buf, packet, state)) {
-			fprintf(stderr, "R %s: Detected input format %s\n", receive->id, parsers[i].name);
+			LOG(receive->id, "Detected input format: %s", parsers[i].name);
 			receive->parser_wrapper = receive_parse_wrapper;
 			receive->parser = parsers[i].parse;
 			return true;
@@ -105,17 +105,16 @@ static bool receive_autodetect_parse(struct receive *receive, struct packet *pac
 }
 
 static void receive_del(struct receive *receive) {
-	fprintf(stderr, "R %s: Connection closed\n", receive->id);
+	LOG(receive->id, "Connection closed");
 	peer_count_in--;
-	peer_epoll_del((struct peer *) receive);
-	assert(!close(receive->peer.fd));
+	peer_close(&receive->peer);
 	list_del(&receive->receive_list);
 	peer_call(receive->on_close);
 	free(receive);
 }
 
 static void receive_read(struct peer *peer) {
-	struct receive *receive = (struct receive *) peer;
+	struct receive *receive = container_of(peer, struct receive, peer);
 
 	if (buf_fill(&receive->buf, receive->peer.fd) <= 0) {
 		receive_del(receive);
@@ -134,14 +133,14 @@ static void receive_read(struct peer *peer) {
 			continue;
 		}
 		if (++packet.hops > receive_max_hops) {
-			fprintf(stderr, "R %s: Packet exceeded hop limit (%u > %u); dropping. You may have a loop in your configuration.\n", receive->id, packet.hops, receive_max_hops);
+			LOG(receive->id, "Packet exceeded hop limit (%u > %u); dropping. You may have a loop in your configuration.", packet.hops, receive_max_hops);
 			continue;
 		}
 		send_write(&packet);
 	}
 
 	if (receive->buf.length == BUF_LEN_MAX) {
-		fprintf(stderr, "R %s: Input buffer overrun. This probably means that adsbus doesn't understand the protocol that this source is speaking.\n", receive->id);
+		LOG(receive->id, "Input buffer overrun. This probably means that adsbus doesn't understand the protocol that this source is speaking.");
 		receive_del(receive);
 		return;
 	}
@@ -164,9 +163,9 @@ static void receive_new(int fd, void __attribute__((unused)) *passthrough, struc
 
 	list_add(&receive->receive_list, &receive_head);
 
-	peer_epoll_add((struct peer *) receive, EPOLLIN);
+	peer_epoll_add(&receive->peer, EPOLLIN);
 
-	fprintf(stderr, "R %s: New receive connection\n", receive->id);
+	LOG(receive->id, "New receive connection");
 }
 
 void receive_init() {

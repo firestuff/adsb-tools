@@ -10,19 +10,25 @@ VALGRIND ?= valgrind
 VALGRIND_FLAGS ?= --error-exitcode=1 --trace-children=yes --track-fds=yes --show-leak-kinds=all --leak-check=full
 ADSBUS_TEST_FLAGS ?= --stdin --stdout=airspy_adsb --stdout=beast --stdout=json --stdout=proto --stdout=raw --stdout=stats
 
-OBJ_TRANSPORT = exec.o file.o incoming.o outgoing.o
+OBJ_TRANSPORT = exec.o file.o incoming.o outgoing.o stdinout.o
 OBJ_FLOW = flow.o receive.o send.o send_receive.o
 OBJ_PROTOCOL = airspy_adsb.o beast.o json.o proto.o raw.o stats.o
-OBJ_UTIL = asyncaddrinfo.o buf.o hex.o list.o opts.o packet.o peer.o rand.o resolve.o server.o socket.o uuid.o wakeup.o
+OBJ_UTIL = asyncaddrinfo.o buf.o hex.o list.o log.o opts.o packet.o peer.o rand.o resolve.o server.o socket.o uuid.o wakeup.o
 OBJ_PROTO = adsb.pb-c.o
 
 all: adsbus
 
 clean:
-	rm -rf *.o adsbus testout findings
+	rm -rf *.o adsbus testout findings build.h
 
-%.o: %.c *.h
+%.o: %.c *.h build.h
 	$(COMP) -c $(CFLAGS) $< -o $@
+
+build.h:
+	echo "#define GIT_LAST_CHANGE \"$$(git log --format=%H -n 1)\"" > $@
+	echo "#define GIT_LOCAL_CLEAN $$(git diff --exit-code > /dev/null && echo true || echo false)" >> $@
+	echo "#define HOSTNAME \"$$(hostname --fqdn)\"" >> $@
+	echo "#define USERNAME \"$$(whoami)\"" >> $@
 
 adsb.pb-c.c: ../proto/adsb.proto
 	protoc-c --c_out=./ --proto_path=$(dir $<) $<

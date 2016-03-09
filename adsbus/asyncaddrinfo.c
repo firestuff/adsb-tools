@@ -2,10 +2,12 @@
 #include <fcntl.h>
 #include <netdb.h>
 #include <pthread.h>
+#include <signal.h>
 #include <stdlib.h>
 #include <string.h>
-#include <sys/types.h>
 #include <sys/socket.h>
+#include <sys/stat.h>
+#include <sys/types.h>
 #include <unistd.h>
 
 #include "asyncaddrinfo.h"
@@ -27,6 +29,11 @@ static int asyncaddrinfo_write_fd;
 
 static void *asyncaddrinfo_main(void *arg) {
 	int fd = (int) (intptr_t) arg;
+
+	sigset_t sigmask;
+	assert(!sigfillset(&sigmask));
+	assert(!pthread_sigmask(SIG_BLOCK, &sigmask, NULL));
+
 	struct asyncaddrinfo_resolution *res;
 	ssize_t len;
 	while ((len = recv(fd, &res, sizeof(res), 0)) == sizeof(res)) {

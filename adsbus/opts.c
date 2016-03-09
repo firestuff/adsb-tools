@@ -1,23 +1,91 @@
 #include <assert.h>
-#include <fcntl.h>
+#include <getopt.h>
 #include <stdlib.h>
+#include <stdio.h>
 #include <string.h>
-#include <sys/stat.h>
-#include <sys/types.h>
-#include <unistd.h>
-
-#include "exec.h"
-#include "file.h"
-#include "flow.h"
-#include "incoming.h"
-#include "outgoing.h"
-#include "receive.h"
-#include "send.h"
-#include "send_receive.h"
 
 #include "opts.h"
 
-static char *opts_split(char **arg, char delim) {
+#define OPTS_MAX 128
+
+static struct {
+	const char *arg_help;
+	opts_handler handler;
+	void *group;
+} opts[OPTS_MAX];
+
+static struct option opts_long[OPTS_MAX];
+static size_t opts_num = 0;
+static int opts_argc;
+static char **opts_argv;
+static opts_group opts_group_internal;
+
+static void opts_print_usage() {
+	fprintf(stderr,
+			"Usage: %s [OPTION]...\n"
+			"\n"
+			"Options:\n"
+			, opts_argv[0]);
+	for (size_t i = 0; i < opts_num; i++) {
+		fprintf(stderr, "\t--%s%s%s\n", opts_long[i].name, opts[i].arg_help ? "=" : "", opts[i].arg_help ? opts[i].arg_help : "");
+	}
+}
+
+static bool opts_help(const char __attribute__ ((unused)) *arg) {
+	opts_print_usage();
+	exit(EXIT_SUCCESS);
+}
+
+void opts_init(int argc, char *argv[]) {
+	opts_argc = argc;
+	opts_argv = argv;
+	opts_add("help", NULL, opts_help, opts_group_internal);
+
+	assert(opts_num < OPTS_MAX);
+	opts_long[opts_num].name = NULL;
+	opts_long[opts_num].has_arg = 0;
+	opts_long[opts_num].flag = NULL;
+	opts_long[opts_num].val = 0;
+
+	opts_call(opts_group_internal);
+}
+
+void opts_add(const char *name, const char *arg_help, opts_handler handler, opts_group group) {
+	assert(opts_num < OPTS_MAX);
+	opts[opts_num].arg_help = arg_help;
+	opts[opts_num].handler = handler;
+	opts[opts_num].group = group;
+	opts_long[opts_num].name = name;
+	opts_long[opts_num].has_arg = arg_help ? required_argument : no_argument;
+	opts_long[opts_num].flag = NULL;
+	opts_long[opts_num].val = 0;
+	opts_num++;
+}
+
+void opts_call(opts_group group) {
+	optind = 1;
+	int opt, longindex;
+	while ((opt = getopt_long_only(opts_argc, opts_argv, "", opts_long, &longindex)) == 0) {
+		if (opts[longindex].group != group) {
+			continue;
+		}
+		if (!opts[longindex].handler(optarg)) {
+			fprintf(stderr, "Invalid option value: %s\n", opts_argv[optind - 1]);
+			exit(EXIT_FAILURE);
+		}
+	}
+	if (opt != -1) {
+		opts_print_usage();
+		exit(EXIT_FAILURE);
+	}
+
+	if (optind != opts_argc) {
+		fprintf(stderr, "Not a flag: %s\n", opts_argv[optind]);
+		exit(EXIT_FAILURE);
+	}
+}
+
+char *opts_split(const char **arg, char delim) {
 	char *split = strchr(*arg, delim);
 	if (!split) {
 		return NULL;
@@ -25,138 +93,4 @@ static char *opts_split(char **arg, char delim) {
 	char *ret = strndup(*arg, split - *arg);
 	*arg = split + 1;
 	return ret;
-}
-
-static bool opts_add_listen(char *host_port, struct flow *flow, void *passthrough) {
-	char *host = opts_split(&host_port, '/');
-	if (host) {
-		incoming_new(host, host_port, flow, passthrough);
-		free(host);
-	} else {
-		incoming_new(NULL, host_port, flow, passthrough);
-	}
-	return true;
-}
-
-static bool opts_add_connect(char *host_port, struct flow *flow, void *passthrough) {
-	char *host = opts_split(&host_port, '/');
-	if (!host) {
-		return false;
-	}
-
-	outgoing_new(host, host_port, flow, passthrough);
-	free(host);
-	return true;
-}
-
-static bool opts_add_file_write_int(char *path, struct flow *flow, void *passthrough) {
-	file_write_new(path, flow, passthrough);
-	return true;
-}
-
-static bool opts_add_file_append_int(char *path, struct flow *flow, void *passthrough) {
-	file_append_new(path, flow, passthrough);
-	return true;
-}
-
-static bool opts_add_exec(char *cmd, struct flow *flow, void *passthrough) {
-	exec_new(cmd, flow, passthrough);
-	return true;
-}
-
-static struct serializer *opts_get_serializer(char **arg) {
-	char *format = opts_split(arg, '=');
-	if (!format) {
-		return NULL;
-	}
-
-	struct serializer *serializer = send_get_serializer(format);
-	free(format);
-	if (!serializer) {
-		return NULL;
-	}
-
-	return serializer;
-}
-
-static bool opts_add_send(bool (*next)(char *, struct flow *, void *), struct flow *flow, char *arg) {
-	struct serializer *serializer = opts_get_serializer(&arg);
-	if (!serializer) {
-		return false;
-	}
-	return next(arg, flow, serializer);
-}
-
-bool opts_add_connect_receive(char *arg) {
-	return opts_add_connect(arg, receive_flow, NULL);
-}
-
-bool opts_add_connect_send(char *arg) {
-	return opts_add_send(opts_add_connect, send_flow, arg);
-}
-
-bool opts_add_connect_send_receive(char *arg) {
-	return opts_add_send(opts_add_connect, send_receive_flow, arg);
-}
-
-bool opts_add_listen_receive(char *arg) {
-	return opts_add_listen(arg, receive_flow, NULL);
-}
-
-bool opts_add_listen_send(char *arg) {
-	return opts_add_send(opts_add_listen, send_flow, arg);
-}
-
-bool opts_add_listen_send_receive(char *arg) {
-	return opts_add_send(opts_add_listen, send_receive_flow, arg);
-}
-
-bool opts_add_file_read(char *arg) {
-	file_read_new(arg, receive_flow, NULL);
-	return true;
-}
-
-bool opts_add_file_write(char *arg) {
-	return opts_add_send(opts_add_file_write_int, send_flow, arg);
-}
-
-bool opts_add_file_write_read(char *arg) {
-	return opts_add_send(opts_add_file_write_int, send_receive_flow, arg);
-}
-
-bool opts_add_file_append(char *arg) {
-	return opts_add_send(opts_add_file_append_int, send_flow, arg);
-}
-
-bool opts_add_file_append_read(char *arg) {
-	return opts_add_send(opts_add_file_append_int, send_receive_flow, arg);
-}
-
-bool opts_add_exec_receive(char *arg) {
-	exec_new(arg, receive_flow, NULL);
-	return true;
-}
-
-bool opts_add_exec_send(char *arg) {
-	return opts_add_send(opts_add_exec, send_flow, arg);
-}
-
-bool opts_add_exec_send_receive(char *arg) {
-	return opts_add_send(opts_add_exec, send_receive_flow, arg);
-}
-
-bool opts_add_stdin(char __attribute__((unused)) *arg) {
-	int fd = fcntl(STDIN_FILENO, F_DUPFD_CLOEXEC, 0);
-	assert(fd >= 0);
-	return flow_new_send_hello(fd, receive_flow, NULL, NULL);
-}
-
-bool opts_add_stdout(char *arg) {
-	struct serializer *serializer = send_get_serializer(arg);
-	if (!serializer) {
-		return false;
-	}
-	int fd = fcntl(STDOUT_FILENO, F_DUPFD_CLOEXEC, 0);
-	assert(fd >= 0);
-	return flow_new_send_hello(fd, send_flow, serializer, NULL);
 }

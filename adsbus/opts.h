@@ -2,19 +2,10 @@
 
 #include <stdbool.h>
 
-bool opts_add_connect_receive(char *);
-bool opts_add_connect_send(char *);
-bool opts_add_connect_send_receive(char *);
-bool opts_add_listen_receive(char *);
-bool opts_add_listen_send(char *);
-bool opts_add_listen_send_receive(char *);
-bool opts_add_file_read(char *);
-bool opts_add_file_write(char *);
-bool opts_add_file_write_read(char *);
-bool opts_add_file_append(char *);
-bool opts_add_file_append_read(char *);
-bool opts_add_exec_receive(char *);
-bool opts_add_exec_send(char *);
-bool opts_add_exec_send_receive(char *);
-bool opts_add_stdout(char *);
-bool opts_add_stdin(char *);
+typedef bool (*opts_handler)(const char *);
+typedef char opts_group[1];
+
+void opts_init(int, char *[]);
+void opts_add(const char *, const char *, opts_handler, opts_group);
+void opts_call(opts_group);
+char *opts_split(const char **, char);

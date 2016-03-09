@@ -1,11 +1,8 @@
 #include <assert.h>
-#include <stdio.h>
-#include <string.h>
 
 #include "buf.h"
 #include "hex.h"
 #include "packet.h"
-#include "uuid.h"
 
 #include "raw.h"
 

@@ -1,5 +1,3 @@
-#include <stdlib.h>
-
 #include "list.h"
 
 void list_head_init(struct list_head *head) {

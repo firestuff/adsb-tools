@@ -1,18 +1,16 @@
-#pragma GCC diagnostic ignored "-Wcast-qual"
-#pragma GCC diagnostic ignored "-Wpacked"
-
-#include <arpa/inet.h>
-#include <assert.h>
-#include <stdio.h>
+#include <stdbool.h>
 #include <string.h>
 
 #include "buf.h"
+#include "log.h"
 #include "packet.h"
 #include "server.h"
-#include "uuid.h"
 
 #include "adsb.pb-c.h"
 #include "proto.h"
+
+#pragma GCC diagnostic ignored "-Wcast-qual"
+#pragma GCC diagnostic ignored "-Wpacked"
 
 #define PROTO_MAGIC "aDsB"
 
@@ -23,6 +21,8 @@ struct proto_parser_state {
 	uint32_t rssi_max;
 	bool have_header;
 };
+
+static char log_module = 'R'; // borrowing
 
 static Adsb *proto_prev = NULL;
 static struct buf proto_hello_buf = BUF_INIT;
@@ -145,12 +145,12 @@ static bool proto_parse_header(AdsbHeader *header, struct packet *packet, struct
 	state->rssi_max = header->rssi_max;
 
 	if (!strcmp(header->server_id, (const char *) server_id)) {
-		fprintf(stderr, "R %s: Attempt to receive proto data from our own server ID (%s); loop!\n", packet->source_id, server_id);
+		LOG(packet->source_id, "Attempt to receive proto data from our own server ID (%s); loop!", server_id);
 		return false;
 	}
 
 	state->have_header = true;
-	fprintf(stderr, "R %s: Connected to server ID: %s\n", packet->source_id, header->server_id);
+	LOG(packet->source_id, "Connected to server ID: %s", header->server_id);
 	return true;
 }
 

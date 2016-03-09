@@ -1,12 +1,9 @@
 #include <assert.h>
-#include <stdio.h>
-#include <string.h>
 
 #include "buf.h"
 #include "hex.h"
 #include "packet.h"
 #include "receive.h"
-#include "uuid.h"
 
 #include "airspy_adsb.h"
 

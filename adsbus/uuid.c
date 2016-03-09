@@ -1,5 +1,3 @@
-#include <stdint.h>
-
 #include "hex.h"
 #include "rand.h"
 

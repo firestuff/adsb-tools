@@ -1,7 +1,5 @@
 #include <assert.h>
-#include <errno.h>
 #include <signal.h>
-#include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <strings.h>
@@ -15,7 +13,8 @@
 #include "buf.h"
 #include "flow.h"
 #include "json.h"
-#include "list.h"
+#include "log.h"
+#include "opts.h"
 #include "packet.h"
 #include "peer.h"
 #include "proto.h"
@@ -46,6 +45,8 @@ static struct flow _send_flow = {
 	.ref_count = &peer_count_out,
 };
 struct flow *send_flow = &_send_flow;
+
+static char log_module = 'S';
 
 typedef void (*serialize)(struct packet *, struct buf *);
 typedef void (*hello)(struct buf **);
@@ -89,17 +90,16 @@ static struct serializer {
 #define NUM_SERIALIZERS (sizeof(serializers) / sizeof(*serializers))
 
 static void send_del(struct send *send) {
-	fprintf(stderr, "S %s (%s): Connection closed\n", send->id, send->serializer->name);
+	LOG(send->id, "Connection closed");
 	peer_count_out--;
-	peer_epoll_del((struct peer *) send);
-	assert(!close(send->peer.fd));
+	peer_close(&send->peer);
 	list_del(&send->send_list);
 	peer_call(send->on_close);
 	free(send);
 }
 
 static void send_del_wrapper(struct peer *peer) {
-	send_del((struct send *) peer);
+	send_del(container_of(peer, struct send, peer));
 }
 
 static void send_new(int fd, void *passthrough, struct peer *on_close) {
@@ -119,9 +119,24 @@ static void send_new(int fd, void *passthrough, struct peer *on_close) {
 
 	list_add(&send->send_list, &serializer->send_head);
 
-	peer_epoll_add((struct peer *) send, 0);
+	peer_epoll_add(&send->peer, 0);
 
-	fprintf(stderr, "S %s (%s): New send connection\n", send->id, serializer->name);
+	LOG(send->id, "New send connection: %s", serializer->name);
+}
+
+static struct serializer *send_parse_format(const char **arg) {
+	char *format = opts_split(arg, '=');
+	if (!format) {
+		return NULL;
+	}
+
+	struct serializer *serializer = send_get_serializer(format);
+	free(format);
+	if (!serializer) {
+		return NULL;
+	}
+
+	return serializer;
 }
 
 void send_init() {
@@ -140,7 +155,7 @@ void send_cleanup() {
 	}
 }
 
-void *send_get_serializer(char *name) {
+void *send_get_serializer(const char *name) {
 	for (size_t i = 0; i < NUM_SERIALIZERS; i++) {
 		if (strcasecmp(serializers[i].name, name) == 0) {
 			return &serializers[i];
@@ -177,8 +192,8 @@ void send_write(struct packet *packet) {
 			}
 			if (write(iter->peer.fd, buf_at(&buf, 0), buf.length) != (ssize_t) buf.length) {
 				// peer_loop() will see this shutdown and call send_del
-				int res = shutdown(iter->peer.fd, SHUT_WR);
-				assert(res == 0 || (res == -1 && errno == ENOTSOCK));
+				// Ignore error
+				shutdown(iter->peer.fd, SHUT_WR);
 			}
 		}
 	}
@@ -189,4 +204,12 @@ void send_print_usage() {
 	for (size_t i = 0; i < NUM_SERIALIZERS; i++) {
 		fprintf(stderr, "\t%s\n", serializers[i].name);
 	}
+}
+
+bool send_add(bool (*next)(const char *, struct flow *, void *), struct flow *flow, const char *arg) {
+	struct serializer *serializer = send_parse_format(&arg);
+	if (!serializer) {
+		return false;
+	}
+	return next(arg, flow, serializer);
 }

@@ -1,10 +1,8 @@
 #include <assert.h>
 #include <fcntl.h>
 #include <stdlib.h>
-#include <unistd.h>
 
 #include "flow.h"
-#include "list.h"
 #include "peer.h"
 #include "receive.h"
 #include "send.h"
@@ -37,7 +35,7 @@ static void send_receive_del(struct send_receive *send_receive) {
 }
 
 static void send_receive_on_close(struct peer *peer) {
-	struct send_receive *send_receive = (struct send_receive *) peer;
+	struct send_receive *send_receive = container_of(peer, struct send_receive, peer);
 
 	if (!--(send_receive->ref_count)) {
 		send_receive_del(send_receive);
@@ -54,10 +52,10 @@ static void send_receive_new(int fd, void *passthrough, struct peer *on_close) {
 	send_receive->ref_count = 2;
 	list_add(&send_receive->send_receive_list, &send_receive_head);
 
-	flow_new(fd, send_flow, passthrough, on_close);
+	flow_new(fd, send_flow, passthrough, &send_receive->peer);
 	int fd2 = fcntl(fd, F_DUPFD_CLOEXEC, 0);
 	assert(fd2 >= 0);
-	flow_new(fd2, receive_flow, NULL, on_close);
+	flow_new(fd2, receive_flow, NULL, &send_receive->peer);
 }
 
 void send_receive_cleanup() {
