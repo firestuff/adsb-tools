@@ -16,6 +16,12 @@ struct wakeup {
 
 static struct list_head wakeup_head = LIST_HEAD_INIT(wakeup_head);
 
+static void wakeup_del(struct wakeup *wakeup) {
+	peer_close(&wakeup->peer);
+	list_del(&wakeup->wakeup_list);
+	free(wakeup);
+}
+
 static void wakeup_handler(struct peer *peer) {
 	struct wakeup *wakeup = container_of(peer, struct wakeup, peer);
 
@@ -23,10 +29,8 @@ static void wakeup_handler(struct peer *peer) {
 	assert(read(wakeup->peer.fd, &events, sizeof(events)) == sizeof(events));
 	assert(events == 1);
 
-	peer_close(&wakeup->peer);
 	peer_call(wakeup->inner_peer);
-	list_del(&wakeup->wakeup_list);
-	free(wakeup);
+	wakeup_del(wakeup);
 }
 
 void wakeup_init() {
@@ -35,7 +39,7 @@ void wakeup_init() {
 void wakeup_cleanup() {
 	struct wakeup *iter, *next;
 	list_for_each_entry_safe(iter, next, &wakeup_head, wakeup_list) {
-		free(iter);
+		wakeup_del(iter);
 	}
 }
 

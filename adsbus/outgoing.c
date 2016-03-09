@@ -45,6 +45,7 @@ static void outgoing_resolve(struct outgoing *);
 static void outgoing_resolve_wrapper(struct peer *);
 
 static void outgoing_retry(struct outgoing *outgoing) {
+	outgoing->peer.fd = -1;
 	uint32_t delay = wakeup_get_retry_delay_ms(++outgoing->attempt);
 	LOG(outgoing->id, "Will retry in %ds", delay / 1000);
 	outgoing->peer.event_handler = outgoing_resolve_wrapper;
