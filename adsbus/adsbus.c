@@ -58,7 +58,7 @@ int main(int argc, char *argv[]) {
 	wakeup_init();
 	peer_init();
 
-	log_init2();
+	log_init_peer();
 
 	receive_init();
 	send_init();
@@ -95,6 +95,8 @@ int main(int argc, char *argv[]) {
 
 	rand_cleanup();
 	wakeup_cleanup();
+
+	log_cleanup_peer();
 
 	peer_cleanup();
 
