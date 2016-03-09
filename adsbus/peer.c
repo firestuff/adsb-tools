@@ -20,16 +20,20 @@ static char log_module = 'X';
 uint32_t peer_count_in = 0, peer_count_out = 0, peer_count_out_in = 0;
 
 static int peer_epoll_fd;
-static struct peer peer_shutdown;
+static struct peer peer_shutdown_peer;
 static bool peer_shutdown_flag = false;
 static struct list_head peer_always_trigger_head = LIST_HEAD_INIT(peer_always_trigger_head);
+
+static void peer_shutdown() {
+	peer_close(&peer_shutdown_peer);
+	peer_shutdown_flag = true;
+}
 
 static void peer_shutdown_handler(struct peer *peer) {
 	struct signalfd_siginfo siginfo;
 	assert(read(peer->fd, &siginfo, sizeof(siginfo)) == sizeof(siginfo));
-	peer_close(peer);
 	LOG(server_id, "Received signal %u; shutting down", siginfo.ssi_signo);
-	peer_shutdown_flag = true;
+	peer_shutdown();
 }
 
 void peer_init() {
@@ -40,10 +44,10 @@ void peer_init() {
 	assert(!sigemptyset(&sigmask));
 	assert(!sigaddset(&sigmask, SIGINT));
 	assert(!sigaddset(&sigmask, SIGTERM));
-	peer_shutdown.fd = signalfd(-1, &sigmask, SFD_NONBLOCK | SFD_CLOEXEC);
-	assert(peer_shutdown.fd >= 0);
-	peer_shutdown.event_handler = peer_shutdown_handler;
-	peer_epoll_add(&peer_shutdown, EPOLLIN);
+	peer_shutdown_peer.fd = signalfd(-1, &sigmask, SFD_NONBLOCK | SFD_CLOEXEC);
+	assert(peer_shutdown_peer.fd >= 0);
+	peer_shutdown_peer.event_handler = peer_shutdown_handler;
+	peer_epoll_add(&peer_shutdown_peer, EPOLLIN);
 
 	assert(!sigprocmask(SIG_BLOCK, &sigmask, NULL));
 }
@@ -104,10 +108,12 @@ void peer_loop() {
 	while (!peer_shutdown_flag) {
 		if (!(peer_count_in + peer_count_out_in)) {
 			LOG(server_id, "No remaining inputs");
-			peer_call(&peer_shutdown);
+			peer_shutdown();
+			break;
 		} else if (!(peer_count_out + peer_count_out_in)) {
 			LOG(server_id, "No remaining outputs");
-			peer_call(&peer_shutdown);
+			peer_shutdown();
+			break;
 		}
 #define MAX_EVENTS 10
 		struct epoll_event events[MAX_EVENTS];
