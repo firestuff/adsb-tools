@@ -61,6 +61,7 @@ void server_init() {
 	assert(!uname(&utsname));
 	LOG(server_id, "\tusername: %s", getlogin());
 	LOG(server_id, "\thostname: %s", utsname.nodename);
+	LOG(server_id, "\tprocess_id: %d", getpid());
 	LOG(server_id, "\tsystem: %s", utsname.sysname);
 	LOG(server_id, "\trelease: %s", utsname.release);
 	LOG(server_id, "\tversion: %s", utsname.version);
