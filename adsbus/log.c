@@ -90,15 +90,19 @@ void log_init() {
 }
 
 void log_init_peer() {
-	sigset_t sigmask;
-	assert(!sigemptyset(&sigmask));
-	assert(!sigaddset(&sigmask, SIGHUP));
-	log_rotate_peer.fd = signalfd(-1, &sigmask, SFD_NONBLOCK | SFD_CLOEXEC);
-	assert(log_rotate_peer.fd >= 0);
-	log_rotate_peer.event_handler = log_rotate_handler;
-	peer_epoll_add(&log_rotate_peer, EPOLLIN);
+	if (log_path) {
+		sigset_t sigmask;
+		assert(!sigemptyset(&sigmask));
+		assert(!sigaddset(&sigmask, SIGHUP));
+		log_rotate_peer.fd = signalfd(-1, &sigmask, SFD_NONBLOCK | SFD_CLOEXEC);
+		assert(log_rotate_peer.fd >= 0);
+		log_rotate_peer.event_handler = log_rotate_handler;
+		peer_epoll_add(&log_rotate_peer, EPOLLIN);
 
-	assert(!sigprocmask(SIG_BLOCK, &sigmask, NULL));
+		assert(!sigprocmask(SIG_BLOCK, &sigmask, NULL));
+	} else {
+		log_rotate_peer.fd = -1;
+	}
 }
 
 void log_cleanup_peer() {
