@@ -10,7 +10,6 @@
 
 #include "log.h"
 #include "server.h"
-#include "wakeup.h"
 
 #include "peer.h"
 
@@ -118,7 +117,7 @@ void peer_loop() {
 		}
 #define MAX_EVENTS 10
 		struct epoll_event events[MAX_EVENTS];
-		int delay = list_is_empty(&peer_always_trigger_head) ? wakeup_get_delay() : 0;
+		int delay = list_is_empty(&peer_always_trigger_head) ? -1 : 0;
 		int nfds = epoll_wait(peer_epoll_fd, events, MAX_EVENTS, delay);
 		if (nfds == -1 && errno == EINTR) {
 			continue;
@@ -136,7 +135,5 @@ void peer_loop() {
 				peer_call(iter);
 			}
 		}
-
-		wakeup_dispatch();
 	}
 }

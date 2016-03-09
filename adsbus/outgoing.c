@@ -111,7 +111,7 @@ static void outgoing_connect_result(struct outgoing *outgoing, int result) {
 
 		default:
 			LOG(outgoing->id, "Can't connect to %s/%s: %s", hbuf, sbuf, strerror(result));
-			peer_close(&outgoing->peer);
+			assert(!close(outgoing->peer.fd));
 			outgoing->addr = outgoing->addr->ai_next;
 			// Tail recursion :/
 			outgoing_connect_next(outgoing);
