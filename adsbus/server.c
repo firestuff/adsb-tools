@@ -1,5 +1,6 @@
 #include <stdlib.h>
 #include <sys/types.h>
+#include <sys/utsname.h>
 #include <unistd.h>
 
 #include <jansson.h>
@@ -43,16 +44,27 @@ void server_opts_add() {
 
 void server_init() {
 	uuid_gen(server_id);
-	LOG(server_id, "Server start:");
+	LOG(server_id, "Server start");
+	LOG(server_id, "Build data:");
 	LOG(server_id, "\tgit_last_change: %s", GIT_LAST_CHANGE);
 	LOG(server_id, "\tgit_local_clean: %s", GIT_LOCAL_CLEAN ? "true" : "false");
 	LOG(server_id, "\tclang_version: %s", __clang_version__);
 	LOG(server_id, "\tglibc_version: %d.%d", __GLIBC__, __GLIBC_MINOR__);
 	LOG(server_id, "\tjansson_version: %s", JANSSON_VERSION);
 	LOG(server_id, "\tprotobuf-c_version: %s", PROTOBUF_C_VERSION);
-	LOG(server_id, "\tbuild_datetime: %s", __DATE__ " " __TIME__);
-	LOG(server_id, "\tbuild_username: %s", USERNAME);
-	LOG(server_id, "\tbuild_hostname: %s", HOSTNAME);
+	LOG(server_id, "\tdatetime: %s", __DATE__ " " __TIME__);
+	LOG(server_id, "\tusername: %s", USERNAME);
+	LOG(server_id, "\thostname: %s", HOSTNAME);
+
+	LOG(server_id, "Runtime data:");
+	struct utsname utsname;
+	assert(!uname(&utsname));
+	LOG(server_id, "\tusername: %s", getlogin());
+	LOG(server_id, "\thostname: %s", utsname.nodename);
+	LOG(server_id, "\tsystem: %s", utsname.sysname);
+	LOG(server_id, "\trelease: %s", utsname.release);
+	LOG(server_id, "\tversion: %s", utsname.version);
+	LOG(server_id, "\tmachine: %s", utsname.machine);
 
 	opts_call(server_opts);
 }
