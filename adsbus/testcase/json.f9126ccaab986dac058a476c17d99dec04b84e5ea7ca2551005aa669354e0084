@@ -1,0 +1,15 @@
+{"mlat_timestamp_max": 907, "mlat_timestamp_mhz": 120, "type": "header", "magic": "aDsB", "sn": "htt1", "server_id": "5a6f", "rssi_max":4967295}
+{"rssi": 32171, "payload": "00A184B4CDFBD5", "mlat_timestamp": 238.500, "hops": 1, "type": "Mode-S short", "source_id": "5b-9ea7-e74ce75f", "rsax":295}
+{"rssi": 32171, "payload": "00A184B4CDFBD5", "mlat_timestamp": 238.500, "hops": 1, "type": "Mode-S short", "source_id": "5b-9ea7-e74ce75d6574"}
+{"rssi": 60324, "payload": "02A185949537B8", "-p": 920, "hops": 1, "type": "Mode-S short", "source_id": "5ba0eb5d-1d8e-4+71sB", "}n": "", "d": "5a6f", "rssx":495}
+{"rssi":71, "payload": "00A184B4CDFBD5", "mlat_timestamp": 238.500, "hops": 1, "type": "Mode-S short", "source_id": "5b-9ea7-e74f", "rssx":495}
+{"rssi":71, "payload": "00A184B4CDFBD5", "mlat_timestamp": 238.500, "hops": 1, "type": "Mode-S short", "source_id": "5b-9ea7-e74ce75d6574"}
+{"rssi": 60324, "payload": "02A185949537B8", "-p": 420, "hops": 1, "type": "Mode-S short", "source_id": "5ba0eb5d-1dce75d6574"}
+{"rssi": 13, "payload": "02E190BCC27EE1", "mp":1660, "hops": 1, "type": "Mode-S short", "source_id": "5ba0e-4471-9ea7-e74ce75d6574"}
+{"rssi": 5, "payload": "02A185949537B8", "mp":2480, "hops": 1, "type": "Mode-S short", "source_id": "5ba0eb5d-1d8e-4d6574"}
+{"rssi": 60324, "payload": "02A185949537B8", "-p": 920, "hops": 1, "type": "Mode-S short", "source_id": "5ba0eb5d-1d8e-4+71-9ea7-e74ce75d6574"}
+{"rssi": 13, "payload": "02E190BCC27EE1", "mp":1660, "hops": 1, "type": "Mode-S short", "source_id": "5ba0eb5d-1d8e-4471-9ea7-e74ce75d6574"}
+{"rssi": 5, "payload": "02A185949537B8", "mp":2480, "hops": 1, "type": "Mode-S short", "source_id": "5ba0eb5d-1d8e-4d6574"}
+{"rssi": 6, "payload": "02A185949537B8", "-p":6920, "hops": 1, "type": "Mode-S short", "source_id": "5ba0eb5d-1d8e-4+71-9ea7-e74ce75d6574"}
+{"rssi": 13, "payload": "02E190BCC27EE1", "|p":1660, "hops": 1, "type": "Mode-S short", "source_id": "5ba0eb5d-1d8e-4471-9ea7-e74ce75d6574"}
+{"rssi": 5, "payload": "02A185949537B8", "mp":2480, "hops": 1, "type": "Mode-S short", "source_id": "5ba0eb5d-1d8e-4471-9ea7-e74ce75d6574"}

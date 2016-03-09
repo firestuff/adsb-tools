@@ -1,0 +1,3 @@
+{"mlat_timestamp_max": 907, "mlat_timestamp_mhz": 120, "type": "header", "magic": "aDsB", "sn": "htt1", "server_id": "5a6f", "rssi_max":295}
+{"payload":0, "hops":81, "type": "Mode-S short", "source_id": "e75d6574"}
+{"": 
