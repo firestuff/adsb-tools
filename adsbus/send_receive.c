@@ -52,10 +52,10 @@ static void send_receive_new(int fd, void *passthrough, struct peer *on_close) {
 	send_receive->ref_count = 2;
 	list_add(&send_receive->send_receive_list, &send_receive_head);
 
-	flow_new(fd, send_flow, passthrough, (struct peer *) send_receive);
+	flow_new(fd, send_flow, passthrough, &send_receive->peer);
 	int fd2 = fcntl(fd, F_DUPFD_CLOEXEC, 0);
 	assert(fd2 >= 0);
-	flow_new(fd2, receive_flow, NULL, (struct peer *) send_receive);
+	flow_new(fd2, receive_flow, NULL, &send_receive->peer);
 }
 
 void send_receive_cleanup() {

@@ -44,7 +44,7 @@ static void incoming_retry(struct incoming *incoming) {
 	uint32_t delay = wakeup_get_retry_delay_ms(incoming->attempt++);
 	LOG(incoming->id, "Will retry in %ds", delay / 1000);
 	incoming->peer.event_handler = incoming_resolve_wrapper;
-	wakeup_add((struct peer *) incoming, delay);
+	wakeup_add(&incoming->peer, delay);
 }
 
 static void incoming_handler(struct peer *peer) {
@@ -79,9 +79,7 @@ static void incoming_handler(struct peer *peer) {
 
 static void incoming_del(struct incoming *incoming) {
 	flow_ref_dec(incoming->flow);
-	if (incoming->peer.fd >= 0) {
-		assert(!close(incoming->peer.fd));
-	}
+	peer_close(&incoming->peer);
 	list_del(&incoming->incoming_list);
 	free(incoming->node);
 	free(incoming->service);
@@ -134,13 +132,13 @@ static void incoming_listen(struct peer *peer) {
 
 	incoming->attempt = 0;
 	incoming->peer.event_handler = incoming_handler;
-	peer_epoll_add((struct peer *) incoming, EPOLLIN);
+	peer_epoll_add(&incoming->peer, EPOLLIN);
 }
 
 static void incoming_resolve(struct incoming *incoming) {
 	LOG(incoming->id, "Resolving %s/%s...", incoming->node, incoming->service);
 	incoming->peer.event_handler = incoming_listen;
-	resolve((struct peer *) incoming, incoming->node, incoming->service, AI_PASSIVE);
+	resolve(&incoming->peer, incoming->node, incoming->service, AI_PASSIVE);
 }
 
 static void incoming_resolve_wrapper(struct peer *peer) {

@@ -72,7 +72,7 @@ static void file_retry(struct file *file) {
 	uint32_t delay = wakeup_get_retry_delay_ms(file->attempt++);
 	LOG(file->id, "Will retry in %ds", delay / 1000);
 	file->peer.event_handler = file_open_wrapper;
-	wakeup_add((struct peer *) file, delay);
+	wakeup_add(&file->peer, delay);
 }
 
 static void file_handle_close(struct peer *peer) {
@@ -98,7 +98,7 @@ static void file_open(struct file *file) {
 	file->retry = file_should_retry(fd, file);
 	file->peer.event_handler = file_handle_close;
 	file->attempt = 0;
-	if (!flow_new_send_hello(fd, file->flow, file->passthrough, (struct peer *) file)) {
+	if (!flow_new_send_hello(fd, file->flow, file->passthrough, &file->peer)) {
 		LOG(file->id, "Error writing greeting");
 		file_retry(file);
 		return;

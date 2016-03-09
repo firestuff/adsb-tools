@@ -90,6 +90,15 @@ void peer_epoll_del(struct peer *peer) {
 	}
 }
 
+void peer_close(struct peer *peer) {
+	if (peer->fd == -1) {
+		return;
+	}
+	peer_epoll_del(peer);
+	assert(!close(peer->fd));
+	peer->fd = -1;
+}
+
 void peer_call(struct peer *peer) {
 	if (peer_shutdown_flag || !peer) {
 		return;

@@ -108,8 +108,7 @@ static bool receive_autodetect_parse(struct receive *receive, struct packet *pac
 static void receive_del(struct receive *receive) {
 	LOG(receive->id, "Connection closed");
 	peer_count_in--;
-	peer_epoll_del((struct peer *) receive);
-	assert(!close(receive->peer.fd));
+	peer_close(&receive->peer);
 	list_del(&receive->receive_list);
 	peer_call(receive->on_close);
 	free(receive);
@@ -165,7 +164,7 @@ static void receive_new(int fd, void __attribute__((unused)) *passthrough, struc
 
 	list_add(&receive->receive_list, &receive_head);
 
-	peer_epoll_add((struct peer *) receive, EPOLLIN);
+	peer_epoll_add(&receive->peer, EPOLLIN);
 
 	LOG(receive->id, "New receive connection");
 }

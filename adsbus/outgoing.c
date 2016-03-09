@@ -48,7 +48,7 @@ static void outgoing_retry(struct outgoing *outgoing) {
 	uint32_t delay = wakeup_get_retry_delay_ms(++outgoing->attempt);
 	LOG(outgoing->id, "Will retry in %ds", delay / 1000);
 	outgoing->peer.event_handler = outgoing_resolve_wrapper;
-	wakeup_add((struct peer *) outgoing, delay);
+	wakeup_add(&outgoing->peer, delay);
 }
 
 static void outgoing_connect_next(struct outgoing *outgoing) {
@@ -85,9 +85,6 @@ static void outgoing_connect_handler(struct peer *peer) {
 
 static void outgoing_disconnect_handler(struct peer *peer) {
 	struct outgoing *outgoing = (struct outgoing *) peer;
-	if (outgoing->peer.fd != -1) {
-		assert(!close(outgoing->peer.fd));
-	}
 	LOG(outgoing->id, "Peer disconnected; reconnecting...");
 	outgoing_retry(outgoing);
 }
@@ -105,18 +102,17 @@ static void outgoing_connect_result(struct outgoing *outgoing, int result) {
 			outgoing->peer.event_handler = outgoing_disconnect_handler;
 			flow_socket_ready(fd, outgoing->flow);
 			flow_socket_connected(fd, outgoing->flow);
-			flow_new(fd, outgoing->flow, outgoing->passthrough, (struct peer *) outgoing);
+			flow_new(fd, outgoing->flow, outgoing->passthrough, &outgoing->peer);
 			break;
 
 		case EINPROGRESS:
 			outgoing->peer.event_handler = outgoing_connect_handler;
-			peer_epoll_add((struct peer *) outgoing, EPOLLOUT);
+			peer_epoll_add(&outgoing->peer, EPOLLOUT);
 			break;
 
 		default:
 			LOG(outgoing->id, "Can't connect to %s/%s: %s", hbuf, sbuf, strerror(result));
-			assert(!close(outgoing->peer.fd));
-			outgoing->peer.fd = -1;
+			peer_close(&outgoing->peer);
 			outgoing->addr = outgoing->addr->ai_next;
 			// Tail recursion :/
 			outgoing_connect_next(outgoing);
@@ -139,7 +135,7 @@ static void outgoing_resolve_handler(struct peer *peer) {
 static void outgoing_resolve(struct outgoing *outgoing) {
 	LOG(outgoing->id, "Resolving %s/%s...", outgoing->node, outgoing->service);
 	outgoing->peer.event_handler = outgoing_resolve_handler;
-	resolve((struct peer *) outgoing, outgoing->node, outgoing->service, 0);
+	resolve(&outgoing->peer, outgoing->node, outgoing->service, 0);
 }
 
 static void outgoing_resolve_wrapper(struct peer *peer) {
@@ -148,9 +144,7 @@ static void outgoing_resolve_wrapper(struct peer *peer) {
 
 static void outgoing_del(struct outgoing *outgoing) {
 	flow_ref_dec(outgoing->flow);
-	if (outgoing->peer.fd >= 0) {
-		assert(!close(outgoing->peer.fd));
-	}
+	peer_close(&outgoing->peer);
 	list_del(&outgoing->outgoing_list);
 	free(outgoing->node);
 	free(outgoing->service);

@@ -21,5 +21,6 @@ void peer_cleanup(void);
 void peer_shutdown(int signal);
 void peer_epoll_add(struct peer *, uint32_t);
 void peer_epoll_del(struct peer *);
+void peer_close(struct peer *);
 void peer_call(struct peer *);
 void peer_loop(void);

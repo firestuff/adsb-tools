@@ -92,8 +92,7 @@ static struct serializer {
 static void send_del(struct send *send) {
 	LOG(send->id, "Connection closed");
 	peer_count_out--;
-	peer_epoll_del((struct peer *) send);
-	assert(!close(send->peer.fd));
+	peer_close(&send->peer);
 	list_del(&send->send_list);
 	peer_call(send->on_close);
 	free(send);
@@ -120,7 +119,7 @@ static void send_new(int fd, void *passthrough, struct peer *on_close) {
 
 	list_add(&send->send_list, &serializer->send_head);
 
-	peer_epoll_add((struct peer *) send, 0);
+	peer_epoll_add(&send->peer, 0);
 
 	LOG(send->id, "New send connection: %s", serializer->name);
 }

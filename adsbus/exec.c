@@ -50,10 +50,7 @@ static void exec_harvest(struct exec *exec) {
 			LOG(exec->id, "Client exited with signal %d", WTERMSIG(status));
 		}
 	}
-	if (exec->log_peer.fd >= 0) {
-		assert(!close(exec->log_peer.fd));
-		exec->log_peer.fd = -1;
-	}
+	peer_close(&exec->log_peer);
 }
 
 static void exec_del(struct exec *exec) {
@@ -76,7 +73,7 @@ static void exec_close_handler(struct peer *peer) {
 	uint32_t delay = wakeup_get_retry_delay_ms(1);
 	LOG(exec->id, "Will retry in %ds", delay / 1000);
 	exec->peer.event_handler = exec_spawn_wrapper;
-	wakeup_add((struct peer *) exec, delay);
+	wakeup_add(&exec->peer, delay);
 }
 
 static void exec_log_handler(struct peer *peer) {
@@ -87,8 +84,7 @@ static void exec_log_handler(struct peer *peer) {
 	ssize_t ret = read(exec->log_peer.fd, linebuf, 4096);
 	if (ret <= 0) {
 		LOG(exec->id, "Log input stream closed");
-		assert(!close(exec->log_peer.fd));
-		exec->log_peer.fd = -1;
+		peer_close(&exec->log_peer);
 		return;
 	}
 	size_t len = (size_t) ret;
@@ -114,8 +110,8 @@ static void exec_parent(struct exec *exec, pid_t child, int data_fd, int log_fd)
 	peer_epoll_add(&exec->log_peer, EPOLLIN);
 
 	exec->peer.event_handler = exec_close_handler;
-	if (!flow_new_send_hello(data_fd, exec->flow, exec->passthrough, (struct peer *) exec)) {
-		exec_close_handler((struct peer *) exec);
+	if (!flow_new_send_hello(data_fd, exec->flow, exec->passthrough, &exec->peer)) {
+		exec_close_handler(&exec->peer);
 		return;
 	}
 }
