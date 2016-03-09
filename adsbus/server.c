@@ -1,3 +1,5 @@
+#include <assert.h>
+#include <stdio.h>
 #include <stdlib.h>
 #include <sys/types.h>
 #include <sys/utsname.h>
@@ -17,7 +19,7 @@
 
 uint8_t server_id[UUID_LEN];
 char server_version[] = "https://github.com/flamingcowtv/adsb-tools#1";
-static opts_group server_opts;
+static opts_group server_opts1, server_opts2;
 
 static char log_module = 'X';
 
@@ -38,8 +40,19 @@ static bool server_detach(const char __attribute__ ((unused)) *arg) {
 	return true;
 }
 
+static bool server_pid_file(const char *path) {
+	pid_t pid = getpid();
+	LOG(server_id, "Writing process ID %d to pid-file: %s", pid, path);
+	FILE *fh = fopen(path, "w");
+	assert(fh);
+	assert(fprintf(fh, "%d\n", pid) > 0);
+	assert(!fclose(fh));
+	return true;
+}
+
 void server_opts_add() {
-	opts_add("detach", NULL, server_detach, server_opts);
+	opts_add("detach", NULL, server_detach, server_opts1);
+	opts_add("pid-file", "PATH", server_pid_file, server_opts2);
 }
 
 void server_init() {
@@ -67,5 +80,6 @@ void server_init() {
 	LOG(server_id, "\tversion: %s", utsname.version);
 	LOG(server_id, "\tmachine: %s", utsname.machine);
 
-	opts_call(server_opts);
+	opts_call(server_opts1);
+	opts_call(server_opts2);
 }
