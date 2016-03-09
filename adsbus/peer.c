@@ -3,6 +3,8 @@
 #include <signal.h>
 #include <stdbool.h>
 #include <stdlib.h>
+#include <string.h>
+#include <sys/signalfd.h>
 #include <sys/socket.h>
 #include <sys/stat.h>
 #include <sys/types.h>
@@ -18,14 +20,15 @@ static char log_module = 'X';
 uint32_t peer_count_in = 0, peer_count_out = 0, peer_count_out_in = 0;
 
 static int peer_epoll_fd;
-static int peer_shutdown_fd;
+static struct peer peer_shutdown;
 static bool peer_shutdown_flag = false;
 static struct list_head peer_always_trigger_head = LIST_HEAD_INIT(peer_always_trigger_head);
 
 static void peer_shutdown_handler(struct peer *peer) {
-	LOG(server_id, "Shutting down");
-	assert(!close(peer->fd));
-	free(peer);
+	struct signalfd_siginfo siginfo;
+	assert(read(peer->fd, &siginfo, sizeof(siginfo)) == sizeof(siginfo));
+	peer_close(peer);
+	LOG(server_id, "Received signal %u; shutting down", siginfo.ssi_signo);
 	peer_shutdown_flag = true;
 }
 
@@ -33,29 +36,20 @@ void peer_init() {
 	peer_epoll_fd = epoll_create1(EPOLL_CLOEXEC);
 	assert(peer_epoll_fd >= 0);
 
-	int shutdown_fds[2];
-	assert(!socketpair(AF_UNIX, SOCK_STREAM | SOCK_CLOEXEC, 0, shutdown_fds));
+	sigset_t sigmask;
+	assert(!sigemptyset(&sigmask));
+	assert(!sigaddset(&sigmask, SIGINT));
+	assert(!sigaddset(&sigmask, SIGTERM));
+	peer_shutdown.fd = signalfd(-1, &sigmask, SFD_NONBLOCK | SFD_CLOEXEC);
+	assert(peer_shutdown.fd >= 0);
+	peer_shutdown.event_handler = peer_shutdown_handler;
+	peer_epoll_add(&peer_shutdown, EPOLLIN);
 
-	struct peer *shutdown_peer = malloc(sizeof(*shutdown_peer));
-	assert(shutdown_peer);
-	shutdown_peer->fd = shutdown_fds[0];
-	shutdown_peer->event_handler = peer_shutdown_handler;
-	peer_epoll_add(shutdown_peer, EPOLLRDHUP);
-
-	peer_shutdown_fd = shutdown_fds[1];
-	signal(SIGINT, peer_shutdown);
-	signal(SIGTERM, peer_shutdown);
+	assert(!sigprocmask(SIG_BLOCK, &sigmask, NULL));
 }
 
 void peer_cleanup() {
 	assert(!close(peer_epoll_fd));
-}
-
-void peer_shutdown(int __attribute__((unused)) signal) {
-	if (peer_shutdown_fd != -1) {
-		assert(!close(peer_shutdown_fd));
-		peer_shutdown_fd = -1;
-	}
 }
 
 void peer_epoll_add(struct peer *peer, uint32_t events) {
@@ -110,10 +104,10 @@ void peer_loop() {
 	while (!peer_shutdown_flag) {
 		if (!(peer_count_in + peer_count_out_in)) {
 			LOG(server_id, "No remaining inputs");
-			peer_shutdown(0);
+			peer_call(&peer_shutdown);
 		} else if (!(peer_count_out + peer_count_out_in)) {
 			LOG(server_id, "No remaining outputs");
-			peer_shutdown(0);
+			peer_call(&peer_shutdown);
 		}
 #define MAX_EVENTS 10
 		struct epoll_event events[MAX_EVENTS];
