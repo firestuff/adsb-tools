@@ -76,7 +76,6 @@ int main(int argc, char *argv[]) {
 
 	reopen(STDIN_FILENO, "/dev/null", O_RDONLY);
 	reopen(STDOUT_FILENO, "/dev/full", O_WRONLY);
-	reopen(STDERR_FILENO, "/dev/full", O_WRONLY);
 
 	peer_loop();
 
@@ -104,7 +103,6 @@ int main(int argc, char *argv[]) {
 
 	assert(!close(STDIN_FILENO));
 	assert(!close(STDOUT_FILENO));
-	assert(!close(STDERR_FILENO));
 
 	return EXIT_SUCCESS;
 }

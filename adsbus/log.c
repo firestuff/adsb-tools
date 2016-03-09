@@ -29,21 +29,25 @@ static opts_group log_opts;
 
 static char log_module = 'L';
 
-static void log_rotate() {
+static void log_open() {
 	if (!log_path) {
-		LOG(log_id, "Asked to rotate logs but not logging to a file; ignoring");
 		return;
 	}
+	int fd = open(log_path, O_WRONLY | O_CREAT | O_APPEND | O_NOCTTY | O_CLOEXEC, S_IRUSR | S_IWUSR);
+	assert(fd >= 0);
+	assert(dup3(fd, STDERR_FILENO, O_CLOEXEC) == STDERR_FILENO);
+	assert(!close(fd));
+}
+
+static void log_rotate() {
+	assert(log_path);
 
 	uint8_t old_log_id[UUID_LEN], new_log_id[UUID_LEN];
 	uuid_gen(new_log_id);
 	LOG(log_id, "Switching to new log with ID %s at: %s", new_log_id, log_path);
 	memcpy(old_log_id, log_id, UUID_LEN);
 	memcpy(log_id, new_log_id, UUID_LEN);
-	assert(!fclose(log_stream));
-	log_stream = fopen(log_path, "a");
-	assert(log_stream);
-	setlinebuf(log_stream);
+	log_open();
 	LOG(log_id, "Log start after switch from log ID %s", old_log_id);
 }
 
@@ -75,13 +79,8 @@ void log_opts_add() {
 
 void log_init() {
 	opts_call(log_opts);
-	if (log_path) {
-		log_stream = fopen(log_path, "a");
-	} else {
-		int fd = fcntl(STDERR_FILENO, F_DUPFD_CLOEXEC, 0);
-		assert(fd >= 0);
-		log_stream = fdopen(fd, "a");
-	}
+	log_open();
+	log_stream = fdopen(STDERR_FILENO, "a");
 	assert(log_stream);
 	setlinebuf(log_stream);
 
