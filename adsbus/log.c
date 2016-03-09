@@ -25,6 +25,7 @@ static char *log_path = NULL;
 static uint8_t log_id[UUID_LEN];
 static struct peer log_rotate_peer;
 static bool log_timestamps = false;
+static bool log_quiet = false;
 static opts_group log_opts;
 
 static char log_module = 'L';
@@ -72,9 +73,15 @@ static bool log_enable_timestamps(const char __attribute__ ((unused)) *arg) {
 	return true;
 }
 
+static bool log_set_quiet(const char __attribute__ ((unused)) *arg) {
+	log_quiet = true;
+	return true;
+}
+
 void log_opts_add() {
 	opts_add("log-file", "PATH", log_set_path, log_opts);
 	opts_add("log-timestamps", NULL, log_enable_timestamps, log_opts);
+	opts_add("quiet", NULL, log_set_quiet, log_opts);
 }
 
 void log_init() {
@@ -118,6 +125,10 @@ void log_cleanup() {
 }
 
 void log_write(char type, const char *loc, const uint8_t *id, const char *fmt, ...) {
+	if (log_quiet) {
+		return;
+	}
+
 	va_list ap;
 	va_start(ap, fmt);
 
