@@ -117,8 +117,6 @@ static void exec_parent(struct exec *exec, pid_t child, int data_fd, int log_fd)
 }
 
 static void __attribute__ ((noreturn)) exec_child(const struct exec *exec, int data_fd, int log_fd) {
-	assert(setsid() != -1);
-	// We leave stderr open from child to parent
 	// Other than that, fds should have CLOEXEC set
 	if (data_fd != STDIN_FILENO) {
 		assert(dup2(data_fd, STDIN_FILENO) == STDIN_FILENO);
@@ -133,6 +131,11 @@ static void __attribute__ ((noreturn)) exec_child(const struct exec *exec, int d
 		assert(dup2(log_fd, STDERR_FILENO) == STDERR_FILENO);
 		assert(!close(log_fd));
 	}
+
+	sigset_t sigmask;
+	assert(!sigemptyset(&sigmask));
+	assert(!sigprocmask(SIG_SETMASK, &sigmask, NULL));
+
 	assert(!execl("/bin/sh", "sh", "-c", exec->command, NULL));
 	abort();
 }
