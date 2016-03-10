@@ -1,9 +1,4 @@
-#include <assert.h>
-#include <fcntl.h>
 #include <stdlib.h>
-#include <sys/types.h>
-#include <sys/stat.h>
-#include <unistd.h>
 
 #include "beast.h"
 #include "exec.h"
@@ -25,12 +20,6 @@
 #include "stats.h"
 #include "stdinout.h"
 #include "wakeup.h"
-
-static void reopen(int fd, char *path, int flags) {
-	// Presumes that all fds < fd are open
-	assert(!close(fd));
-	assert(open(path, flags | O_CLOEXEC | O_NOCTTY) == fd);
-}
 
 static void adsbus_opts_add() {
 	// This order controls the order in --help, but nothing else.
@@ -74,9 +63,6 @@ int main(int argc, char *argv[]) {
 	file_init();
 	stdinout_init();
 
-	reopen(STDIN_FILENO, "/dev/null", O_RDONLY);
-	reopen(STDOUT_FILENO, "/dev/full", O_WRONLY);
-
 	peer_loop();
 
 	resolve_cleanup();
@@ -101,8 +87,7 @@ int main(int argc, char *argv[]) {
 
 	log_cleanup();
 
-	assert(!close(STDIN_FILENO));
-	assert(!close(STDOUT_FILENO));
+	stdinout_cleanup();
 
 	return EXIT_SUCCESS;
 }
