@@ -15,7 +15,7 @@ void resolve_cleanup() {
 
 void resolve(struct peer *peer, const char *node, const char *service, int flags) {
 	struct addrinfo hints = {
-		.ai_flags = AI_V4MAPPED | AI_ADDRCONFIG | flags,
+		.ai_flags = AI_V4MAPPED | flags,
 		.ai_family = AF_UNSPEC,
 		.ai_socktype = SOCK_STREAM,
 	};
