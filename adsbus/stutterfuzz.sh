@@ -21,7 +21,7 @@ stutterfuzz --blob-dir testcase --host=::1 --port=20000 --cycle-ms=150 --num-con
 stutterfuzz --blob-dir testcase --host=::1 --port=20001 --cycle-ms=150 --num-conns=10 2>/dev/null &
 stutterfuzz --blob-dir testcase --host=::1 --port=20002 --cycle-ms=150 --num-conns=10 2>/dev/null &
 stutterfuzz --blob-dir testcase --host=::1 --port=20003 --cycle-ms=150 --num-conns=10 2>/dev/null &
-stutterfuzz --blob-dir testcase --host=::1 --port=20005 --cycle-ms=150 --num-conns=10 2>/dev/null &
+stutterfuzz --blob-dir testcase --host=::1 --port=20004 --cycle-ms=150 --num-conns=10 2>/dev/null &
 
 fg %1
 kill %2
