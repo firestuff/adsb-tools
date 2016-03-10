@@ -4,6 +4,9 @@
 #include <stdio.h>
 #include <string.h>
 
+#include "receive.h"
+#include "send.h"
+
 #include "opts.h"
 
 #define OPTS_MAX 128
@@ -29,6 +32,8 @@ static void opts_print_usage() {
 	for (size_t i = 0; i < opts_num; i++) {
 		fprintf(stderr, "\t--%s%s%s\n", opts_long[i].name, opts[i].arg_help ? "=" : "", opts[i].arg_help ? opts[i].arg_help : "");
 	}
+	send_print_usage();
+	receive_print_usage();
 }
 
 static bool opts_help(const char __attribute__ ((unused)) *arg) {
