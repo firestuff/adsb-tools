@@ -2,6 +2,7 @@
 #include <signal.h>
 #include <stdlib.h>
 #include <string.h>
+#include <sys/signalfd.h>
 #include <sys/socket.h>
 #include <sys/stat.h>
 #include <sys/types.h>
@@ -32,24 +33,22 @@ struct exec {
 };
 
 static struct list_head exec_head = LIST_HEAD_INIT(exec_head);
+static struct peer exec_peer;
 static opts_group exec_opts;
 
 static char log_module = 'E';
 
 static void exec_spawn_wrapper(struct peer *);
 
-static void exec_harvest(struct exec *exec) {
-	if (exec->child > 0) {
-		int status;
-		assert(waitpid(exec->child, &status, 0) == exec->child);
-		exec->child = -1;
-		if (WIFEXITED(status)) {
-			LOG(exec->id, "Client exited with status %d", WEXITSTATUS(status));
-		} else {
-			assert(WIFSIGNALED(status));
-			LOG(exec->id, "Client exited with signal %d", WTERMSIG(status));
-		}
+static void exec_child_cleanup(struct exec *exec, int status) {
+	exec->child = -1;
+	if (WIFEXITED(status)) {
+		LOG(exec->id, "Client exited with status %d", WEXITSTATUS(status));
+	} else {
+		assert(WIFSIGNALED(status));
+		LOG(exec->id, "Client exited with signal %d", WTERMSIG(status));
 	}
+	peer_close(&exec->peer);
 	peer_close(&exec->log_peer);
 }
 
@@ -59,17 +58,40 @@ static void exec_del(struct exec *exec) {
 	if (exec->child > 0) {
 		LOG(exec->id, "Sending SIGTERM to child process %d", exec->child);
 		// Racy with the process terminating, so don't assert on it
-		kill(exec->child, SIGTERM);
+		kill(0 - exec->child, SIGTERM);
+		int status;
+		assert(waitpid(exec->child, &status, 0) == exec->child);
+		exec_child_cleanup(exec, status);
 	}
-	exec_harvest(exec);
 	list_del(&exec->exec_list);
 	free(exec->command);
 	free(exec);
 }
 
-static void exec_close_handler(struct peer *peer) {
+static void exec_sigchld_handler(struct peer *peer) {
+	struct signalfd_siginfo siginfo;
+	assert(read(peer->fd, &siginfo, sizeof(siginfo)) == sizeof(siginfo));
+
+	int status;
+	pid_t pid = waitpid(-1, &status, WNOHANG);
+	if (pid == 0) {
+		// No child
+		return;
+	}
+	assert(pid > 0);
+	struct exec *iter, *next;
+	list_for_each_entry_safe(iter, next, &exec_head, exec_list) {
+		if (iter->child == pid) {
+			exec_child_cleanup(iter, status);
+			peer_call(&iter->peer);
+			break;
+		}
+	}
+}
+
+static void exec_retry(struct peer *peer) {
 	struct exec *exec = container_of(peer, struct exec, peer);
-	exec_harvest(exec);
+
 	uint32_t delay = wakeup_get_retry_delay_ms(1);
 	LOG(exec->id, "Will retry in %ds", delay / 1000);
 	exec->peer.event_handler = exec_spawn_wrapper;
@@ -77,7 +99,6 @@ static void exec_close_handler(struct peer *peer) {
 }
 
 static void exec_log_handler(struct peer *peer) {
-	// Do you believe in magic?
 	struct exec *exec = container_of(peer, struct exec, log_peer);
 
 	char linebuf[4096];
@@ -109,14 +130,16 @@ static void exec_parent(struct exec *exec, pid_t child, int data_fd, int log_fd)
 	exec->log_peer.event_handler = exec_log_handler;
 	peer_epoll_add(&exec->log_peer, EPOLLIN);
 
-	exec->peer.event_handler = exec_close_handler;
-	if (!flow_new_send_hello(data_fd, exec->flow, exec->passthrough, &exec->peer)) {
-		exec_close_handler(&exec->peer);
+	exec->peer.event_handler = exec_retry;
+	if (!flow_new_send_hello(data_fd, exec->flow, exec->passthrough, NULL)) {
+		// SIGCHILD will fire and clean this up when the process actually dies.
 		return;
 	}
 }
 
 static void __attribute__ ((noreturn)) exec_child(const struct exec *exec, int data_fd, int log_fd) {
+	assert(!setpgid(0, 0));
+
 	// Other than that, fds should have CLOEXEC set
 	if (data_fd != STDIN_FILENO) {
 		assert(dup2(data_fd, STDIN_FILENO) == STDIN_FILENO);
@@ -191,6 +214,16 @@ void exec_opts_add() {
 
 void exec_init() {
 	opts_call(exec_opts);
+
+	sigset_t sigmask;
+	assert(!sigemptyset(&sigmask));
+	assert(!sigaddset(&sigmask, SIGCHLD));
+	exec_peer.fd = signalfd(-1, &sigmask, SFD_NONBLOCK | SFD_CLOEXEC);
+	assert(exec_peer.fd >= 0);
+	exec_peer.event_handler = exec_sigchld_handler;
+	peer_epoll_add(&exec_peer, EPOLLIN);
+
+	assert(!sigprocmask(SIG_BLOCK, &sigmask, NULL));
 }
 
 void exec_cleanup() {
@@ -198,6 +231,7 @@ void exec_cleanup() {
 	list_for_each_entry_safe(iter, next, &exec_head, exec_list) {
 		exec_del(iter);
 	}
+	peer_close(&exec_peer);
 }
 
 void exec_new(const char *command, struct flow *flow, void *passthrough) {
