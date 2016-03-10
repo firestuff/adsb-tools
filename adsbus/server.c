@@ -1,6 +1,7 @@
 #include <assert.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <sys/capability.h>
 #include <sys/types.h>
 #include <sys/utsname.h>
 #include <unistd.h>
@@ -72,13 +73,20 @@ void server_init() {
 	LOG(server_id, "Runtime data:");
 	struct utsname utsname;
 	assert(!uname(&utsname));
+	cap_t caps = cap_get_proc();
+	assert(caps);
+	char *caps_str = cap_to_text(caps, NULL);
+	assert(caps_str);
+	assert(!cap_free(caps));
 	LOG(server_id, "\tusername: %s", getlogin());
 	LOG(server_id, "\thostname: %s", utsname.nodename);
 	LOG(server_id, "\tprocess_id: %d", getpid());
+	LOG(server_id, "\tcapabilities: %s", caps_str);
 	LOG(server_id, "\tsystem: %s", utsname.sysname);
 	LOG(server_id, "\trelease: %s", utsname.release);
 	LOG(server_id, "\tversion: %s", utsname.version);
 	LOG(server_id, "\tmachine: %s", utsname.machine);
+	assert(!cap_free(caps_str));
 
 	opts_call(server_opts1);
 	opts_call(server_opts2);

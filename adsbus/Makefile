@@ -2,7 +2,7 @@ COMP ?= clang
 DISABLED_WARNINGS ?= -Wno-padded -Wno-disabled-macro-expansion
 CFLAGS ?= -Weverything -Werror -O3 -g --std=gnu11 --pedantic-errors -fPIE -fstack-protector-strong -pthread -D_GNU_SOURCE -D_FILE_OFFSET_BITS=64 $(DISABLED_WARNINGS)
 LDFLAGS ?= $(CFLAGS) -Wl,-z,relro -Wl,-z,now -pie
-LIBS ?= -ljansson -lprotobuf-c
+LIBS ?= -lcap -ljansson -lprotobuf-c
 
 TESTCASE_DIR ?= testcase
 TESTOUT_DIR ?= testout
