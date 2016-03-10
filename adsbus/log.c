@@ -35,8 +35,10 @@ static void log_open() {
 	}
 	int fd = open(log_path, O_WRONLY | O_CREAT | O_APPEND | O_NOCTTY | O_CLOEXEC, S_IRUSR | S_IWUSR);
 	assert(fd >= 0);
-	assert(dup3(fd, STDERR_FILENO, O_CLOEXEC) == STDERR_FILENO);
-	assert(!close(fd));
+	if (fd != STDERR_FILENO) {
+		assert(dup3(fd, STDERR_FILENO, O_CLOEXEC) == STDERR_FILENO);
+		assert(!close(fd));
+	}
 }
 
 static void log_rotate() {
