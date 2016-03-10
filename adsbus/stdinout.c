@@ -13,10 +13,14 @@
 
 static opts_group stdinout_opts;
 
+static void stdinout_open(int fd, char *path, int flags) {
+	assert(open(path, flags | O_CLOEXEC | O_NOCTTY) == fd);
+}
+
 static void stdinout_reopen(int fd, char *path, int flags) {
 	// Presumes that all fds < fd are open
 	assert(!close(fd));
-	assert(open(path, flags | O_CLOEXEC | O_NOCTTY) == fd);
+	stdinout_open(fd, path, flags);
 }
 
 static bool stdinout_stdin(const char __attribute__((unused)) *arg) {
@@ -33,6 +37,15 @@ static bool stdinout_stdout(const char *arg) {
 	int fd = fcntl(STDOUT_FILENO, F_DUPFD_CLOEXEC, 0);
 	assert(fd >= 0);
 	return flow_new_send_hello(fd, send_flow, serializer, NULL);
+}
+
+void stdinout_preinit() {
+	if (fcntl(STDIN_FILENO, F_GETFD) == -1) {
+		stdinout_open(STDIN_FILENO, "/dev/null", O_RDONLY);
+	}
+	if (fcntl(STDOUT_FILENO, F_GETFD) == -1) {
+		stdinout_open(STDOUT_FILENO, "/dev/full", O_WRONLY);
+	}
 }
 
 void stdinout_opts_add() {

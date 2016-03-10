@@ -33,6 +33,8 @@ static void adsbus_opts_add() {
 }
 
 int main(int argc, char *argv[]) {
+	stdinout_preinit();
+
 	adsbus_opts_add();
 
 	opts_init(argc, argv);
