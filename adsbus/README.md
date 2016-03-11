@@ -112,7 +112,7 @@ make
 		* Log timestamping: use `--log-timestamps`
 		* Run as user: use [start-stop-daemon](http://manpages.ubuntu.com/manpages/vivid/man8/start-stop-daemon.8.html), etc.
 		* Shuts down cleanly on SIGTERM
-	* **DO NOT RUN AS ROOT**.
+	* **DO NOT RUN AS ROOT**
 		* To bind privileged (< 1024) ports, use [capabilities](http://man7.org/linux/man-pages/man7/capabilities.7.html):
 
 			```console
