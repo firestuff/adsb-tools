@@ -5,3 +5,6 @@ adsb-ws: *.go
 
 clean:
 	rm -f adsb-ws
+
+fmt:
+	gofmt -w .

@@ -8,7 +8,7 @@ import (
 )
 
 type connection struct {
-	ws *websocket.Conn
+	ws   *websocket.Conn
 	send chan []byte
 }
 
