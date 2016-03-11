@@ -6,6 +6,8 @@ It is conceptually similar to `dump1090 --net-only`, but supports more protocols
 hooks programs that do, then handles the network distribution and format translation. It doesn't output to a web interface or send data to
 services like FlightAware; it provides hooks for programs that do.
 
+For programs to feed data into and consume data from adsbus, see the documentation on the [adsb-tools suite](../README.md).
+
 
 ## Building
 
