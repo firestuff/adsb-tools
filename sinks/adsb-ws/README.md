@@ -1,6 +1,6 @@
 ## Overview
 
-adsb-ws takes an ads-b feed and makes it available via [websockets](https://en.wikipedia.org/wiki/WebSocket) (written in Go)
+adsb-ws takes an ADS-B feed and makes it available via [websockets](https://en.wikipedia.org/wiki/WebSocket) (written in Go)
 
 ## Use
 
