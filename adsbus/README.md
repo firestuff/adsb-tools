@@ -63,7 +63,8 @@ make
 
 ## Use
 * As a commandline utility
-	* For captures from a network source: <script src="https://gist.github.com/flamingcow66/68f06aaa7ce91b8ad433.js"></script>
+	* For captures from a network source:
+<script src="https://gist.github.com/flamingcow66/68f06aaa7ce91b8ad433.js"></script>
 
 
 ## Security, reliability, testing
