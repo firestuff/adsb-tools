@@ -6,4 +6,4 @@ These statistics will appear in the adsbus logs.
 
 ## Use
 
-Pass `--exec-send=json=/path/to/sourcestats.py` to [adsbus](../../adsbus/).
+Pass `--exec-send=json="exec /path/to/sourcestats.py"` to [adsbus](../../adsbus/).

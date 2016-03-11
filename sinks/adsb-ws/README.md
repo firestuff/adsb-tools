@@ -6,8 +6,8 @@ This exposes data from adsbus to HTTP clients. It allows you to write clients th
 
 ## Use
 
-Pass `--exec-send=json=/path/to/adsb-ws` to [adsbus](../../adsbus/).
+Pass `--exec-send=json="exec /path/to/adsb-ws"` to [adsbus](../../adsbus/).
 
 Optional flags:
-* `--exec-send=json="/path/to/adsb-ws --bind-address=host:port"`
-* `--exec-send=json="/path/to/adsb-ws --static-dir=/path/to/static/content"`
+* `--exec-send=json="exec /path/to/adsb-ws --bind-address=host:port"`
+* `--exec-send=json="exec /path/to/adsb-ws --static-dir=/path/to/static/content"`
