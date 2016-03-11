@@ -5,6 +5,7 @@ type hub struct {
 	broadcast   chan []byte
 	register    chan *connection
 	unregister  chan *connection
+	greeting    []byte
 }
 
 var h = hub{
@@ -19,6 +20,7 @@ func (h *hub) run() {
 		select {
 		case c := <-h.register:
 			h.connections[c] = true
+			c.send <- h.greeting
 
 		case c := <-h.unregister:
 			_, ok := h.connections[c]
@@ -28,6 +30,9 @@ func (h *hub) run() {
 			}
 
 		case m := <-h.broadcast:
+			if len(h.greeting) == 0 {
+				h.greeting = m
+			}
 			for c := range h.connections {
 				select {
 				case c.send <- m:
