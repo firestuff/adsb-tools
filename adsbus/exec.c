@@ -1,4 +1,5 @@
 #include <assert.h>
+#include <fcntl.h>
 #include <signal.h>
 #include <stdlib.h>
 #include <string.h>
@@ -166,9 +167,11 @@ static void __attribute__ ((noreturn)) exec_child(const struct exec *exec, int d
 static void exec_spawn(struct exec *exec) {
 	LOG(exec->id, "Executing: %s", exec->command);
 	int data_fds[2], log_fds[2];
-	// Leave these sockets blocking; we move in lock step with subprograms
-	assert(!socketpair(AF_UNIX, SOCK_STREAM, 0, data_fds));
-	assert(!socketpair(AF_UNIX, SOCK_STREAM, 0, log_fds));
+	assert(!socketpair(AF_UNIX, SOCK_STREAM | SOCK_NONBLOCK, 0, data_fds));
+	assert(!socketpair(AF_UNIX, SOCK_STREAM | SOCK_NONBLOCK, 0, log_fds));
+
+	assert(!fcntl(data_fds[0], F_SETFD, FD_CLOEXEC));
+	assert(!fcntl(log_fds[0], F_SETFD, FD_CLOEXEC));
 	
 	int res = fork();
 	assert(res >= 0);
@@ -178,8 +181,6 @@ static void exec_spawn(struct exec *exec) {
 		assert(!shutdown(log_fds[0], SHUT_WR));
 		exec_parent(exec, res, data_fds[0], log_fds[0]);
 	} else {
-		assert(!close(data_fds[0]));
-		assert(!close(log_fds[0]));
 		exec_child(exec, data_fds[1], log_fds[1]);
 	}
 }
