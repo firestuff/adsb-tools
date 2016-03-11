@@ -70,7 +70,6 @@ $ ./adsbus --quiet --connect-receive=10.66.0.75/30005 --file-write=beast=dump.be
 $ ls -l dump.beast
 -rw------- 1 flamingcow flamingcow 4065 Mar 11 15:07 dump.beast
 ```
-
 	* For file type conversion:
 ```console
 $ ./adsbus --quiet --file-read=dump.beast --file-write=proto=dump.proto
@@ -78,7 +77,6 @@ $ ls -l dump.*
 -rw------- 1 flamingcow flamingcow  4065 Mar 11 15:07 dump.beast
 -rw------- 1 flamingcow flamingcow 16548 Mar 11 15:10 dump.proto
 ```
-
 	* For examining file contents:
 ```console
  ./adsbus --quiet --file-read=dump.proto --stdout=json
