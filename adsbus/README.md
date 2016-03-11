@@ -84,7 +84,7 @@ make
 	* For examining file contents:
 
 		```console
- 		./adsbus --quiet --file-read=dump.proto --stdout=json
+ 		$ ./adsbus --quiet --file-read=dump.proto --stdout=json
  		{"type": "header", "server_version": "https://github.com/flamingcowtv/adsb-tools#1", "magic": "aDsB", "server_id": "0cd53a31-e62f-4c89-a969-cf0e0f7b141a", "rssi_max": 4294967295, "mlat_timestamp_mhz": 120, "mlat_timestamp_max": 9223372036854775807}
  		{"payload": "200016171BA2BB", "hops": 2, "mlat_timestamp": 370512307133580, "type": "Mode-S short", "source_id": "237e62d7-9f77-4ee0-9025-33367f5f2fc6", "rssi": 286331153}
  		{"payload": "5D400D30A969AA", "hops": 2, "mlat_timestamp": 370512308420280, "type": "Mode-S short", "source_id": "237e62d7-9f77-4ee0-9025-33367f5f2fc6", "rssi": 858993459}
@@ -93,6 +93,31 @@ make
  		{"payload": "5DAAC189CD820A", "hops": 2, "mlat_timestamp": 370512312373740, "type": "Mode-S short", "source_id": "237e62d7-9f77-4ee0-9025-33367f5f2fc6", "rssi": 673720360}
  		...
  		```
+
+* As a daemon
+	* Using [daemontools](https://cr.yp.to/daemontools.html)
+		* Does not fork/detact by default
+		* Logs to stderr by default
+		* Log rotation: use [multilog](https://cr.yp.to/daemontools/multilog.html)
+		* Log timestamping: use [multilog](https://cr.yp.to/daemontools/multilog.html) and [tai64nlocal](https://cr.yp.to/daemontools/tai64nlocal.html)
+		* Run as user: use [setuidgid](https://cr.yp.to/daemontools/setuidgid.html)
+		* Shuts down cleanly on SIGTERM
+	* Using other init systems
+		* Use `--detach` to fork/detach
+		* Use `--log-file=PATH` to write logs to a file instead of stderr
+		* Use `--pid-file=PATH` to write post-detach process ID to a file
+		* Log rotation: adsbus will reopen its log file on receiving SIGHUP; use with most log rotation systems
+		* Log timestamping: use `--log-timestamps`
+		* Run as user: use [start-stop-daemon](http://manpages.ubuntu.com/manpages/vivid/man8/start-stop-daemon.8.html), etc.
+		* Shuts down cleanly on SIGTERM
+	* **DO NOT RUN AS ROOT**.
+		* To bind privileged (< 1024) ports, use [capabilities](http://man7.org/linux/man-pages/man7/capabilities.7.html):
+
+			```console
+			$ setcap cap_net_bind_service=+ep /path/to/adsbus
+			```
+
+		* To allow subprograms (those run with --exec-*) to take privileged actions, set capabilties on them, and consider limiting who can execute them with filesystem permissions.
 
 
 ## Security, reliability, testing
