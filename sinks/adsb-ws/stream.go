@@ -1,10 +1,16 @@
 package main
 
 import (
-	"github.com/gorilla/websocket"
 	"log"
 	"net/http"
+
+	"github.com/gorilla/websocket"
 )
+
+type connection struct {
+	ws *websocket.Conn
+	send chan []byte
+}
 
 var upgrader = websocket.Upgrader{
 	ReadBufferSize:  1024,
@@ -14,24 +20,31 @@ var upgrader = websocket.Upgrader{
 	},
 }
 
-func readPump(ws *websocket.Conn) {
+func (c *connection) writePump() {
 	for {
-		msgtype, msg, err := ws.ReadMessage()
-		if err != nil {
-			if websocket.IsUnexpectedCloseError(err, websocket.CloseGoingAway) {
-				log.Printf("error: %v", err)
-			}
-			break
+		message, ok := <-c.send
+		if !ok {
+			c.ws.WriteMessage(websocket.CloseMessage, []byte{})
+			return
 		}
-		log.Println(msgtype, msg)
+		err := c.ws.WriteMessage(websocket.TextMessage, message)
+		if err != nil {
+			return
+		}
 	}
 }
 
 func serveStream(w http.ResponseWriter, r *http.Request) {
 	ws, err := upgrader.Upgrade(w, r, nil)
 	if err != nil {
-		log.Println(err)
+		log.Printf("%s: Error in websocket handshake: %s", r.RemoteAddr, err)
 		return
 	}
-	readPump(ws)
+	log.Printf("%s: New connection", r.RemoteAddr)
+	c := &connection{send: make(chan []byte, 256), ws: ws}
+	h.register <- c
+	c.writePump()
+	h.unregister <- c
+	c.ws.Close()
+	log.Printf("%s: Connection closed", r.RemoteAddr)
 }

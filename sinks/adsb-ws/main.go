@@ -6,15 +6,16 @@ import (
 	"net/http"
 )
 
-var addr = flag.String("addr", ":8080", "http service address")
+var bindaddr = flag.String("bind-address", ":8080", "Address to respond to HTTP requests on")
 
 func main() {
 	log.SetFlags(0)
 	flag.Parse()
+	go h.run()
 	go readInput()
 	http.HandleFunc("/stream", serveStream)
-	err := http.ListenAndServe(*addr, nil)
+	err := http.ListenAndServe(*bindaddr, nil)
 	if err != nil {
-		log.Fatal("ListenAndServe: ", err)
+		log.Fatal("Error starting web server: ", err)
 	}
 }
