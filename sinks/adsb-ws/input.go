@@ -5,6 +5,8 @@ import (
 	"errors"
 	"log"
 	"os"
+
+	"github.com/adsb-tools/sinks/adsb-ws/proto"
 )
 
 func decodeVarint(r *bufio.Reader) (n uint64, err error) {
@@ -53,7 +55,13 @@ func readInput() {
 			log.Printf("short read")
 			break
 		}
-		log.Println(buf)
+		packet := new(adsb.Adsb)
+		err = packet.Unmarshal(buf)
+		if err != nil {
+			log.Printf("error: %v", err)
+			break
+		}
+		log.Println(packet)
 	}
 	os.Exit(1)
 }
