@@ -127,6 +127,9 @@ static void exec_parent(struct exec *exec, pid_t child, int data_fd, int log_fd)
 	exec->child = child;
 	LOG(exec->id, "Child started as process %d", exec->child);
 
+	assert(!fcntl(data_fd, F_SETFL, O_NONBLOCK));
+	assert(!fcntl(log_fd, F_SETFL, O_NONBLOCK));
+
 	exec->log_peer.fd = log_fd;
 	exec->log_peer.event_handler = exec_log_handler;
 	peer_epoll_add(&exec->log_peer, EPOLLIN);
@@ -167,8 +170,8 @@ static void __attribute__ ((noreturn)) exec_child(const struct exec *exec, int d
 static void exec_spawn(struct exec *exec) {
 	LOG(exec->id, "Executing: %s", exec->command);
 	int data_fds[2], log_fds[2];
-	assert(!socketpair(AF_UNIX, SOCK_STREAM | SOCK_NONBLOCK, 0, data_fds));
-	assert(!socketpair(AF_UNIX, SOCK_STREAM | SOCK_NONBLOCK, 0, log_fds));
+	assert(!socketpair(AF_UNIX, SOCK_STREAM, 0, data_fds));
+	assert(!socketpair(AF_UNIX, SOCK_STREAM, 0, log_fds));
 
 	assert(!fcntl(data_fds[0], F_SETFD, FD_CLOEXEC));
 	assert(!fcntl(log_fds[0], F_SETFD, FD_CLOEXEC));
