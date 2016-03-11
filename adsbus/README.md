@@ -71,6 +71,26 @@ $ ls -l dump.beast
 -rw------- 1 flamingcow flamingcow 4065 Mar 11 15:07 dump.beast
 ```
 
+	* For file type conversion:
+```console
+$ ./adsbus --quiet --file-read=dump.beast --file-write=proto=dump.proto
+$ ls -l dump.*
+-rw------- 1 flamingcow flamingcow  4065 Mar 11 15:07 dump.beast
+-rw------- 1 flamingcow flamingcow 16548 Mar 11 15:10 dump.proto
+```
+
+	* For examining file contents:
+```console
+ ./adsbus --quiet --file-read=dump.proto --stdout=json
+ {"type": "header", "server_version": "https://github.com/flamingcowtv/adsb-tools#1", "magic": "aDsB", "server_id": "0cd53a31-e62f-4c89-a969-cf0e0f7b141a", "rssi_max": 4294967295, "mlat_timestamp_mhz": 120, "mlat_timestamp_max": 9223372036854775807}
+ {"payload": "200016171BA2BB", "hops": 2, "mlat_timestamp": 370512307133580, "type": "Mode-S short", "source_id": "237e62d7-9f77-4ee0-9025-33367f5f2fc6", "rssi": 286331153}
+ {"payload": "5D400D30A969AA", "hops": 2, "mlat_timestamp": 370512308420280, "type": "Mode-S short", "source_id": "237e62d7-9f77-4ee0-9025-33367f5f2fc6", "rssi": 858993459}
+ {"payload": "5DAAC189CD820A", "hops": 2, "mlat_timestamp": 370512310040460, "type": "Mode-S short", "source_id": "237e62d7-9f77-4ee0-9025-33367f5f2fc6", "rssi": 640034342}
+ {"payload": "59A528D6148686", "hops": 2, "mlat_timestamp": 370512310059540, "type": "Mode-S short", "source_id": "237e62d7-9f77-4ee0-9025-33367f5f2fc6", "rssi": 218959117}
+ {"payload": "5DAAC189CD820A", "hops": 2, "mlat_timestamp": 370512312373740, "type": "Mode-S short", "source_id": "237e62d7-9f77-4ee0-9025-33367f5f2fc6", "rssi": 673720360}
+ ...
+ ```
+
 
 ## Security, reliability, testing
 * Secure build options by default
