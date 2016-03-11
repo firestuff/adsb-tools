@@ -64,20 +64,25 @@ make
 ## Use
 * As a commandline utility
 	* For captures from a network source:
+
 		```console
 		$ ./adsbus --quiet --connect-receive=10.66.0.75/30005 --file-write=beast=dump.beast
 		^C
 		$ ls -l dump.beast
 		-rw------- 1 flamingcow flamingcow 4065 Mar 11 15:07 dump.beast
 		```
+
 	* For file type conversion:
+
 		```console
 		$ ./adsbus --quiet --file-read=dump.beast --file-write=proto=dump.proto
 		$ ls -l dump.*
 		-rw------- 1 flamingcow flamingcow  4065 Mar 11 15:07 dump.beast
 		-rw------- 1 flamingcow flamingcow 16548 Mar 11 15:10 dump.proto
 		```
+
 	* For examining file contents:
+
 		```console
  		./adsbus --quiet --file-read=dump.proto --stdout=json
  		{"type": "header", "server_version": "https://github.com/flamingcowtv/adsb-tools#1", "magic": "aDsB", "server_id": "0cd53a31-e62f-4c89-a969-cf0e0f7b141a", "rssi_max": 4294967295, "mlat_timestamp_mhz": 120, "mlat_timestamp_max": 9223372036854775807}
