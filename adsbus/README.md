@@ -25,7 +25,7 @@ make
 	* Incoming TCP connection
 	* Local files, [named pipes](https://en.wikipedia.org/wiki/Named_pipe), and [character devices](https://en.wikipedia.org/wiki/Device_file#Character_devices)
 	* [stdin/stdout](https://en.wikipedia.org/wiki/Standard_streams)
-	* Execute a command and talk to its stdin/stdout
+	* Execute a command and talk to its stdin/stdout, proxy logs from its stderr
 * Data flows:
 	* Send (data flows out of adsbus)
 	* Receive (data flows in to adsbus)
@@ -59,3 +59,25 @@ make
 		* Efficient long-haul links (hub and spoke models on both ends)
 	* json and proto formats carry information about original source across multiple hops
 	* SO_REUSEPORT allows multiple adsbus instances to accept connections on the same IP and port without a load balancer
+
+
+## Security, reliability, testing
+* Secure build options by default
+	* -Weverything -Werror -pedantic-errors (with limited specific exceptions)
+	* [-D_FORTIFY_SOURCE=2](https://wiki.debian.org/Hardening#DEB_BUILD_HARDENING_FORTIFY_.28gcc.2Fg.2B-.2B-_-D_FORTIFY_SOURCE.3D2.29)
+	* [-fstack-protector-strong](https://wiki.debian.org/Hardening#DEB_BUILD_HARDENING_STACKPROTECTOR_.28gcc.2Fg.2B-.2B-_-fstack-protector-strong.29)
+	* [-fPIE -pie](https://wiki.debian.org/Hardening#DEB_BUILD_HARDENING_PIE_.28gcc.2Fg.2B-.2B-_-fPIE_-pie.29)
+	* [-z relro](https://wiki.debian.org/Hardening#DEB_BUILD_HARDENING_RELRO_.28ld_-z_relro.29)
+	* [-z now](https://wiki.debian.org/Hardening#DEB_BUILD_HARDENING_BINDNOW_.28ld_-z_now.29)
+* valgrind clean
+	* Zero open fds and allocated blocks when run with `--track-fds=yes --show-leak-kinds=all --leak-check=full`
+	* Cleans up on normal exit and when handling SIGINT/SIGTERM
+* Subprogram isolation
+	* All fds created with CLOEXEC; none passed on to children (tested with `--exec-receive='ls -l /proc/self/fd 1>&2'`)
+	* Separate process group
+* Test suite
+	* `make test` runs a large set of test inputs through adsbus under valgrind
+* Parser fuzzing
+	* `make afl-fuzz` runs adsbus inside [american fuzzy lop](http://lcamtuf.coredump.cx/afl/) starting from previous output cases
+* Network fuzzing
+	* `stutterfuzz.sh` runs adsbus with [stutterfuzz](https://github.com/flamingcowtv/stutterfuzz) to test connection/network handling under load, using afl test cases
