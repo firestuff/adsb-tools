@@ -16,11 +16,17 @@
 */
 package adsb
 
-import proto "github.com/golang/protobuf/proto"
+import proto "github.com/gogo/protobuf/proto"
 import fmt "fmt"
 import math "math"
 
-import github_com_golang_protobuf_proto "github.com/golang/protobuf/proto"
+import bytes "bytes"
+
+import strings "strings"
+import github_com_gogo_protobuf_proto "github.com/gogo/protobuf/proto"
+import sort "sort"
+import strconv "strconv"
+import reflect "reflect"
 
 import io "io"
 
@@ -31,65 +37,63 @@ var _ = math.Inf
 
 type AdsbHeader struct {
 	// Always "aDsB"
-	Magic *string `protobuf:"bytes,1,req,name=magic" json:"magic,omitempty"`
+	Magic string `protobuf:"bytes,1,req,name=magic" json:"magic"`
 	// Unique identifier for this server implementation
 	// Recommended: "https://url/of/source#version"
-	ServerVersion *string `protobuf:"bytes,2,req,name=server_version" json:"server_version,omitempty"`
+	ServerVersion string `protobuf:"bytes,2,req,name=server_version" json:"server_version"`
 	// Unique identifier for this server instance
 	// UUID recommended
 	// 36 character limit
-	ServerId *string `protobuf:"bytes,3,req,name=server_id" json:"server_id,omitempty"`
+	ServerId string `protobuf:"bytes,3,req,name=server_id" json:"server_id"`
 	// MHz of the clock used in subsequent mlat_timestamp fields
-	MlatTimestampMhz *uint32 `protobuf:"fixed32,4,req,name=mlat_timestamp_mhz" json:"mlat_timestamp_mhz,omitempty"`
+	MlatTimestampMhz uint32 `protobuf:"fixed32,4,req,name=mlat_timestamp_mhz" json:"mlat_timestamp_mhz"`
 	// Maximum value of subsequent mlat_timestamp fields, at which point values are expected to wrap
-	MlatTimestampMax *uint64 `protobuf:"fixed64,5,req,name=mlat_timestamp_max" json:"mlat_timestamp_max,omitempty"`
+	MlatTimestampMax uint64 `protobuf:"fixed64,5,req,name=mlat_timestamp_max" json:"mlat_timestamp_max"`
 	// Maximum value of subsequent rssi fields
-	RssiMax          *uint32 `protobuf:"fixed32,6,req,name=rssi_max" json:"rssi_max,omitempty"`
-	XXX_unrecognized []byte  `json:"-"`
+	RssiMax uint32 `protobuf:"fixed32,6,req,name=rssi_max" json:"rssi_max"`
 }
 
-func (m *AdsbHeader) Reset()         { *m = AdsbHeader{} }
-func (m *AdsbHeader) String() string { return proto.CompactTextString(m) }
-func (*AdsbHeader) ProtoMessage()    {}
+func (m *AdsbHeader) Reset()      { *m = AdsbHeader{} }
+func (*AdsbHeader) ProtoMessage() {}
 
 func (m *AdsbHeader) GetMagic() string {
-	if m != nil && m.Magic != nil {
-		return *m.Magic
+	if m != nil {
+		return m.Magic
 	}
 	return ""
 }
 
 func (m *AdsbHeader) GetServerVersion() string {
-	if m != nil && m.ServerVersion != nil {
-		return *m.ServerVersion
+	if m != nil {
+		return m.ServerVersion
 	}
 	return ""
 }
 
 func (m *AdsbHeader) GetServerId() string {
-	if m != nil && m.ServerId != nil {
-		return *m.ServerId
+	if m != nil {
+		return m.ServerId
 	}
 	return ""
 }
 
 func (m *AdsbHeader) GetMlatTimestampMhz() uint32 {
-	if m != nil && m.MlatTimestampMhz != nil {
-		return *m.MlatTimestampMhz
+	if m != nil {
+		return m.MlatTimestampMhz
 	}
 	return 0
 }
 
 func (m *AdsbHeader) GetMlatTimestampMax() uint64 {
-	if m != nil && m.MlatTimestampMax != nil {
-		return *m.MlatTimestampMax
+	if m != nil {
+		return m.MlatTimestampMax
 	}
 	return 0
 }
 
 func (m *AdsbHeader) GetRssiMax() uint32 {
-	if m != nil && m.RssiMax != nil {
-		return *m.RssiMax
+	if m != nil {
+		return m.RssiMax
 	}
 	return 0
 }
@@ -98,54 +102,52 @@ type AdsbPacket struct {
 	// Unique value for the source that recorded this packet
 	// UUID recommended
 	// 36 character limit
-	SourceId *string `protobuf:"bytes,1,req,name=source_id" json:"source_id,omitempty"`
+	SourceId string `protobuf:"bytes,1,req,name=source_id" json:"source_id"`
 	// Number of routing hops since source, when carried by protocols with a hop count.
-	Hops *uint32 `protobuf:"varint,2,req,name=hops" json:"hops,omitempty"`
+	Hops uint32 `protobuf:"varint,2,req,name=hops" json:"hops"`
 	// Value of the MLAT counter when this packet arrived at the recorder
 	// Range [0, mlat_timestamp_max]
 	// Units of 1 / (mlat_timestamp_mhz * 10^6) Hz
-	MlatTimestamp *uint64 `protobuf:"fixed64,3,opt,name=mlat_timestamp" json:"mlat_timestamp,omitempty"`
+	MlatTimestamp uint64 `protobuf:"fixed64,3,opt,name=mlat_timestamp" json:"mlat_timestamp"`
 	// RSSI of the received packet at the recorder
 	// Range [0, rssi_max]
 	// Units unspecified
-	Rssi *uint32 `protobuf:"fixed32,4,opt,name=rssi" json:"rssi,omitempty"`
+	Rssi uint32 `protobuf:"fixed32,4,opt,name=rssi" json:"rssi"`
 	// Binary packet payload.
 	// Length:
 	//   mode_ac: 2 bytes
 	//   mode_s_short: 7 bytes
 	//   mode_s_long: 14 bytes
-	Payload          []byte `protobuf:"bytes,5,req,name=payload" json:"payload,omitempty"`
-	XXX_unrecognized []byte `json:"-"`
+	Payload []byte `protobuf:"bytes,5,req,name=payload" json:"payload"`
 }
 
-func (m *AdsbPacket) Reset()         { *m = AdsbPacket{} }
-func (m *AdsbPacket) String() string { return proto.CompactTextString(m) }
-func (*AdsbPacket) ProtoMessage()    {}
+func (m *AdsbPacket) Reset()      { *m = AdsbPacket{} }
+func (*AdsbPacket) ProtoMessage() {}
 
 func (m *AdsbPacket) GetSourceId() string {
-	if m != nil && m.SourceId != nil {
-		return *m.SourceId
+	if m != nil {
+		return m.SourceId
 	}
 	return ""
 }
 
 func (m *AdsbPacket) GetHops() uint32 {
-	if m != nil && m.Hops != nil {
-		return *m.Hops
+	if m != nil {
+		return m.Hops
 	}
 	return 0
 }
 
 func (m *AdsbPacket) GetMlatTimestamp() uint64 {
-	if m != nil && m.MlatTimestamp != nil {
-		return *m.MlatTimestamp
+	if m != nil {
+		return m.MlatTimestamp
 	}
 	return 0
 }
 
 func (m *AdsbPacket) GetRssi() uint32 {
-	if m != nil && m.Rssi != nil {
-		return *m.Rssi
+	if m != nil {
+		return m.Rssi
 	}
 	return 0
 }
@@ -167,16 +169,15 @@ type Adsb struct {
 	//	*Adsb_ModeAc
 	//	*Adsb_ModeSShort
 	//	*Adsb_ModeSLong
-	Record           isAdsb_Record `protobuf_oneof:"record"`
-	XXX_unrecognized []byte        `json:"-"`
+	Record isAdsb_Record `protobuf_oneof:"record"`
 }
 
-func (m *Adsb) Reset()         { *m = Adsb{} }
-func (m *Adsb) String() string { return proto.CompactTextString(m) }
-func (*Adsb) ProtoMessage()    {}
+func (m *Adsb) Reset()      { *m = Adsb{} }
+func (*Adsb) ProtoMessage() {}
 
 type isAdsb_Record interface {
 	isAdsb_Record()
+	Equal(interface{}) bool
 	MarshalTo([]byte) (int, error)
 	Size() int
 }
@@ -319,13 +320,11 @@ func _Adsb_OneofUnmarshaler(msg proto.Message, tag, wire int, b *proto.Buffer) (
 // with many messages and many AdsbStreams each with a single message encode
 // identically.
 type AdsbStream struct {
-	Msg              []*Adsb `protobuf:"bytes,1,rep,name=msg" json:"msg,omitempty"`
-	XXX_unrecognized []byte  `json:"-"`
+	Msg []*Adsb `protobuf:"bytes,1,rep,name=msg" json:"msg,omitempty"`
 }
 
-func (m *AdsbStream) Reset()         { *m = AdsbStream{} }
-func (m *AdsbStream) String() string { return proto.CompactTextString(m) }
-func (*AdsbStream) ProtoMessage()    {}
+func (m *AdsbStream) Reset()      { *m = AdsbStream{} }
+func (*AdsbStream) ProtoMessage() {}
 
 func (m *AdsbStream) GetMsg() []*Adsb {
 	if m != nil {
@@ -339,6 +338,394 @@ func init() {
 	proto.RegisterType((*AdsbPacket)(nil), "AdsbPacket")
 	proto.RegisterType((*Adsb)(nil), "Adsb")
 	proto.RegisterType((*AdsbStream)(nil), "AdsbStream")
+}
+func (this *AdsbHeader) Equal(that interface{}) bool {
+	if that == nil {
+		if this == nil {
+			return true
+		}
+		return false
+	}
+
+	that1, ok := that.(*AdsbHeader)
+	if !ok {
+		that2, ok := that.(AdsbHeader)
+		if ok {
+			that1 = &that2
+		} else {
+			return false
+		}
+	}
+	if that1 == nil {
+		if this == nil {
+			return true
+		}
+		return false
+	} else if this == nil {
+		return false
+	}
+	if this.Magic != that1.Magic {
+		return false
+	}
+	if this.ServerVersion != that1.ServerVersion {
+		return false
+	}
+	if this.ServerId != that1.ServerId {
+		return false
+	}
+	if this.MlatTimestampMhz != that1.MlatTimestampMhz {
+		return false
+	}
+	if this.MlatTimestampMax != that1.MlatTimestampMax {
+		return false
+	}
+	if this.RssiMax != that1.RssiMax {
+		return false
+	}
+	return true
+}
+func (this *AdsbPacket) Equal(that interface{}) bool {
+	if that == nil {
+		if this == nil {
+			return true
+		}
+		return false
+	}
+
+	that1, ok := that.(*AdsbPacket)
+	if !ok {
+		that2, ok := that.(AdsbPacket)
+		if ok {
+			that1 = &that2
+		} else {
+			return false
+		}
+	}
+	if that1 == nil {
+		if this == nil {
+			return true
+		}
+		return false
+	} else if this == nil {
+		return false
+	}
+	if this.SourceId != that1.SourceId {
+		return false
+	}
+	if this.Hops != that1.Hops {
+		return false
+	}
+	if this.MlatTimestamp != that1.MlatTimestamp {
+		return false
+	}
+	if this.Rssi != that1.Rssi {
+		return false
+	}
+	if !bytes.Equal(this.Payload, that1.Payload) {
+		return false
+	}
+	return true
+}
+func (this *Adsb) Equal(that interface{}) bool {
+	if that == nil {
+		if this == nil {
+			return true
+		}
+		return false
+	}
+
+	that1, ok := that.(*Adsb)
+	if !ok {
+		that2, ok := that.(Adsb)
+		if ok {
+			that1 = &that2
+		} else {
+			return false
+		}
+	}
+	if that1 == nil {
+		if this == nil {
+			return true
+		}
+		return false
+	} else if this == nil {
+		return false
+	}
+	if that1.Record == nil {
+		if this.Record != nil {
+			return false
+		}
+	} else if this.Record == nil {
+		return false
+	} else if !this.Record.Equal(that1.Record) {
+		return false
+	}
+	return true
+}
+func (this *Adsb_Header) Equal(that interface{}) bool {
+	if that == nil {
+		if this == nil {
+			return true
+		}
+		return false
+	}
+
+	that1, ok := that.(*Adsb_Header)
+	if !ok {
+		that2, ok := that.(Adsb_Header)
+		if ok {
+			that1 = &that2
+		} else {
+			return false
+		}
+	}
+	if that1 == nil {
+		if this == nil {
+			return true
+		}
+		return false
+	} else if this == nil {
+		return false
+	}
+	if !this.Header.Equal(that1.Header) {
+		return false
+	}
+	return true
+}
+func (this *Adsb_ModeAc) Equal(that interface{}) bool {
+	if that == nil {
+		if this == nil {
+			return true
+		}
+		return false
+	}
+
+	that1, ok := that.(*Adsb_ModeAc)
+	if !ok {
+		that2, ok := that.(Adsb_ModeAc)
+		if ok {
+			that1 = &that2
+		} else {
+			return false
+		}
+	}
+	if that1 == nil {
+		if this == nil {
+			return true
+		}
+		return false
+	} else if this == nil {
+		return false
+	}
+	if !this.ModeAc.Equal(that1.ModeAc) {
+		return false
+	}
+	return true
+}
+func (this *Adsb_ModeSShort) Equal(that interface{}) bool {
+	if that == nil {
+		if this == nil {
+			return true
+		}
+		return false
+	}
+
+	that1, ok := that.(*Adsb_ModeSShort)
+	if !ok {
+		that2, ok := that.(Adsb_ModeSShort)
+		if ok {
+			that1 = &that2
+		} else {
+			return false
+		}
+	}
+	if that1 == nil {
+		if this == nil {
+			return true
+		}
+		return false
+	} else if this == nil {
+		return false
+	}
+	if !this.ModeSShort.Equal(that1.ModeSShort) {
+		return false
+	}
+	return true
+}
+func (this *Adsb_ModeSLong) Equal(that interface{}) bool {
+	if that == nil {
+		if this == nil {
+			return true
+		}
+		return false
+	}
+
+	that1, ok := that.(*Adsb_ModeSLong)
+	if !ok {
+		that2, ok := that.(Adsb_ModeSLong)
+		if ok {
+			that1 = &that2
+		} else {
+			return false
+		}
+	}
+	if that1 == nil {
+		if this == nil {
+			return true
+		}
+		return false
+	} else if this == nil {
+		return false
+	}
+	if !this.ModeSLong.Equal(that1.ModeSLong) {
+		return false
+	}
+	return true
+}
+func (this *AdsbStream) Equal(that interface{}) bool {
+	if that == nil {
+		if this == nil {
+			return true
+		}
+		return false
+	}
+
+	that1, ok := that.(*AdsbStream)
+	if !ok {
+		that2, ok := that.(AdsbStream)
+		if ok {
+			that1 = &that2
+		} else {
+			return false
+		}
+	}
+	if that1 == nil {
+		if this == nil {
+			return true
+		}
+		return false
+	} else if this == nil {
+		return false
+	}
+	if len(this.Msg) != len(that1.Msg) {
+		return false
+	}
+	for i := range this.Msg {
+		if !this.Msg[i].Equal(that1.Msg[i]) {
+			return false
+		}
+	}
+	return true
+}
+func (this *AdsbHeader) GoString() string {
+	if this == nil {
+		return "nil"
+	}
+	s := make([]string, 0, 10)
+	s = append(s, "&adsb.AdsbHeader{")
+	s = append(s, "Magic: "+fmt.Sprintf("%#v", this.Magic)+",\n")
+	s = append(s, "ServerVersion: "+fmt.Sprintf("%#v", this.ServerVersion)+",\n")
+	s = append(s, "ServerId: "+fmt.Sprintf("%#v", this.ServerId)+",\n")
+	s = append(s, "MlatTimestampMhz: "+fmt.Sprintf("%#v", this.MlatTimestampMhz)+",\n")
+	s = append(s, "MlatTimestampMax: "+fmt.Sprintf("%#v", this.MlatTimestampMax)+",\n")
+	s = append(s, "RssiMax: "+fmt.Sprintf("%#v", this.RssiMax)+",\n")
+	s = append(s, "}")
+	return strings.Join(s, "")
+}
+func (this *AdsbPacket) GoString() string {
+	if this == nil {
+		return "nil"
+	}
+	s := make([]string, 0, 9)
+	s = append(s, "&adsb.AdsbPacket{")
+	s = append(s, "SourceId: "+fmt.Sprintf("%#v", this.SourceId)+",\n")
+	s = append(s, "Hops: "+fmt.Sprintf("%#v", this.Hops)+",\n")
+	s = append(s, "MlatTimestamp: "+fmt.Sprintf("%#v", this.MlatTimestamp)+",\n")
+	s = append(s, "Rssi: "+fmt.Sprintf("%#v", this.Rssi)+",\n")
+	s = append(s, "Payload: "+fmt.Sprintf("%#v", this.Payload)+",\n")
+	s = append(s, "}")
+	return strings.Join(s, "")
+}
+func (this *Adsb) GoString() string {
+	if this == nil {
+		return "nil"
+	}
+	s := make([]string, 0, 8)
+	s = append(s, "&adsb.Adsb{")
+	if this.Record != nil {
+		s = append(s, "Record: "+fmt.Sprintf("%#v", this.Record)+",\n")
+	}
+	s = append(s, "}")
+	return strings.Join(s, "")
+}
+func (this *Adsb_Header) GoString() string {
+	if this == nil {
+		return "nil"
+	}
+	s := strings.Join([]string{`&adsb.Adsb_Header{` +
+		`Header:` + fmt.Sprintf("%#v", this.Header) + `}`}, ", ")
+	return s
+}
+func (this *Adsb_ModeAc) GoString() string {
+	if this == nil {
+		return "nil"
+	}
+	s := strings.Join([]string{`&adsb.Adsb_ModeAc{` +
+		`ModeAc:` + fmt.Sprintf("%#v", this.ModeAc) + `}`}, ", ")
+	return s
+}
+func (this *Adsb_ModeSShort) GoString() string {
+	if this == nil {
+		return "nil"
+	}
+	s := strings.Join([]string{`&adsb.Adsb_ModeSShort{` +
+		`ModeSShort:` + fmt.Sprintf("%#v", this.ModeSShort) + `}`}, ", ")
+	return s
+}
+func (this *Adsb_ModeSLong) GoString() string {
+	if this == nil {
+		return "nil"
+	}
+	s := strings.Join([]string{`&adsb.Adsb_ModeSLong{` +
+		`ModeSLong:` + fmt.Sprintf("%#v", this.ModeSLong) + `}`}, ", ")
+	return s
+}
+func (this *AdsbStream) GoString() string {
+	if this == nil {
+		return "nil"
+	}
+	s := make([]string, 0, 5)
+	s = append(s, "&adsb.AdsbStream{")
+	if this.Msg != nil {
+		s = append(s, "Msg: "+fmt.Sprintf("%#v", this.Msg)+",\n")
+	}
+	s = append(s, "}")
+	return strings.Join(s, "")
+}
+func valueToGoStringAdsb(v interface{}, typ string) string {
+	rv := reflect.ValueOf(v)
+	if rv.IsNil() {
+		return "nil"
+	}
+	pv := reflect.Indirect(rv).Interface()
+	return fmt.Sprintf("func(v %v) *%v { return &v } ( %#v )", typ, typ, pv)
+}
+func extensionToGoStringAdsb(e map[int32]github_com_gogo_protobuf_proto.Extension) string {
+	if e == nil {
+		return "nil"
+	}
+	s := "map[int32]proto.Extension{"
+	keys := make([]int, 0, len(e))
+	for k := range e {
+		keys = append(keys, int(k))
+	}
+	sort.Ints(keys)
+	ss := []string{}
+	for _, k := range keys {
+		ss = append(ss, strconv.Itoa(k)+": "+e[int32(k)].GoString())
+	}
+	s += strings.Join(ss, ",") + "}"
+	return s
 }
 func (m *AdsbHeader) Marshal() (data []byte, err error) {
 	size := m.Size()
@@ -355,54 +742,27 @@ func (m *AdsbHeader) MarshalTo(data []byte) (int, error) {
 	_ = i
 	var l int
 	_ = l
-	if m.Magic == nil {
-		return 0, new(github_com_golang_protobuf_proto.RequiredNotSetError)
-	} else {
-		data[i] = 0xa
-		i++
-		i = encodeVarintAdsb(data, i, uint64(len(*m.Magic)))
-		i += copy(data[i:], *m.Magic)
-	}
-	if m.ServerVersion == nil {
-		return 0, new(github_com_golang_protobuf_proto.RequiredNotSetError)
-	} else {
-		data[i] = 0x12
-		i++
-		i = encodeVarintAdsb(data, i, uint64(len(*m.ServerVersion)))
-		i += copy(data[i:], *m.ServerVersion)
-	}
-	if m.ServerId == nil {
-		return 0, new(github_com_golang_protobuf_proto.RequiredNotSetError)
-	} else {
-		data[i] = 0x1a
-		i++
-		i = encodeVarintAdsb(data, i, uint64(len(*m.ServerId)))
-		i += copy(data[i:], *m.ServerId)
-	}
-	if m.MlatTimestampMhz == nil {
-		return 0, new(github_com_golang_protobuf_proto.RequiredNotSetError)
-	} else {
-		data[i] = 0x25
-		i++
-		i = encodeFixed32Adsb(data, i, uint32(*m.MlatTimestampMhz))
-	}
-	if m.MlatTimestampMax == nil {
-		return 0, new(github_com_golang_protobuf_proto.RequiredNotSetError)
-	} else {
-		data[i] = 0x29
-		i++
-		i = encodeFixed64Adsb(data, i, uint64(*m.MlatTimestampMax))
-	}
-	if m.RssiMax == nil {
-		return 0, new(github_com_golang_protobuf_proto.RequiredNotSetError)
-	} else {
-		data[i] = 0x35
-		i++
-		i = encodeFixed32Adsb(data, i, uint32(*m.RssiMax))
-	}
-	if m.XXX_unrecognized != nil {
-		i += copy(data[i:], m.XXX_unrecognized)
-	}
+	data[i] = 0xa
+	i++
+	i = encodeVarintAdsb(data, i, uint64(len(m.Magic)))
+	i += copy(data[i:], m.Magic)
+	data[i] = 0x12
+	i++
+	i = encodeVarintAdsb(data, i, uint64(len(m.ServerVersion)))
+	i += copy(data[i:], m.ServerVersion)
+	data[i] = 0x1a
+	i++
+	i = encodeVarintAdsb(data, i, uint64(len(m.ServerId)))
+	i += copy(data[i:], m.ServerId)
+	data[i] = 0x25
+	i++
+	i = encodeFixed32Adsb(data, i, uint32(m.MlatTimestampMhz))
+	data[i] = 0x29
+	i++
+	i = encodeFixed64Adsb(data, i, uint64(m.MlatTimestampMax))
+	data[i] = 0x35
+	i++
+	i = encodeFixed32Adsb(data, i, uint32(m.RssiMax))
 	return i, nil
 }
 
@@ -421,41 +781,24 @@ func (m *AdsbPacket) MarshalTo(data []byte) (int, error) {
 	_ = i
 	var l int
 	_ = l
-	if m.SourceId == nil {
-		return 0, new(github_com_golang_protobuf_proto.RequiredNotSetError)
-	} else {
-		data[i] = 0xa
-		i++
-		i = encodeVarintAdsb(data, i, uint64(len(*m.SourceId)))
-		i += copy(data[i:], *m.SourceId)
-	}
-	if m.Hops == nil {
-		return 0, new(github_com_golang_protobuf_proto.RequiredNotSetError)
-	} else {
-		data[i] = 0x10
-		i++
-		i = encodeVarintAdsb(data, i, uint64(*m.Hops))
-	}
-	if m.MlatTimestamp != nil {
-		data[i] = 0x19
-		i++
-		i = encodeFixed64Adsb(data, i, uint64(*m.MlatTimestamp))
-	}
-	if m.Rssi != nil {
-		data[i] = 0x25
-		i++
-		i = encodeFixed32Adsb(data, i, uint32(*m.Rssi))
-	}
-	if m.Payload == nil {
-		return 0, new(github_com_golang_protobuf_proto.RequiredNotSetError)
-	} else {
+	data[i] = 0xa
+	i++
+	i = encodeVarintAdsb(data, i, uint64(len(m.SourceId)))
+	i += copy(data[i:], m.SourceId)
+	data[i] = 0x10
+	i++
+	i = encodeVarintAdsb(data, i, uint64(m.Hops))
+	data[i] = 0x19
+	i++
+	i = encodeFixed64Adsb(data, i, uint64(m.MlatTimestamp))
+	data[i] = 0x25
+	i++
+	i = encodeFixed32Adsb(data, i, uint32(m.Rssi))
+	if m.Payload != nil {
 		data[i] = 0x2a
 		i++
 		i = encodeVarintAdsb(data, i, uint64(len(m.Payload)))
 		i += copy(data[i:], m.Payload)
-	}
-	if m.XXX_unrecognized != nil {
-		i += copy(data[i:], m.XXX_unrecognized)
 	}
 	return i, nil
 }
@@ -481,9 +824,6 @@ func (m *Adsb) MarshalTo(data []byte) (int, error) {
 			return 0, err
 		}
 		i += nn1
-	}
-	if m.XXX_unrecognized != nil {
-		i += copy(data[i:], m.XXX_unrecognized)
 	}
 	return i, nil
 }
@@ -571,9 +911,6 @@ func (m *AdsbStream) MarshalTo(data []byte) (int, error) {
 			i += n
 		}
 	}
-	if m.XXX_unrecognized != nil {
-		i += copy(data[i:], m.XXX_unrecognized)
-	}
 	return i, nil
 }
 
@@ -607,55 +944,29 @@ func encodeVarintAdsb(data []byte, offset int, v uint64) int {
 func (m *AdsbHeader) Size() (n int) {
 	var l int
 	_ = l
-	if m.Magic != nil {
-		l = len(*m.Magic)
-		n += 1 + l + sovAdsb(uint64(l))
-	}
-	if m.ServerVersion != nil {
-		l = len(*m.ServerVersion)
-		n += 1 + l + sovAdsb(uint64(l))
-	}
-	if m.ServerId != nil {
-		l = len(*m.ServerId)
-		n += 1 + l + sovAdsb(uint64(l))
-	}
-	if m.MlatTimestampMhz != nil {
-		n += 5
-	}
-	if m.MlatTimestampMax != nil {
-		n += 9
-	}
-	if m.RssiMax != nil {
-		n += 5
-	}
-	if m.XXX_unrecognized != nil {
-		n += len(m.XXX_unrecognized)
-	}
+	l = len(m.Magic)
+	n += 1 + l + sovAdsb(uint64(l))
+	l = len(m.ServerVersion)
+	n += 1 + l + sovAdsb(uint64(l))
+	l = len(m.ServerId)
+	n += 1 + l + sovAdsb(uint64(l))
+	n += 5
+	n += 9
+	n += 5
 	return n
 }
 
 func (m *AdsbPacket) Size() (n int) {
 	var l int
 	_ = l
-	if m.SourceId != nil {
-		l = len(*m.SourceId)
-		n += 1 + l + sovAdsb(uint64(l))
-	}
-	if m.Hops != nil {
-		n += 1 + sovAdsb(uint64(*m.Hops))
-	}
-	if m.MlatTimestamp != nil {
-		n += 9
-	}
-	if m.Rssi != nil {
-		n += 5
-	}
+	l = len(m.SourceId)
+	n += 1 + l + sovAdsb(uint64(l))
+	n += 1 + sovAdsb(uint64(m.Hops))
+	n += 9
+	n += 5
 	if m.Payload != nil {
 		l = len(m.Payload)
 		n += 1 + l + sovAdsb(uint64(l))
-	}
-	if m.XXX_unrecognized != nil {
-		n += len(m.XXX_unrecognized)
 	}
 	return n
 }
@@ -665,9 +976,6 @@ func (m *Adsb) Size() (n int) {
 	_ = l
 	if m.Record != nil {
 		n += m.Record.Size()
-	}
-	if m.XXX_unrecognized != nil {
-		n += len(m.XXX_unrecognized)
 	}
 	return n
 }
@@ -717,9 +1025,6 @@ func (m *AdsbStream) Size() (n int) {
 			n += 1 + l + sovAdsb(uint64(l))
 		}
 	}
-	if m.XXX_unrecognized != nil {
-		n += len(m.XXX_unrecognized)
-	}
 	return n
 }
 
@@ -735,6 +1040,103 @@ func sovAdsb(x uint64) (n int) {
 }
 func sozAdsb(x uint64) (n int) {
 	return sovAdsb(uint64((x << 1) ^ uint64((int64(x) >> 63))))
+}
+func (this *AdsbHeader) String() string {
+	if this == nil {
+		return "nil"
+	}
+	s := strings.Join([]string{`&AdsbHeader{`,
+		`Magic:` + fmt.Sprintf("%v", this.Magic) + `,`,
+		`ServerVersion:` + fmt.Sprintf("%v", this.ServerVersion) + `,`,
+		`ServerId:` + fmt.Sprintf("%v", this.ServerId) + `,`,
+		`MlatTimestampMhz:` + fmt.Sprintf("%v", this.MlatTimestampMhz) + `,`,
+		`MlatTimestampMax:` + fmt.Sprintf("%v", this.MlatTimestampMax) + `,`,
+		`RssiMax:` + fmt.Sprintf("%v", this.RssiMax) + `,`,
+		`}`,
+	}, "")
+	return s
+}
+func (this *AdsbPacket) String() string {
+	if this == nil {
+		return "nil"
+	}
+	s := strings.Join([]string{`&AdsbPacket{`,
+		`SourceId:` + fmt.Sprintf("%v", this.SourceId) + `,`,
+		`Hops:` + fmt.Sprintf("%v", this.Hops) + `,`,
+		`MlatTimestamp:` + fmt.Sprintf("%v", this.MlatTimestamp) + `,`,
+		`Rssi:` + fmt.Sprintf("%v", this.Rssi) + `,`,
+		`Payload:` + fmt.Sprintf("%v", this.Payload) + `,`,
+		`}`,
+	}, "")
+	return s
+}
+func (this *Adsb) String() string {
+	if this == nil {
+		return "nil"
+	}
+	s := strings.Join([]string{`&Adsb{`,
+		`Record:` + fmt.Sprintf("%v", this.Record) + `,`,
+		`}`,
+	}, "")
+	return s
+}
+func (this *Adsb_Header) String() string {
+	if this == nil {
+		return "nil"
+	}
+	s := strings.Join([]string{`&Adsb_Header{`,
+		`Header:` + strings.Replace(fmt.Sprintf("%v", this.Header), "AdsbHeader", "AdsbHeader", 1) + `,`,
+		`}`,
+	}, "")
+	return s
+}
+func (this *Adsb_ModeAc) String() string {
+	if this == nil {
+		return "nil"
+	}
+	s := strings.Join([]string{`&Adsb_ModeAc{`,
+		`ModeAc:` + strings.Replace(fmt.Sprintf("%v", this.ModeAc), "AdsbPacket", "AdsbPacket", 1) + `,`,
+		`}`,
+	}, "")
+	return s
+}
+func (this *Adsb_ModeSShort) String() string {
+	if this == nil {
+		return "nil"
+	}
+	s := strings.Join([]string{`&Adsb_ModeSShort{`,
+		`ModeSShort:` + strings.Replace(fmt.Sprintf("%v", this.ModeSShort), "AdsbPacket", "AdsbPacket", 1) + `,`,
+		`}`,
+	}, "")
+	return s
+}
+func (this *Adsb_ModeSLong) String() string {
+	if this == nil {
+		return "nil"
+	}
+	s := strings.Join([]string{`&Adsb_ModeSLong{`,
+		`ModeSLong:` + strings.Replace(fmt.Sprintf("%v", this.ModeSLong), "AdsbPacket", "AdsbPacket", 1) + `,`,
+		`}`,
+	}, "")
+	return s
+}
+func (this *AdsbStream) String() string {
+	if this == nil {
+		return "nil"
+	}
+	s := strings.Join([]string{`&AdsbStream{`,
+		`Msg:` + strings.Replace(fmt.Sprintf("%v", this.Msg), "Adsb", "Adsb", 1) + `,`,
+		`}`,
+	}, "")
+	return s
+}
+func valueToStringAdsb(v interface{}) string {
+	rv := reflect.ValueOf(v)
+	if rv.IsNil() {
+		return "nil"
+	}
+	pv := reflect.Indirect(rv).Interface()
+	return fmt.Sprintf("*%v", pv)
 }
 func (m *AdsbHeader) Unmarshal(data []byte) error {
 	var hasFields [1]uint64
@@ -793,8 +1195,7 @@ func (m *AdsbHeader) Unmarshal(data []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			s := string(data[iNdEx:postIndex])
-			m.Magic = &s
+			m.Magic = string(data[iNdEx:postIndex])
 			iNdEx = postIndex
 			hasFields[0] |= uint64(0x00000001)
 		case 2:
@@ -824,8 +1225,7 @@ func (m *AdsbHeader) Unmarshal(data []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			s := string(data[iNdEx:postIndex])
-			m.ServerVersion = &s
+			m.ServerVersion = string(data[iNdEx:postIndex])
 			iNdEx = postIndex
 			hasFields[0] |= uint64(0x00000002)
 		case 3:
@@ -855,58 +1255,54 @@ func (m *AdsbHeader) Unmarshal(data []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			s := string(data[iNdEx:postIndex])
-			m.ServerId = &s
+			m.ServerId = string(data[iNdEx:postIndex])
 			iNdEx = postIndex
 			hasFields[0] |= uint64(0x00000004)
 		case 4:
 			if wireType != 5 {
 				return fmt.Errorf("proto: wrong wireType = %d for field MlatTimestampMhz", wireType)
 			}
-			var v uint32
+			m.MlatTimestampMhz = 0
 			if (iNdEx + 4) > l {
 				return io.ErrUnexpectedEOF
 			}
 			iNdEx += 4
-			v = uint32(data[iNdEx-4])
-			v |= uint32(data[iNdEx-3]) << 8
-			v |= uint32(data[iNdEx-2]) << 16
-			v |= uint32(data[iNdEx-1]) << 24
-			m.MlatTimestampMhz = &v
+			m.MlatTimestampMhz = uint32(data[iNdEx-4])
+			m.MlatTimestampMhz |= uint32(data[iNdEx-3]) << 8
+			m.MlatTimestampMhz |= uint32(data[iNdEx-2]) << 16
+			m.MlatTimestampMhz |= uint32(data[iNdEx-1]) << 24
 			hasFields[0] |= uint64(0x00000008)
 		case 5:
 			if wireType != 1 {
 				return fmt.Errorf("proto: wrong wireType = %d for field MlatTimestampMax", wireType)
 			}
-			var v uint64
+			m.MlatTimestampMax = 0
 			if (iNdEx + 8) > l {
 				return io.ErrUnexpectedEOF
 			}
 			iNdEx += 8
-			v = uint64(data[iNdEx-8])
-			v |= uint64(data[iNdEx-7]) << 8
-			v |= uint64(data[iNdEx-6]) << 16
-			v |= uint64(data[iNdEx-5]) << 24
-			v |= uint64(data[iNdEx-4]) << 32
-			v |= uint64(data[iNdEx-3]) << 40
-			v |= uint64(data[iNdEx-2]) << 48
-			v |= uint64(data[iNdEx-1]) << 56
-			m.MlatTimestampMax = &v
+			m.MlatTimestampMax = uint64(data[iNdEx-8])
+			m.MlatTimestampMax |= uint64(data[iNdEx-7]) << 8
+			m.MlatTimestampMax |= uint64(data[iNdEx-6]) << 16
+			m.MlatTimestampMax |= uint64(data[iNdEx-5]) << 24
+			m.MlatTimestampMax |= uint64(data[iNdEx-4]) << 32
+			m.MlatTimestampMax |= uint64(data[iNdEx-3]) << 40
+			m.MlatTimestampMax |= uint64(data[iNdEx-2]) << 48
+			m.MlatTimestampMax |= uint64(data[iNdEx-1]) << 56
 			hasFields[0] |= uint64(0x00000010)
 		case 6:
 			if wireType != 5 {
 				return fmt.Errorf("proto: wrong wireType = %d for field RssiMax", wireType)
 			}
-			var v uint32
+			m.RssiMax = 0
 			if (iNdEx + 4) > l {
 				return io.ErrUnexpectedEOF
 			}
 			iNdEx += 4
-			v = uint32(data[iNdEx-4])
-			v |= uint32(data[iNdEx-3]) << 8
-			v |= uint32(data[iNdEx-2]) << 16
-			v |= uint32(data[iNdEx-1]) << 24
-			m.RssiMax = &v
+			m.RssiMax = uint32(data[iNdEx-4])
+			m.RssiMax |= uint32(data[iNdEx-3]) << 8
+			m.RssiMax |= uint32(data[iNdEx-2]) << 16
+			m.RssiMax |= uint32(data[iNdEx-1]) << 24
 			hasFields[0] |= uint64(0x00000020)
 		default:
 			iNdEx = preIndex
@@ -920,27 +1316,26 @@ func (m *AdsbHeader) Unmarshal(data []byte) error {
 			if (iNdEx + skippy) > l {
 				return io.ErrUnexpectedEOF
 			}
-			m.XXX_unrecognized = append(m.XXX_unrecognized, data[iNdEx:iNdEx+skippy]...)
 			iNdEx += skippy
 		}
 	}
 	if hasFields[0]&uint64(0x00000001) == 0 {
-		return new(github_com_golang_protobuf_proto.RequiredNotSetError)
+		return github_com_gogo_protobuf_proto.NewRequiredNotSetError("magic")
 	}
 	if hasFields[0]&uint64(0x00000002) == 0 {
-		return new(github_com_golang_protobuf_proto.RequiredNotSetError)
+		return github_com_gogo_protobuf_proto.NewRequiredNotSetError("server_version")
 	}
 	if hasFields[0]&uint64(0x00000004) == 0 {
-		return new(github_com_golang_protobuf_proto.RequiredNotSetError)
+		return github_com_gogo_protobuf_proto.NewRequiredNotSetError("server_id")
 	}
 	if hasFields[0]&uint64(0x00000008) == 0 {
-		return new(github_com_golang_protobuf_proto.RequiredNotSetError)
+		return github_com_gogo_protobuf_proto.NewRequiredNotSetError("mlat_timestamp_mhz")
 	}
 	if hasFields[0]&uint64(0x00000010) == 0 {
-		return new(github_com_golang_protobuf_proto.RequiredNotSetError)
+		return github_com_gogo_protobuf_proto.NewRequiredNotSetError("mlat_timestamp_max")
 	}
 	if hasFields[0]&uint64(0x00000020) == 0 {
-		return new(github_com_golang_protobuf_proto.RequiredNotSetError)
+		return github_com_gogo_protobuf_proto.NewRequiredNotSetError("rssi_max")
 	}
 
 	if iNdEx > l {
@@ -1005,15 +1400,14 @@ func (m *AdsbPacket) Unmarshal(data []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			s := string(data[iNdEx:postIndex])
-			m.SourceId = &s
+			m.SourceId = string(data[iNdEx:postIndex])
 			iNdEx = postIndex
 			hasFields[0] |= uint64(0x00000001)
 		case 2:
 			if wireType != 0 {
 				return fmt.Errorf("proto: wrong wireType = %d for field Hops", wireType)
 			}
-			var v uint32
+			m.Hops = 0
 			for shift := uint(0); ; shift += 7 {
 				if shift >= 64 {
 					return ErrIntOverflowAdsb
@@ -1023,45 +1417,42 @@ func (m *AdsbPacket) Unmarshal(data []byte) error {
 				}
 				b := data[iNdEx]
 				iNdEx++
-				v |= (uint32(b) & 0x7F) << shift
+				m.Hops |= (uint32(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
 			}
-			m.Hops = &v
 			hasFields[0] |= uint64(0x00000002)
 		case 3:
 			if wireType != 1 {
 				return fmt.Errorf("proto: wrong wireType = %d for field MlatTimestamp", wireType)
 			}
-			var v uint64
+			m.MlatTimestamp = 0
 			if (iNdEx + 8) > l {
 				return io.ErrUnexpectedEOF
 			}
 			iNdEx += 8
-			v = uint64(data[iNdEx-8])
-			v |= uint64(data[iNdEx-7]) << 8
-			v |= uint64(data[iNdEx-6]) << 16
-			v |= uint64(data[iNdEx-5]) << 24
-			v |= uint64(data[iNdEx-4]) << 32
-			v |= uint64(data[iNdEx-3]) << 40
-			v |= uint64(data[iNdEx-2]) << 48
-			v |= uint64(data[iNdEx-1]) << 56
-			m.MlatTimestamp = &v
+			m.MlatTimestamp = uint64(data[iNdEx-8])
+			m.MlatTimestamp |= uint64(data[iNdEx-7]) << 8
+			m.MlatTimestamp |= uint64(data[iNdEx-6]) << 16
+			m.MlatTimestamp |= uint64(data[iNdEx-5]) << 24
+			m.MlatTimestamp |= uint64(data[iNdEx-4]) << 32
+			m.MlatTimestamp |= uint64(data[iNdEx-3]) << 40
+			m.MlatTimestamp |= uint64(data[iNdEx-2]) << 48
+			m.MlatTimestamp |= uint64(data[iNdEx-1]) << 56
 		case 4:
 			if wireType != 5 {
 				return fmt.Errorf("proto: wrong wireType = %d for field Rssi", wireType)
 			}
-			var v uint32
+			m.Rssi = 0
 			if (iNdEx + 4) > l {
 				return io.ErrUnexpectedEOF
 			}
 			iNdEx += 4
-			v = uint32(data[iNdEx-4])
-			v |= uint32(data[iNdEx-3]) << 8
-			v |= uint32(data[iNdEx-2]) << 16
-			v |= uint32(data[iNdEx-1]) << 24
-			m.Rssi = &v
+			m.Rssi = uint32(data[iNdEx-4])
+			m.Rssi |= uint32(data[iNdEx-3]) << 8
+			m.Rssi |= uint32(data[iNdEx-2]) << 16
+			m.Rssi |= uint32(data[iNdEx-1]) << 24
 		case 5:
 			if wireType != 2 {
 				return fmt.Errorf("proto: wrong wireType = %d for field Payload", wireType)
@@ -1106,18 +1497,17 @@ func (m *AdsbPacket) Unmarshal(data []byte) error {
 			if (iNdEx + skippy) > l {
 				return io.ErrUnexpectedEOF
 			}
-			m.XXX_unrecognized = append(m.XXX_unrecognized, data[iNdEx:iNdEx+skippy]...)
 			iNdEx += skippy
 		}
 	}
 	if hasFields[0]&uint64(0x00000001) == 0 {
-		return new(github_com_golang_protobuf_proto.RequiredNotSetError)
+		return github_com_gogo_protobuf_proto.NewRequiredNotSetError("source_id")
 	}
 	if hasFields[0]&uint64(0x00000002) == 0 {
-		return new(github_com_golang_protobuf_proto.RequiredNotSetError)
+		return github_com_gogo_protobuf_proto.NewRequiredNotSetError("hops")
 	}
 	if hasFields[0]&uint64(0x00000004) == 0 {
-		return new(github_com_golang_protobuf_proto.RequiredNotSetError)
+		return github_com_gogo_protobuf_proto.NewRequiredNotSetError("payload")
 	}
 
 	if iNdEx > l {
@@ -1294,7 +1684,6 @@ func (m *Adsb) Unmarshal(data []byte) error {
 			if (iNdEx + skippy) > l {
 				return io.ErrUnexpectedEOF
 			}
-			m.XXX_unrecognized = append(m.XXX_unrecognized, data[iNdEx:iNdEx+skippy]...)
 			iNdEx += skippy
 		}
 	}
@@ -1376,7 +1765,6 @@ func (m *AdsbStream) Unmarshal(data []byte) error {
 			if (iNdEx + skippy) > l {
 				return io.ErrUnexpectedEOF
 			}
-			m.XXX_unrecognized = append(m.XXX_unrecognized, data[iNdEx:iNdEx+skippy]...)
 			iNdEx += skippy
 		}
 	}

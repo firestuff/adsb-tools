@@ -9,6 +9,7 @@ import (
 var addr = flag.String("addr", ":8080", "http service address")
 
 func main() {
+	log.SetFlags(0)
 	flag.Parse()
 	go readInput()
 	http.HandleFunc("/stream", serveStream)
