@@ -104,7 +104,7 @@ make
 		* Log timestamping: use [multilog](https://cr.yp.to/daemontools/multilog.html) and [tai64nlocal](https://cr.yp.to/daemontools/tai64nlocal.html)
 		* Run as user: use [setuidgid](https://cr.yp.to/daemontools/setuidgid.html)
 		* Shuts down cleanly on SIGTERM
-	* Using other init systems
+	* Using other init systems or started manually
 		* Use `--detach` to fork/detach
 		* Use `--log-file=PATH` to write logs to a file instead of stderr
 		* Use `--pid-file=PATH` to write post-detach process ID to a file
