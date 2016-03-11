@@ -61,6 +61,11 @@ make
 	* SO_REUSEPORT allows multiple adsbus instances to accept connections on the same IP and port without a load balancer
 
 
+## Use
+* As a commandline utility
+	* For captures from a network source: <script src="https://gist.github.com/flamingcow66/68f06aaa7ce91b8ad433.js"></script>
+
+
 ## Security, reliability, testing
 * Secure build options by default
 	* -Weverything -Werror -pedantic-errors (with limited specific exceptions)
