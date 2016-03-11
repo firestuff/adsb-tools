@@ -11,6 +11,7 @@ var staticdir = flag.String("static-dir", "", "Static directory to serve at /")
 
 func main() {
 	log.SetFlags(0)
+	log.SetPrefix("{adsb-ws} ")
 	flag.Parse()
 	go h.run()
 	go readInput()
@@ -19,7 +20,9 @@ func main() {
 	if *staticdir != "" {
 		fs := http.FileServer(http.Dir(*staticdir))
 		http.Handle("/", fs)
+		log.Printf("Serving static content from: %s", *staticdir)
 	}
+	log.Printf("Listening on: %s", *bindaddr)
 	err := http.ListenAndServe(*bindaddr, nil)
 	if err != nil {
 		log.Fatal("Error starting web server: ", err)
