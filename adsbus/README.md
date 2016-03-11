@@ -64,7 +64,12 @@ make
 ## Use
 * As a commandline utility
 	* For captures from a network source:
-<script src="https://gist.github.com/flamingcow66/68f06aaa7ce91b8ad433.js"></script>
+```console
+$ ./adsbus --quiet --connect-receive=10.66.0.75/30005 --file-write=beast=dump.beast
+^C
+$ ls -l dump.beast
+-rw------- 1 flamingcow flamingcow 4065 Mar 11 15:07 dump.beast
+```
 
 
 ## Security, reliability, testing
