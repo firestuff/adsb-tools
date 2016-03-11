@@ -3,6 +3,7 @@
 import collections
 import fileinput
 import json
+import os
 import sys
 import threading
 import time
@@ -84,6 +85,7 @@ class Reader(object):
 
 Log('Runtime data:')
 Log('\tpython_version: %s' % sys.version.replace('\n', ''))
+Log('\tprocess_id: %d' % os.getpid())
 Log('')
 
 
