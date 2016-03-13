@@ -12,7 +12,7 @@ For programs to feed data into and consume data from adsbus, see the documentati
 ## Building
 
 ```bash
-sudo apt-get -y install build-essential git clang libjansson-dev libprotobuf-c-dev protobuf-c-compiler
+sudo apt-get -y install build-essential git clang libjansson-dev libprotobuf-c-dev protobuf-c-compiler libcap-dev
 git clone https://github.com/flamingcowtv/adsb-tools.git
 cd adsb-tools/adsbus
 make
